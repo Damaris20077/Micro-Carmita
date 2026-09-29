@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Micro Carmita | Sistema de Gestión</title>
+
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='15' fill='%231769aa'/%3E%3Cpath d='M15 40h70l-7-20H22z' fill='white'/%3E%3Cpath d='M15 40c0 10 10 15 17 7 7 8 17 8 24 0 7 8 17 8 24 0 7 8 15 3 15-7' fill='white'/%3E%3Crect x='23' y='48' width='54' height='35' rx='3' fill='white'/%3E%3Crect x='43' y='63' width='14' height='20' fill='%231769aa'/%3E%3C/svg%3E">
+
+    <link rel="stylesheet" href="estilos.css">
+
+    <!-- Font Awesome para los iconos -->
+    <link rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+</head>
+
+<body>
+
+    <div class="contenedor">
+
+        <!-- ================= SIDEBAR ================= -->
+
+        <aside class="sidebar">
+
+            <div class="logo">
+                <i class="fa-solid fa-store"></i>
+                <h2>Micro Carmita</h2>
+            </div>
+
+            <nav>
+
+                <button class="menu activo" onclick="mostrarSeccion('inicio', this)">
+                    <i class="fa-solid fa-house"></i>
+                    <span>Inicio</span>
+                </button>
+
+                <button class="menu" onclick="mostrarSeccion('ventas', this)">
+                    <i class="fa-solid fa-cart-shopping"></i>
+                    <span>Ventas</span>
+                </button>
+
+                <button class="menu" onclick="mostrarSeccion('cuentas', this)">
+                    <i class="fa-solid fa-credit-card"></i>
+                    <span>Cuentas por cobrar</span>
+                </button>
+
+                <button class="menu" onclick="mostrarSeccion('inventario', this)">
+                    <i class="fa-solid fa-box"></i>
+                    <span>Inventario</span>
+                </button>
+
+                <button class="menu" onclick="mostrarSeccion('movimientos', this)">
+                    <i class="fa-solid fa-money-bill-transfer"></i>
+                    <span>Ingresos y egresos</span>
+                </button>
+
+                <button class="menu" onclick="mostrarSeccion('reportes', this)">
+                    <i class="fa-solid fa-chart-column"></i>
+                    <span>Reportes</span>
+                </button>
+
+            </nav>
+
+            <div class="sidebar-footer">
+                <p>Sistema de Gestión</p>
+                <small>Micro Carmita - 2026</small>
+            </div>
+
+        </aside>
+
+
+        <!-- ================= CONTENIDO ================= -->
+
+        <main class="contenido">
+
+
+            <!-- ================= INICIO ================= -->
+
+            <section id="inicio" class="seccion activa-seccion">
+
+                <div class="encabezado">
+                    <div>
+                        <h1>Panel principal</h1>
+                        <p>Bienvenido al sistema de gestión financiera de Micro Carmita</p>
+                    </div>
+                </div>
+
+
+                <div class="tarjetas">
+
+                    <div class="tarjeta tarjeta-ventas">
+
+                        <div class="icono">
+                            <i class="fa-solid fa-cart-shopping"></i>
+                        </div>
+
+                        <div>
+                            <h3>Ventas</h3>
+                            <strong id="totalVentas">$0.00</strong>
+                            <p>Total registrado</p>
+                        </div>
+
+                    </div>
+
+
+                    <div class="tarjeta tarjeta-cuentas">
+
+                        <div class="icono">
+                            <i class="fa-solid fa-credit-card"></i>
+                        </div>
+
+                        <div>
+                            <h3>Cuentas por cobrar</h3>
+                            <strong id="totalCobrar">$0.00</strong>
+                            <p>Saldo pendiente</p>
+                        </div>
+
+                    </div>
+
+
+                    <div class="tarjeta tarjeta-inventario">
+
+                        <div class="icono">
+                            <i class="fa-solid fa-box"></i>
+                        </div>
+
+                        <div>
+                            <h3>Inventario</h3>
+                            <strong id="totalProductos">0</strong>
+                            <p>Productos registrados</p>
+                        </div>
+
+                    </div>
+
+
+                    <div class="tarjeta tarjeta-ingresos">
+
+                        <div class="icono">
+                            <i class="fa-solid fa-arrow-up"></i>
+                        </div>
+
+                        <div>
+                            <h3>Ingresos</h3>
+                            <strong id="totalIngresos">$0.00</strong>
+                            <p>Ingresos registrados</p>
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <div class="bienvenida">
+
+                    <i class="fa-solid fa-store"></i>
+
+                    <h2>Micro Carmita</h2>
+
+                    <p>
+                        Desde este sistema podrás administrar las ventas,
+                        cuentas por cobrar, inventario, ingresos, egresos
+                        y consultar reportes del negocio.
+                    </p>
+
+                </div>
+
+            </section>
+
+
+
+            <!-- ================= VENTAS ================= -->
+
+            <section id="ventas" class="seccion">
+
+                <div class="encabezado">
+                    <div>
+                        <h1>Gestión de Ventas</h1>
+                        <p>Registre las ventas realizadas en Micro Carmita.</p>
+                    </div>
+                </div>
+
+
+                <div class="formulario">
+
+                    <h2>
+                        <i class="fa-solid fa-cart-shopping"></i>
+                        Registrar venta
+                    </h2>
+
+
+                    <div class="form-grid">
+
+                        <div class="campo">
+                            <label>Cliente</label>
+                            <input type="text" id="ventaCliente"
+                                   placeholder="Nombre del cliente">
+                        </div>
+
+
+                        <div class="campo">
+                            <label>Producto</label>
+                            <input type="text" id="ventaProducto"
+                                   placeholder="Producto vendido">
+                        </div>
+
+
+                        <div class="campo">
+                            <label>Cantidad</label>
+                            <input type="number" id="ventaCantidad"
+                                   min="1" value="1">
+                        </div>
+
+
+                        <div class="campo">
+                            <label>Precio unitario</label>
+                            <input type="number" id="ventaPrecio"
+                                   min="0" step="0.01"
+                                   placeholder="0.00">
+                        </div>
+
+
+                        <div class="campo">
+                            <label>Tipo de venta</label>
+
+                            <select id="ventaTipo">
+                                <option value="contado">Contado</option>
+                                <option value="fiado">Fiado</option>
+                            </select>
+
+                        </div>
+
+                    </div>
+
+
+                    <button class="btn guardar" onclick="registrarVenta()">
+                        <i class="fa-solid fa-save"></i>
+                        Registrar venta
+                    </button>
+
+                </div>
+
+
+                <div class="tabla-contenedor">
+
+                    <h2>Ventas registradas</h2>
+
+                    <div class="tabla-scroll">
+
+                        <table>
+
+                            <thead>
+                                <tr>
+                                    <th>Cliente</th>
+                                    <th>Producto</th>
+                                    <th>Cantidad</th>
+                                    <th>Total</th>
+                                    <th>Tipo</th>
+                                    <th>Fecha</th>
+                                </tr>
+                            </thead>
+
+                            <tbody id="listaVentas"></tbody>
+
+                        </table>
+
+                    </div>
+
+                </div>
+
+            </section>
+
+
+
+            <!-- ================= CUENTAS ================= -->
+
+            <section id="cuentas" class="seccion">
+
+                <div class="encabezado">
+
+                    <div>
+                        <h1>Cuentas por cobrar</h1>
+                        <p>Controle las ventas realizadas a crédito.</p>
+                    </div>
+
+                </div>
+
+
+                <div class="resumen-cuenta">
+
+                    <div>
+                        <span>Total pendiente</span>
+                        <strong id="saldoPendiente">$0.00</strong>
+                    </div>
+
+                </div>
+
+
+                <div class="tabla-contenedor">
+
+                    <h2>Clientes con saldo pendiente</h2>
+
+                    <div class="tabla-scroll">
+
+                        <table>
+
+                            <thead>
+
+                                <tr>
+                                    <th>Cliente</th>
+                                    <th>Producto</th>
+                                    <th>Total</th>
+                                    <th>Fecha</th>
+                                    <th>Estado</th>
+                                    <th>Acción</th>
+                                </tr>
+
+                            </thead>
+
+                            <tbody id="listaCuentas"></tbody>
+
+                        </table>
+
+                    </div>
+
+                </div>
+
+            </section>
+
+
+
+            <!-- ================= INVENTARIO ================= -->
+
+            <section id="inventario" class="seccion">
+
+                <div class="encabezado">
+
+                    <div>
+                        <h1>Inventario</h1>
+                        <p>Controle los productos disponibles en Micro Carmita.</p>
+                    </div>
+
+                </div>
+
+
+                <div class="formulario">
+
+                    <h2>
+                        <i class="fa-solid fa-box"></i>
+                        Agregar producto
+                    </h2>
+
+
+                    <div class="form-grid">
+
+                        <div class="campo">
+
+                            <label>Producto</label>
+
+                            <input type="text"
+                                   id="productoNombre"
+                                   placeholder="Nombre del producto">
+
+                        </div>
+
+
+                        <div class="campo">
+
+                            <label>Categoría</label>
+
+                            <input type="text"
+                                   id="productoCategoria"
+                                   placeholder="Ej: Abarrotes">
+
+                        </div>
+
+
+                        <div class="campo">
+
+                            <label>Precio</label>
+
+                            <input type="number"
+                                   id="productoPrecio"
+                                   min="0"
+                                   step="0.01"
+                                   placeholder="0.00">
+
+                        </div>
+
+
+                        <div class="campo">
+
+                            <label>Cantidad</label>
+
+                            <input type="number"
+                                   id="productoCantidad"
+                                   min="0"
+                                   value="1">
+
+                        </div>
+
+                    </div>
+
+
+                    <button class="btn guardar" onclick="agregarProducto()">
+
+                        <i class="fa-solid fa-plus"></i>
+
+                        Agregar producto
+
+                    </button>
+
+                </div>
+
+
+                <div class="tabla-contenedor">
+
+                    <h2>Productos registrados</h2>
+
+
+                    <div class="tabla-scroll">
+
+                        <table>
+
+                            <thead>
+
+                                <tr>
+                                    <th>Producto</th>
+                                    <th>Categoría</th>
+                                    <th>Precio</th>
+                                    <th>Cantidad</th>
+                                    <th>Estado</th>
+                                </tr>
+
+                            </thead>
+
+
+                            <tbody id="listaInventario"></tbody>
+
+                        </table>
+
+                    </div>
+
+                </div>
+
+            </section>
+
+
+
+            <!-- ================= INGRESOS Y EGRESOS ================= -->
+
+            <section id="movimientos" class="seccion">
+
+                <div class="encabezado">
+
+                    <div>
+
+                        <h1>Ingresos y egresos</h1>
+
+                        <p>
+                            Registre los movimientos financieros
+                            del emprendimiento.
+                        </p>
+
+                    </div>
+
+                </div>
+
+
+                <div class="formulario">
+
+                    <h2>
+                        <i class="fa-solid fa-money-bill-transfer"></i>
+                        Registrar movimiento
+                    </h2>
+
+
+                    <div class="form-grid">
+
+                        <div class="campo">
+
+                            <label>Tipo</label>
+
+                            <select id="movimientoTipo">
+
+                                <option value="ingreso">
+                                    Ingreso
+                                </option>
+
+                                <option value="egreso">
+                                    Egreso
+                                </option>
+
+                            </select>
+
+                        </div>
+
+
+                        <div class="campo">
+
+                            <label>Descripción</label>
+
+                            <input type="text"
+                                   id="movimientoDescripcion"
+                                   placeholder="Descripción">
+
+                        </div>
+
+
+                        <div class="campo">
+
+                            <label>Valor</label>
+
+                            <input type="number"
+                                   id="movimientoValor"
+                                   min="0"
+                                   step="0.01"
+                                   placeholder="0.00">
+
+                        </div>
+
+                    </div>
+
+
+                    <button class="btn guardar"
+                            onclick="registrarMovimiento()">
+
+                        <i class="fa-solid fa-save"></i>
+
+                        Registrar movimiento
+
+                    </button>
+
+                </div>
+
+
+                <div class="tabla-contenedor">
+
+                    <h2>Movimientos registrados</h2>
+
+
+                    <div class="tabla-scroll">
+
+                        <table>
+
+                            <thead>
+
+                                <tr>
+
+                                    <th>Tipo</th>
+                                    <th>Descripción</th>
+                                    <th>Valor</th>
+                                    <th>Fecha</th>
+
+                                </tr>
+
+                            </thead>
+
+
+                            <tbody id="listaMovimientos"></tbody>
+
+                        </table>
+
+                    </div>
+
+                </div>
+
+            </section>
+
+
+
+            <!-- ================= REPORTES ================= -->
+
+            <section id="reportes" class="seccion">
+
+                <div class="encabezado">
+
+                    <div>
+
+                        <h1>Reportes</h1>
+
+                        <p>
+                            Consulte el resumen financiero
+                            del emprendimiento.
+                        </p>
+
+                    </div>
+
+                </div>
+
+
+                <div class="reporte-grid">
+
+
+                    <div class="reporte-card">
+
+                        <i class="fa-solid fa-cart-shopping"></i>
+
+                        <span>Total de ventas</span>
+
+                        <strong id="reporteVentas">
+                            $0.00
+                        </strong>
+
+                    </div>
+
+
+                    <div class="reporte-card">
+
+                        <i class="fa-solid fa-arrow-up"></i>
+
+                        <span>Total de ingresos</span>
+
+                        <strong id="reporteIngresos">
+                            $0.00
+                        </strong>
+
+                    </div>
+
+
+                    <div class="reporte-card">
+
+                        <i class="fa-solid fa-arrow-down"></i>
+
+                        <span>Total de egresos</span>
+
+                        <strong id="reporteEgresos">
+                            $0.00
+                        </strong>
+
+                    </div>
+
+
+                    <div class="reporte-card">
+
+                        <i class="fa-solid fa-wallet"></i>
+
+                        <span>Balance</span>
+
+                        <strong id="reporteBalance">
+                            $0.00
+                        </strong>
+
+                    </div>
+
+
+                </div>
+
+            </section>
+
+
+        </main>
+
+    </div>
+
+
+    <script src="app.js"></script>
+
+</body>
+</html>
