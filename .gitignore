@@ -1,0 +1,29 @@
+# Dependencias instaladas (se reconstruyen con `npm install`)
+node_modules/
+
+# Variables de entorno y credenciales (MySQL, Cloudflare R2, sesiones)
+.env
+.env.*
+!.env.example
+
+# Respaldos locales del prototipo (JSON exportados desde la pantalla de respaldo)
+respaldo*.json
+respaldos/
+copia-*.json
+
+# Archivos temporales de edición y del sistema operativo
+*.tmp
+*.log
+*.bak
+*~
+Thumbs.db
+desktop.ini
+.DS_Store
+
+# Configuración de editores (preferencias personales, no del proyecto)
+.vscode/
+.idea/
+
+# Salidas de herramientas de prueba y cobertura
+coverage/
+.nyc_output/

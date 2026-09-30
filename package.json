@@ -1,0 +1,29 @@
+{
+  "name": "micro-carmita",
+  "version": "1.0.0",
+  "description": "Esta carpeta contiene la adaptación del prototipo compartido. Se conservaron la barra lateral azul, los iconos, las tarjetas de colores, las tablas y los formularios del diseño original. `../Micro-Carmita-1` conserva la copia original sin modificaciones.",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Damaris20077/Micro-Carmita.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/Damaris20077/Micro-Carmita/issues"
+  },
+  "homepage": "https://github.com/Damaris20077/Micro-Carmita#readme",
+  "dependencies": {
+    "dotenv": "^18.0.4",
+    "express": "^5.2.1",
+    "mysql2": "^3.24.5"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.14"
+  }
+}
