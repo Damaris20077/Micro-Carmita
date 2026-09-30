@@ -79,16 +79,22 @@
             <section id="inventario" class="seccion">
                 <div class="encabezado"><h1>Inventario</h1><p>Controle productos, existencias, lotes y caducidad.</p></div>
                 <form id="formProducto" class="formulario" data-admin>
-                    <h2><i class="fa-solid fa-box" aria-hidden="true"></i>Agregar producto</h2>
+                    <h2><i class="fa-solid fa-box" aria-hidden="true"></i><span id="tituloProducto">Agregar producto</span></h2>
                     <div class="form-grid">
                         <div class="campo"><label for="productoNombre">Producto</label><input id="productoNombre" maxlength="100" placeholder="Nombre del producto" required></div>
                         <div class="campo"><label for="productoCategoria">Categoría</label><input id="productoCategoria" maxlength="80" placeholder="Ej: Abarrotes" required></div>
-                        <div class="campo"><label for="productoPrecio">Precio</label><input id="productoPrecio" type="number" min="0.01" step="0.01" placeholder="0.00" required></div>
+                        <div class="campo">
+                            <label for="productoPrecio">Precio</label>
+                            <div class="campo-moneda"><span aria-hidden="true">$</span><input id="productoPrecio" type="text" inputmode="decimal" pattern="[0-9]+([.,][0-9]{1,2})?" placeholder="00.00" title="Ingrese un precio positivo con hasta dos decimales" aria-label="Precio en dólares" required></div>
+                        </div>
                     </div>
-                    <p class="ayuda-texto">Registre el producto y luego agregue sus existencias mediante una entrada de lote.</p>
-                    <button class="btn guardar" type="submit">Agregar producto</button>
+                    <p id="ayudaProducto" class="ayuda-texto">Registre el producto y luego agregue sus existencias mediante una entrada de lote.</p>
+                    <div class="acciones-producto">
+                        <button id="guardarProducto" class="btn guardar" type="submit">Agregar producto</button>
+                        <button id="cancelarProducto" class="btn secundaria" type="button" hidden>Cancelar edición</button>
+                    </div>
                 </form>
-                <div class="tabla-contenedor"><h2>Productos registrados</h2><div class="tabla-scroll"><table><thead><tr><th>Producto</th><th>Categoría</th><th>Precio</th><th>Stock general</th><th>Estado</th></tr></thead><tbody id="listaInventario"></tbody></table></div></div>
+                <div class="tabla-contenedor"><h2>Productos registrados</h2><div class="tabla-scroll"><table><thead><tr><th>Producto</th><th>Categoría</th><th>Precio</th><th>Stock general</th><th>Estado</th><th data-admin>Acción</th></tr></thead><tbody id="listaInventario"></tbody></table></div></div>
                 <form id="formLote" class="formulario bloque" data-admin>
                     <h2><i class="fa-solid fa-boxes-stacked" aria-hidden="true"></i>Entrada de lote</h2>
                     <div class="form-grid">

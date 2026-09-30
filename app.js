@@ -12,6 +12,7 @@ const formatoMoneda = new Intl.NumberFormat('es-EC', {
 let datos;
 let perfil;
 let cuentaAbono;
+let productoEditando;
 
 /* Utilidades de presentación */
 
@@ -173,6 +174,7 @@ function cambiarPerfil(id) {
     const usuario = datos.usuarios.find(usuario => usuario.id === id && usuario.activo);
     if (!usuario) return;
     perfil = id;
+    cancelarEdicionProducto();
     actualizarTodo();
     mostrarSeccion('inicio');
     mensaje(`Perfil de demostración: ${usuario.nombre}`);
@@ -235,11 +237,56 @@ function agregarProducto() {
     const producto = {
         nombre: valor('productoNombre'),
         categoria: valor('productoCategoria'),
-        precio: Number(valor('productoPrecio'))
+        precio: Number(valor('productoPrecio').replace(',', '.'))
     };
-    if (operacion(estado => M.producto(estado, producto, perfil), 'Producto registrado. Agregue sus existencias mediante un lote.')) {
-        elemento('formProducto').reset();
+    const editando = Boolean(productoEditando);
+    const guardar = estado => editando
+        ? M.editarProducto(estado, productoEditando, producto, perfil)
+        : M.producto(estado, producto, perfil);
+    const aviso = editando ? 'Producto actualizado.' : 'Producto registrado. Agregue sus existencias mediante un lote.';
+    if (operacion(guardar, aviso)) {
+        cancelarEdicionProducto();
+        seleccionarProductoVenta();
     }
+}
+
+function formatearPrecioProducto() {
+    const campo = elemento('productoPrecio');
+    const texto = campo.value.trim().replace(',', '.');
+    if (!/^\d+(\.\d{1,2})?$/.test(texto) || !Number.isFinite(Number(texto))) return;
+    const [entero, decimales] = Number(texto).toFixed(2).split('.');
+    campo.value = `${entero.padStart(2, '0')}.${decimales}`;
+}
+
+function editarProducto(id) {
+    try {
+        const usuario = M.autorizar(datos, perfil, 'inventario');
+        if (usuario.rol !== 'administrador') throw new Error('Solo administración puede editar productos.');
+        const producto = datos.productos.find(producto => producto.id === id);
+        if (!producto) throw new Error('No se encontró el producto.');
+        productoEditando = id;
+        elemento('productoNombre').value = producto.nombre;
+        elemento('productoCategoria').value = producto.categoria;
+        elemento('productoPrecio').value = producto.precio.toFixed(2);
+        formatearPrecioProducto();
+        elemento('tituloProducto').textContent = 'Editar producto';
+        elemento('guardarProducto').textContent = 'Guardar cambios';
+        elemento('ayudaProducto').textContent = 'Actualice el nombre, la categoría o el precio del producto.';
+        elemento('cancelarProducto').hidden = false;
+        elemento('formProducto').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        elemento('productoNombre').focus({ preventScroll: true });
+    } catch (error) {
+        mensaje(error.message, true);
+    }
+}
+
+function cancelarEdicionProducto() {
+    productoEditando = undefined;
+    elemento('formProducto').reset();
+    elemento('tituloProducto').textContent = 'Agregar producto';
+    elemento('guardarProducto').textContent = 'Agregar producto';
+    elemento('ayudaProducto').textContent = 'Registre el producto y luego agregue sus existencias mediante una entrada de lote.';
+    elemento('cancelarProducto').hidden = true;
 }
 
 function registrarLote() {
@@ -382,15 +429,17 @@ function mostrarCuentas() {
 }
 
 function mostrarInventario() {
+    const administrador = datos.usuarios.find(usuario => usuario.id === perfil)?.rol === 'administrador';
     const productos = datos.productos.map(producto => {
         const stock = M.stock(datos, producto.id);
         const estado = stock < 0 ? 'Stock negativo' : stock === 0 ? 'Agotado' : 'Registrado';
         return fila([
             escapar(producto.nombre), escapar(producto.categoria), moneda(producto.precio),
-            stock, etiqueta(estado, stock <= 0 ? 'agotado' : 'disponible')
+            stock, etiqueta(estado, stock <= 0 ? 'agotado' : 'disponible'),
+            ...(administrador ? [`<button class="btn-editar" data-editar-producto="${escapar(producto.id)}">Editar</button>`] : [])
         ]);
     });
-    mostrarTabla('listaInventario', productos, 5, 'No existen productos registrados.');
+    mostrarTabla('listaInventario', productos, administrador ? 6 : 5, 'No existen productos registrados.');
 
     const lotes = datos.lotes.map(lote => {
         const estado = M.estadoLote(lote);
@@ -577,6 +626,12 @@ function conectarEventos() {
     });
     elemento('perfilActual').addEventListener('change', evento => cambiarPerfil(evento.target.value));
     elemento('ventaProducto').addEventListener('change', seleccionarProductoVenta);
+    elemento('productoPrecio').addEventListener('blur', formatearPrecioProducto);
+    elemento('cancelarProducto').addEventListener('click', cancelarEdicionProducto);
+    elemento('listaInventario').addEventListener('click', evento => {
+        const boton = evento.target.closest('[data-editar-producto]');
+        if (boton) editarProducto(boton.dataset.editarProducto);
+    });
     elemento('ventaTipo').addEventListener('change', actualizarTipoVenta);
     ['ventaCantidad', 'ventaPrecio'].forEach(id => elemento(id).addEventListener('input', resumenVenta));
     ['reporteDesde', 'reporteHasta'].forEach(id => elemento(id).addEventListener('change', actualizarReportes));

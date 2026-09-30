@@ -115,6 +115,24 @@
         return nuevo;
     }
 
+    function editarProducto(estado, productoId, datos, usuarioId) {
+        exigirAdministrador(estado, usuarioId);
+        const existente = estado.productos.find(producto => producto.id === productoId);
+        exigir(existente, 'No se encontró el producto que desea editar.');
+        exigir(texto(datos.nombre) && texto(datos.categoria) && dinero(datos.precio),
+            'Ingrese nombre, categoría y un precio positivo con hasta dos decimales.');
+        const nombre = datos.nombre.trim();
+        const repetido = estado.productos.some(producto =>
+            producto.id !== productoId && producto.nombre.toLocaleLowerCase() === nombre.toLocaleLowerCase()
+        );
+        exigir(!repetido, 'Ya existe otro producto con ese nombre.');
+        existente.nombre = nombre;
+        existente.categoria = datos.categoria.trim();
+        existente.precio = datos.precio;
+        // El identificador, los lotes, el faltante y las ventas históricas se conservan.
+        return existente;
+    }
+
     function entrada(estado, datos, usuarioId, fecha = hoy()) {
         exigirAdministrador(estado, usuarioId);
         const producto = estado.productos.find(producto => producto.id === datos.productoId);
@@ -291,6 +309,6 @@
 
     return {
         hoy, id, redondear, vacio, permisos, autorizar, stock, estadoLote,
-        producto, entrada, venta, abono, salida, movimiento, validarEstado
+        producto, editarProducto, entrada, venta, abono, salida, movimiento, validarEstado
     };
 });

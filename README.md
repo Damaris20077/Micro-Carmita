@@ -28,7 +28,7 @@ Para probar sin mezclar registros del negocio, visite `http://127.0.0.1:8765/?pr
 
 | Necesidad recuperada de las conversaciones | Adaptación |
 | --- | --- |
-| Registro de productos y consulta de stock | Catálogo con categoría y precio; stock calculado a partir de lotes y unidades pendientes |
+| Registro de productos y consulta de stock | Catálogo con categoría y precio; edición de nombre, categoría y precio por administración; stock calculado a partir de lotes y unidades pendientes |
 | Entradas y salidas de inventario | Entrada de lote, salida con motivo e historial; las ventas también generan una salida |
 | Lotes con distintas caducidades | Cantidad y fecha por lote; fecha opcional para productos que no caducan |
 | Rotación FEFO | Se consumen primero los lotes vigentes con caducidad más cercana; los lotes sin caducidad se utilizan después |
@@ -82,4 +82,4 @@ node --check modelo.js
 node --test modelo.test.cjs
 ```
 
-Las 12 pruebas cubren FEFO, exclusión de caducados, alerta a siete días, stock negativo y conciliación, abonos parciales, rechazo de sobrepagos, redondeo de dinero, validación de entradas, permisos y validación del almacenamiento. La interfaz se verifica con el flujo producto → lote → venta a crédito → abono → reporte y el cambio de perfil.
+Las 14 pruebas cubren FEFO, exclusión de caducados, alerta a siete días, stock negativo y conciliación, abonos parciales, rechazo de sobrepagos, redondeo de dinero, validación de entradas, permisos, validación del almacenamiento y edición de productos conservando lotes y ventas anteriores. La interfaz se verifica con el flujo producto → lote → venta a crédito → abono → reporte y el cambio de perfil. El precio del producto se muestra con un prefijo `$` y completa el formato `00.00` al salir del campo.

@@ -92,3 +92,31 @@ test('rechaza almacenamiento dañado sin modificar sus registros', () => {
         assert.equal(JSON.stringify(s), antes);
     }
 });
+
+test('editar producto conserva stock, lotes, deuda y datos de ventas anteriores', () => {
+    const { s, p } = preparar();
+    M.entrada(s, { productoId: p.id, codigo: 'L-1', cantidad: 5, caducidad: '' }, admin, fecha);
+    const venta = vender(s, p, { cantidad: 2, tipo: 'fiado' });
+    const lotesAntes = JSON.stringify(s.lotes);
+    const cuentasAntes = JSON.stringify(s.cuentas);
+    const actualizado = M.editarProducto(s, p.id, { nombre: 'Leche entera', categoria: 'Bebidas', precio: 1.5 }, admin);
+    assert.equal(actualizado.id, p.id);
+    assert.equal(actualizado.nombre, 'Leche entera');
+    assert.equal(actualizado.precio, 1.5);
+    assert.equal(M.stock(s, p.id), 3);
+    assert.equal(JSON.stringify(s.lotes), lotesAntes);
+    assert.equal(JSON.stringify(s.cuentas), cuentasAntes);
+    assert.equal(venta.producto, 'Leche');
+    assert.equal(venta.precio, 1.25);
+    M.validarEstado(s);
+});
+
+test('editar producto rechaza duplicados, precio inválido y perfil operador', () => {
+    const { s, p } = preparar();
+    M.producto(s, { nombre: 'Pan', categoria: 'Panadería', precio: 1 }, admin);
+    const antes = JSON.stringify(s);
+    assert.throws(() => M.editarProducto(s, p.id, { nombre: 'Pan', categoria: 'Bebidas', precio: 2 }, admin), /otro producto/);
+    assert.throws(() => M.editarProducto(s, p.id, { nombre: 'Leche', categoria: 'Bebidas', precio: 0 }, admin), /precio positivo/);
+    assert.throws(() => M.editarProducto(s, p.id, { nombre: 'Leche', categoria: 'Bebidas', precio: 2 }, operador), /administración/);
+    assert.equal(JSON.stringify(s), antes);
+});

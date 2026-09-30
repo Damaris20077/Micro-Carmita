@@ -102,6 +102,13 @@ button:focus-visible { outline: 3px solid #f39c12; outline-offset: 3px; }
 .campo label { font-weight: bold; font-size: 14px; }
 .campo input, .campo select { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; outline: none; font-size: 14px; background: white; color: #333; }
 .campo input:focus, .campo select:focus { border-color: #1769aa; box-shadow: 0 0 0 2px #1769aa1a; }
+.campo-moneda { display: flex; align-items: center; border: 1px solid #ddd; border-radius: 8px; background: white; overflow: hidden; }
+.campo-moneda > span { padding-left: 12px; color: #1769aa; font-weight: bold; }
+.campo .campo-moneda input { border: 0; border-radius: 0; box-shadow: none; min-width: 0; }
+.campo-moneda:focus-within { border-color: #1769aa; box-shadow: 0 0 0 2px #1769aa1a; }
+.acciones-producto { display: flex; flex-wrap: wrap; gap: 12px; }
+.btn-editar { border: 1px solid #1769aa; border-radius: 6px; background: #e3f2fd; color: #1769aa; padding: 7px 12px; cursor: pointer; font-weight: bold; }
+.btn-editar:hover { background: #d0e8fa; }
 .btn { border: none; padding: 12px 20px; border-radius: 8px; cursor: pointer; color: white; font-weight: bold; font-size: 14px; }
 .btn.guardar { background: #1769aa; }
 .btn.guardar:hover { background: #12568b; }
