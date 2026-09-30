@@ -3,658 +3,183 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
     <title>Micro Carmita | Sistema de Gestión</title>
-
-    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='15' fill='%231769aa'/%3E%3Cpath d='M15 40h70l-7-20H22z' fill='white'/%3E%3Cpath d='M15 40c0 10 10 15 17 7 7 8 17 8 24 0 7 8 17 8 24 0 7 8 15 3 15-7' fill='white'/%3E%3Crect x='23' y='48' width='54' height='35' rx='3' fill='white'/%3E%3Crect x='43' y='63' width='14' height='20' fill='%231769aa'/%3E%3C/svg%3E">
-
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='15' fill='%231769aa'/%3E%3Cpath d='M15 40h70l-7-20H22z' fill='white'/%3E%3Crect x='23' y='48' width='54' height='35' rx='3' fill='white'/%3E%3Crect x='43' y='63' width='14' height='20' fill='%231769aa'/%3E%3C/svg%3E">
     <link rel="stylesheet" href="estilos.css">
-
-    <!-- Font Awesome para los iconos -->
-    <link rel="stylesheet"
-          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <!-- El modelo debe cargarse antes de la interfaz. -->
+    <script src="modelo.js" defer></script>
+    <script src="app.js" defer></script>
 </head>
-
 <body>
-
     <div class="contenedor">
-
-        <!-- ================= SIDEBAR ================= -->
-
         <aside class="sidebar">
-
             <div class="logo">
-                <i class="fa-solid fa-store"></i>
+                <i class="fa-solid fa-store" aria-hidden="true"></i>
                 <h2>Micro Carmita</h2>
             </div>
-
-            <nav>
-
-                <button class="menu activo" onclick="mostrarSeccion('inicio', this)">
-                    <i class="fa-solid fa-house"></i>
-                    <span>Inicio</span>
-                </button>
-
-                <button class="menu" onclick="mostrarSeccion('ventas', this)">
-                    <i class="fa-solid fa-cart-shopping"></i>
-                    <span>Ventas</span>
-                </button>
-
-                <button class="menu" onclick="mostrarSeccion('cuentas', this)">
-                    <i class="fa-solid fa-credit-card"></i>
-                    <span>Cuentas por cobrar</span>
-                </button>
-
-                <button class="menu" onclick="mostrarSeccion('inventario', this)">
-                    <i class="fa-solid fa-box"></i>
-                    <span>Inventario</span>
-                </button>
-
-                <button class="menu" onclick="mostrarSeccion('movimientos', this)">
-                    <i class="fa-solid fa-money-bill-transfer"></i>
-                    <span>Ingresos y egresos</span>
-                </button>
-
-                <button class="menu" onclick="mostrarSeccion('reportes', this)">
-                    <i class="fa-solid fa-chart-column"></i>
-                    <span>Reportes</span>
-                </button>
-
+            <nav aria-label="Menú principal">
+                <button class="menu activo" data-seccion="inicio" aria-current="page"><i class="fa-solid fa-house" aria-hidden="true"></i><span>Inicio</span></button>
+                <button class="menu" data-seccion="ventas"><i class="fa-solid fa-cart-shopping" aria-hidden="true"></i><span>Ventas</span></button>
+                <button class="menu" data-seccion="cuentas"><i class="fa-solid fa-credit-card" aria-hidden="true"></i><span>Cuentas por cobrar</span></button>
+                <button class="menu" data-seccion="inventario"><i class="fa-solid fa-box" aria-hidden="true"></i><span>Inventario</span></button>
+                <button class="menu" data-seccion="movimientos"><i class="fa-solid fa-money-bill-transfer" aria-hidden="true"></i><span>Ingresos y egresos</span></button>
+                <button class="menu" data-seccion="reportes"><i class="fa-solid fa-chart-column" aria-hidden="true"></i><span>Reportes</span></button>
+                <button class="menu" data-seccion="usuarios"><i class="fa-solid fa-users" aria-hidden="true"></i><span>Usuarios</span></button>
+                <button class="menu" data-seccion="respaldo"><i class="fa-solid fa-cloud" aria-hidden="true"></i><span>Respaldo</span></button>
+                <button class="menu" data-seccion="ayuda"><i class="fa-solid fa-circle-question" aria-hidden="true"></i><span>Guía de uso</span></button>
             </nav>
-
-            <div class="sidebar-footer">
-                <p>Sistema de Gestión</p>
-                <small>Micro Carmita - 2026</small>
-            </div>
-
+            <div class="sidebar-footer"><p>Sistema de Gestión</p><small>Micro Carmita · 2026</small></div>
         </aside>
 
-
-        <!-- ================= CONTENIDO ================= -->
-
         <main class="contenido">
-
-
-            <!-- ================= INICIO ================= -->
+            <div class="barra-sesion">
+                <span class="estado estado-pendiente">Prototipo · datos en este navegador</span>
+                <div class="campo"><label for="perfilActual">Perfil de demostración</label><select id="perfilActual"></select></div>
+            </div>
+            <div id="aviso" class="aviso" role="status" aria-live="polite" hidden></div>
 
             <section id="inicio" class="seccion activa-seccion">
-
-                <div class="encabezado">
-                    <div>
-                        <h1>Panel principal</h1>
-                        <p>Bienvenido al sistema de gestión financiera de Micro Carmita</p>
-                    </div>
-                </div>
-
-
+                <div class="encabezado"><h1>Panel principal</h1><p>Ventas, inventario y control financiero de Micro Carmita.</p></div>
                 <div class="tarjetas">
-
-                    <div class="tarjeta tarjeta-ventas">
-
-                        <div class="icono">
-                            <i class="fa-solid fa-cart-shopping"></i>
-                        </div>
-
-                        <div>
-                            <h3>Ventas</h3>
-                            <strong id="totalVentas">$0.00</strong>
-                            <p>Total registrado</p>
-                        </div>
-
-                    </div>
-
-
-                    <div class="tarjeta tarjeta-cuentas">
-
-                        <div class="icono">
-                            <i class="fa-solid fa-credit-card"></i>
-                        </div>
-
-                        <div>
-                            <h3>Cuentas por cobrar</h3>
-                            <strong id="totalCobrar">$0.00</strong>
-                            <p>Saldo pendiente</p>
-                        </div>
-
-                    </div>
-
-
-                    <div class="tarjeta tarjeta-inventario">
-
-                        <div class="icono">
-                            <i class="fa-solid fa-box"></i>
-                        </div>
-
-                        <div>
-                            <h3>Inventario</h3>
-                            <strong id="totalProductos">0</strong>
-                            <p>Productos registrados</p>
-                        </div>
-
-                    </div>
-
-
-                    <div class="tarjeta tarjeta-ingresos">
-
-                        <div class="icono">
-                            <i class="fa-solid fa-arrow-up"></i>
-                        </div>
-
-                        <div>
-                            <h3>Ingresos</h3>
-                            <strong id="totalIngresos">$0.00</strong>
-                            <p>Ingresos registrados</p>
-                        </div>
-
-                    </div>
-
+                    <div class="tarjeta tarjeta-ventas"><div class="icono"><i class="fa-solid fa-cart-shopping" aria-hidden="true"></i></div><div><h3>Ventas</h3><strong id="totalVentas">$0.00</strong><p>Ventas de hoy</p></div></div>
+                    <div class="tarjeta tarjeta-cuentas" data-admin><div class="icono"><i class="fa-solid fa-credit-card" aria-hidden="true"></i></div><div><h3>Cuentas por cobrar</h3><strong id="totalCobrar">$0.00</strong><p>Saldo pendiente</p></div></div>
+                    <div class="tarjeta tarjeta-inventario"><div class="icono"><i class="fa-solid fa-box" aria-hidden="true"></i></div><div><h3>Inventario</h3><strong id="totalProductos">0</strong><p>Productos registrados</p></div></div>
+                    <div class="tarjeta tarjeta-ingresos" data-admin><div class="icono"><i class="fa-solid fa-arrow-up" aria-hidden="true"></i></div><div><h3>Ingresos</h3><strong id="totalIngresos">$0.00</strong><p>Ingresos registrados</p></div></div>
                 </div>
-
-
-                <div class="bienvenida">
-
-                    <i class="fa-solid fa-store"></i>
-
-                    <h2>Micro Carmita</h2>
-
-                    <p>
-                        Desde este sistema podrás administrar las ventas,
-                        cuentas por cobrar, inventario, ingresos, egresos
-                        y consultar reportes del negocio.
-                    </p>
-
-                </div>
-
+                <div class="bienvenida"><i class="fa-solid fa-store" aria-hidden="true"></i><h2>Micro Carmita</h2><p>Desde este sistema podrás administrar las ventas, cuentas por cobrar, inventario, ingresos, egresos y consultar reportes del negocio.</p></div>
+                <div class="tabla-contenedor bloque"><h2>Alertas de inventario</h2><p class="ayuda-texto">Lotes caducados, caducidad en los próximos 7 días y stock por revisar.</p><div id="alertasInventario"></div></div>
             </section>
-
-
-
-            <!-- ================= VENTAS ================= -->
 
             <section id="ventas" class="seccion">
-
-                <div class="encabezado">
-                    <div>
-                        <h1>Gestión de Ventas</h1>
-                        <p>Registre las ventas realizadas en Micro Carmita.</p>
-                    </div>
-                </div>
-
-
-                <div class="formulario">
-
-                    <h2>
-                        <i class="fa-solid fa-cart-shopping"></i>
-                        Registrar venta
-                    </h2>
-
-
+                <div class="encabezado"><h1>Gestión de Ventas</h1><p>Registre las ventas realizadas en Micro Carmita.</p></div>
+                <form id="formVenta" class="formulario">
+                    <h2><i class="fa-solid fa-cart-shopping" aria-hidden="true"></i>Registrar venta</h2>
                     <div class="form-grid">
-
-                        <div class="campo">
-                            <label>Cliente</label>
-                            <input type="text" id="ventaCliente"
-                                   placeholder="Nombre del cliente">
-                        </div>
-
-
-                        <div class="campo">
-                            <label>Producto</label>
-                            <input type="text" id="ventaProducto"
-                                   placeholder="Producto vendido">
-                        </div>
-
-
-                        <div class="campo">
-                            <label>Cantidad</label>
-                            <input type="number" id="ventaCantidad"
-                                   min="1" value="1">
-                        </div>
-
-
-                        <div class="campo">
-                            <label>Precio unitario</label>
-                            <input type="number" id="ventaPrecio"
-                                   min="0" step="0.01"
-                                   placeholder="0.00">
-                        </div>
-
-
-                        <div class="campo">
-                            <label>Tipo de venta</label>
-
-                            <select id="ventaTipo">
-                                <option value="contado">Contado</option>
-                                <option value="fiado">Fiado</option>
-                            </select>
-
-                        </div>
-
+                        <div class="campo"><label for="ventaCliente">Cliente</label><input id="ventaCliente" maxlength="100" placeholder="Obligatorio para ventas a crédito"></div>
+                        <div class="campo"><label for="ventaProducto">Producto</label><select id="ventaProducto" required></select></div>
+                        <div class="campo"><label for="ventaCantidad">Cantidad</label><input id="ventaCantidad" type="number" min="1" step="1" value="1" required></div>
+                        <div class="campo"><label for="ventaPrecio">Precio unitario</label><input id="ventaPrecio" type="number" min="0.01" step="0.01" placeholder="0.00" required></div>
+                        <div class="campo"><label for="ventaTipo">Tipo de venta</label><select id="ventaTipo"><option value="contado">Contado</option><option value="fiado">Crédito / fiado</option></select></div>
                     </div>
-
-
-                    <button class="btn guardar" onclick="registrarVenta()">
-                        <i class="fa-solid fa-save"></i>
-                        Registrar venta
-                    </button>
-
-                </div>
-
-
-                <div class="tabla-contenedor">
-
-                    <h2>Ventas registradas</h2>
-
-                    <div class="tabla-scroll">
-
-                        <table>
-
-                            <thead>
-                                <tr>
-                                    <th>Cliente</th>
-                                    <th>Producto</th>
-                                    <th>Cantidad</th>
-                                    <th>Total</th>
-                                    <th>Tipo</th>
-                                    <th>Fecha</th>
-                                </tr>
-                            </thead>
-
-                            <tbody id="listaVentas"></tbody>
-
-                        </table>
-
-                    </div>
-
-                </div>
-
+                    <p id="ventaResumen" class="ayuda-texto">Seleccione un producto. La asignación de lotes seguirá FEFO.</p>
+                    <p class="ayuda-texto">Registro interno: no se emiten facturas ni comprobantes tributarios.</p>
+                    <button class="btn guardar" type="submit">Registrar venta</button>
+                </form>
+                <div class="tabla-contenedor"><h2>Ventas registradas</h2><div class="tabla-scroll"><table><thead><tr><th>Cliente</th><th>Producto / lotes</th><th>Cantidad</th><th>Total</th><th>Tipo</th><th>Fecha</th></tr></thead><tbody id="listaVentas"></tbody></table></div></div>
             </section>
-
-
-
-            <!-- ================= CUENTAS ================= -->
 
             <section id="cuentas" class="seccion">
-
-                <div class="encabezado">
-
-                    <div>
-                        <h1>Cuentas por cobrar</h1>
-                        <p>Controle las ventas realizadas a crédito.</p>
-                    </div>
-
-                </div>
-
-
-                <div class="resumen-cuenta">
-
-                    <div>
-                        <span>Total pendiente</span>
-                        <strong id="saldoPendiente">$0.00</strong>
-                    </div>
-
-                </div>
-
-
-                <div class="tabla-contenedor">
-
-                    <h2>Clientes con saldo pendiente</h2>
-
-                    <div class="tabla-scroll">
-
-                        <table>
-
-                            <thead>
-
-                                <tr>
-                                    <th>Cliente</th>
-                                    <th>Producto</th>
-                                    <th>Total</th>
-                                    <th>Fecha</th>
-                                    <th>Estado</th>
-                                    <th>Acción</th>
-                                </tr>
-
-                            </thead>
-
-                            <tbody id="listaCuentas"></tbody>
-
-                        </table>
-
-                    </div>
-
-                </div>
-
+                <div class="encabezado"><h1>Cuentas por cobrar</h1><p>Controle las ventas a crédito y sus abonos.</p></div>
+                <div class="resumen-cuenta"><span>Total pendiente</span><strong id="saldoPendiente">$0.00</strong></div>
+                <div class="tabla-contenedor"><h2>Cuentas registradas</h2><div class="tabla-scroll"><table><thead><tr><th>Cliente</th><th>Producto</th><th>Total original</th><th>Saldo</th><th>Fecha / estado</th><th>Acción</th></tr></thead><tbody id="listaCuentas"></tbody></table></div></div>
+                <div class="tabla-contenedor bloque"><h2>Historial de abonos</h2><div class="tabla-scroll"><table><thead><tr><th>Cliente</th><th>Valor</th><th>Fecha</th></tr></thead><tbody id="listaPagos"></tbody></table></div></div>
             </section>
-
-
-
-            <!-- ================= INVENTARIO ================= -->
 
             <section id="inventario" class="seccion">
-
-                <div class="encabezado">
-
-                    <div>
-                        <h1>Inventario</h1>
-                        <p>Controle los productos disponibles en Micro Carmita.</p>
-                    </div>
-
-                </div>
-
-
-                <div class="formulario">
-
-                    <h2>
-                        <i class="fa-solid fa-box"></i>
-                        Agregar producto
-                    </h2>
-
-
+                <div class="encabezado"><h1>Inventario</h1><p>Controle productos, existencias, lotes y caducidad.</p></div>
+                <form id="formProducto" class="formulario" data-admin>
+                    <h2><i class="fa-solid fa-box" aria-hidden="true"></i>Agregar producto</h2>
                     <div class="form-grid">
-
-                        <div class="campo">
-
-                            <label>Producto</label>
-
-                            <input type="text"
-                                   id="productoNombre"
-                                   placeholder="Nombre del producto">
-
-                        </div>
-
-
-                        <div class="campo">
-
-                            <label>Categoría</label>
-
-                            <input type="text"
-                                   id="productoCategoria"
-                                   placeholder="Ej: Abarrotes">
-
-                        </div>
-
-
-                        <div class="campo">
-
-                            <label>Precio</label>
-
-                            <input type="number"
-                                   id="productoPrecio"
-                                   min="0"
-                                   step="0.01"
-                                   placeholder="0.00">
-
-                        </div>
-
-
-                        <div class="campo">
-
-                            <label>Cantidad</label>
-
-                            <input type="number"
-                                   id="productoCantidad"
-                                   min="0"
-                                   value="1">
-
-                        </div>
-
+                        <div class="campo"><label for="productoNombre">Producto</label><input id="productoNombre" maxlength="100" placeholder="Nombre del producto" required></div>
+                        <div class="campo"><label for="productoCategoria">Categoría</label><input id="productoCategoria" maxlength="80" placeholder="Ej: Abarrotes" required></div>
+                        <div class="campo"><label for="productoPrecio">Precio</label><input id="productoPrecio" type="number" min="0.01" step="0.01" placeholder="0.00" required></div>
                     </div>
-
-
-                    <button class="btn guardar" onclick="agregarProducto()">
-
-                        <i class="fa-solid fa-plus"></i>
-
-                        Agregar producto
-
-                    </button>
-
-                </div>
-
-
-                <div class="tabla-contenedor">
-
-                    <h2>Productos registrados</h2>
-
-
-                    <div class="tabla-scroll">
-
-                        <table>
-
-                            <thead>
-
-                                <tr>
-                                    <th>Producto</th>
-                                    <th>Categoría</th>
-                                    <th>Precio</th>
-                                    <th>Cantidad</th>
-                                    <th>Estado</th>
-                                </tr>
-
-                            </thead>
-
-
-                            <tbody id="listaInventario"></tbody>
-
-                        </table>
-
+                    <p class="ayuda-texto">Registre el producto y luego agregue sus existencias mediante una entrada de lote.</p>
+                    <button class="btn guardar" type="submit">Agregar producto</button>
+                </form>
+                <div class="tabla-contenedor"><h2>Productos registrados</h2><div class="tabla-scroll"><table><thead><tr><th>Producto</th><th>Categoría</th><th>Precio</th><th>Stock general</th><th>Estado</th></tr></thead><tbody id="listaInventario"></tbody></table></div></div>
+                <form id="formLote" class="formulario bloque" data-admin>
+                    <h2><i class="fa-solid fa-boxes-stacked" aria-hidden="true"></i>Entrada de lote</h2>
+                    <div class="form-grid">
+                        <div class="campo"><label for="loteProducto">Producto</label><select id="loteProducto" required></select></div>
+                        <div class="campo"><label for="loteCodigo">Código de lote</label><input id="loteCodigo" maxlength="80" placeholder="Ej: L-001" required></div>
+                        <div class="campo"><label for="loteCantidad">Cantidad recibida</label><input id="loteCantidad" type="number" min="1" step="1" value="1" required></div>
+                        <div class="campo"><label for="loteCaducidad">Caducidad (si corresponde)</label><input id="loteCaducidad" type="date"></div>
                     </div>
-
-                </div>
-
+                    <p class="ayuda-texto">Las entradas vigentes concilian primero las unidades vendidas sin existencia.</p>
+                    <button class="btn guardar" type="submit">Registrar entrada</button>
+                </form>
+                <div class="tabla-contenedor bloque"><h2>Lotes y caducidad</h2><div class="tabla-scroll"><table><thead><tr><th>Producto</th><th>Lote</th><th>Existencias</th><th>Caducidad</th><th>Estado</th></tr></thead><tbody id="listaLotes"></tbody></table></div></div>
+                <form id="formSalida" class="formulario bloque" data-admin>
+                    <h2>Salida de inventario</h2>
+                    <div class="form-grid">
+                        <div class="campo"><label for="salidaLote">Lote</label><select id="salidaLote" required></select></div>
+                        <div class="campo"><label for="salidaCantidad">Cantidad</label><input id="salidaCantidad" type="number" min="1" step="1" value="1" required></div>
+                        <div class="campo"><label for="salidaMotivo">Motivo</label><input id="salidaMotivo" maxlength="150" placeholder="Caducidad, daño, pérdida…" required></div>
+                    </div>
+                    <button class="btn guardar" type="submit">Registrar salida</button>
+                </form>
+                <div class="tabla-contenedor bloque"><h2>Historial de inventario</h2><div class="tabla-scroll"><table><thead><tr><th>Fecha</th><th>Producto</th><th>Lote</th><th>Movimiento</th><th>Unidades</th></tr></thead><tbody id="listaInventarioMovimientos"></tbody></table></div></div>
             </section>
-
-
-
-            <!-- ================= INGRESOS Y EGRESOS ================= -->
 
             <section id="movimientos" class="seccion">
-
-                <div class="encabezado">
-
-                    <div>
-
-                        <h1>Ingresos y egresos</h1>
-
-                        <p>
-                            Registre los movimientos financieros
-                            del emprendimiento.
-                        </p>
-
-                    </div>
-
-                </div>
-
-
-                <div class="formulario">
-
-                    <h2>
-                        <i class="fa-solid fa-money-bill-transfer"></i>
-                        Registrar movimiento
-                    </h2>
-
-
+                <div class="encabezado"><h1>Ingresos y egresos</h1><p>Registre otros movimientos financieros del emprendimiento.</p></div>
+                <form id="formMovimiento" class="formulario">
+                    <h2>Registrar movimiento</h2>
                     <div class="form-grid">
-
-                        <div class="campo">
-
-                            <label>Tipo</label>
-
-                            <select id="movimientoTipo">
-
-                                <option value="ingreso">
-                                    Ingreso
-                                </option>
-
-                                <option value="egreso">
-                                    Egreso
-                                </option>
-
-                            </select>
-
-                        </div>
-
-
-                        <div class="campo">
-
-                            <label>Descripción</label>
-
-                            <input type="text"
-                                   id="movimientoDescripcion"
-                                   placeholder="Descripción">
-
-                        </div>
-
-
-                        <div class="campo">
-
-                            <label>Valor</label>
-
-                            <input type="number"
-                                   id="movimientoValor"
-                                   min="0"
-                                   step="0.01"
-                                   placeholder="0.00">
-
-                        </div>
-
+                        <div class="campo"><label for="movimientoTipo">Tipo</label><select id="movimientoTipo"><option value="ingreso">Ingreso</option><option value="egreso">Egreso</option></select></div>
+                        <div class="campo"><label for="movimientoDescripcion">Descripción</label><input id="movimientoDescripcion" maxlength="150" placeholder="Descripción" required></div>
+                        <div class="campo"><label for="movimientoValor">Valor</label><input id="movimientoValor" type="number" min="0.01" step="0.01" placeholder="0.00" required></div>
                     </div>
-
-
-                    <button class="btn guardar"
-                            onclick="registrarMovimiento()">
-
-                        <i class="fa-solid fa-save"></i>
-
-                        Registrar movimiento
-
-                    </button>
-
-                </div>
-
-
-                <div class="tabla-contenedor">
-
-                    <h2>Movimientos registrados</h2>
-
-
-                    <div class="tabla-scroll">
-
-                        <table>
-
-                            <thead>
-
-                                <tr>
-
-                                    <th>Tipo</th>
-                                    <th>Descripción</th>
-                                    <th>Valor</th>
-                                    <th>Fecha</th>
-
-                                </tr>
-
-                            </thead>
-
-
-                            <tbody id="listaMovimientos"></tbody>
-
-                        </table>
-
-                    </div>
-
-                </div>
-
+                    <p class="ayuda-texto">Las ventas al contado y los abonos generan ingresos automáticamente. No vuelva a registrarlos aquí.</p>
+                    <button class="btn guardar" type="submit">Registrar movimiento</button>
+                </form>
+                <div class="tabla-contenedor"><h2>Movimientos registrados</h2><div class="tabla-scroll"><table><thead><tr><th>Tipo</th><th>Descripción</th><th>Valor</th><th>Fecha</th></tr></thead><tbody id="listaMovimientos"></tbody></table></div></div>
             </section>
-
-
-
-            <!-- ================= REPORTES ================= -->
 
             <section id="reportes" class="seccion">
-
-                <div class="encabezado">
-
-                    <div>
-
-                        <h1>Reportes</h1>
-
-                        <p>
-                            Consulte el resumen financiero
-                            del emprendimiento.
-                        </p>
-
-                    </div>
-
+                <div class="encabezado"><h1>Reportes</h1><p>Consulte ventas y movimientos por período.</p></div>
+                <div class="formulario">
+                    <h2>Período del reporte</h2>
+                    <div class="form-grid"><div class="campo"><label for="reporteDesde">Desde</label><input id="reporteDesde" type="date"></div><div class="campo"><label for="reporteHasta">Hasta</label><input id="reporteHasta" type="date"></div></div>
+                    <button id="btnReporte" class="btn guardar" type="button">Descargar movimientos CSV</button>
+                    <p class="ayuda-texto">Ingresos: cobros al contado, abonos y otros ingresos. Las ventas a crédito se cuentan como ingreso cuando se cobran.</p>
                 </div>
-
-
                 <div class="reporte-grid">
-
-
-                    <div class="reporte-card">
-
-                        <i class="fa-solid fa-cart-shopping"></i>
-
-                        <span>Total de ventas</span>
-
-                        <strong id="reporteVentas">
-                            $0.00
-                        </strong>
-
-                    </div>
-
-
-                    <div class="reporte-card">
-
-                        <i class="fa-solid fa-arrow-up"></i>
-
-                        <span>Total de ingresos</span>
-
-                        <strong id="reporteIngresos">
-                            $0.00
-                        </strong>
-
-                    </div>
-
-
-                    <div class="reporte-card">
-
-                        <i class="fa-solid fa-arrow-down"></i>
-
-                        <span>Total de egresos</span>
-
-                        <strong id="reporteEgresos">
-                            $0.00
-                        </strong>
-
-                    </div>
-
-
-                    <div class="reporte-card">
-
-                        <i class="fa-solid fa-wallet"></i>
-
-                        <span>Balance</span>
-
-                        <strong id="reporteBalance">
-                            $0.00
-                        </strong>
-
-                    </div>
-
-
+                    <div class="reporte-card"><i class="fa-solid fa-cart-shopping" aria-hidden="true"></i><span>Total de ventas</span><strong id="reporteVentas">$0.00</strong></div>
+                    <div class="reporte-card"><i class="fa-solid fa-arrow-up" aria-hidden="true"></i><span>Total de ingresos</span><strong id="reporteIngresos">$0.00</strong></div>
+                    <div class="reporte-card"><i class="fa-solid fa-arrow-down" aria-hidden="true"></i><span>Total de egresos</span><strong id="reporteEgresos">$0.00</strong></div>
+                    <div class="reporte-card"><i class="fa-solid fa-wallet" aria-hidden="true"></i><span>Balance</span><strong id="reporteBalance">$0.00</strong></div>
                 </div>
-
             </section>
 
+            <section id="usuarios" class="seccion">
+                <div class="encabezado"><h1>Usuarios y permisos</h1><p>Perfiles de demostración del negocio.</p></div>
+                <form id="formUsuario" class="formulario">
+                    <h2>Registrar perfil</h2>
+                    <div class="form-grid"><div class="campo"><label for="usuarioNombre">Nombre</label><input id="usuarioNombre" maxlength="100" placeholder="Nombre del responsable" required></div><div class="campo"><label for="usuarioRol">Rol</label><select id="usuarioRol"><option value="operador">Operador</option><option value="administrador">Administrador</option></select></div></div>
+                    <button class="btn guardar" type="submit">Agregar perfil</button>
+                    <p class="ayuda-texto">Administración gestiona todos los módulos. El operador registra ventas y abonos y consulta inventario. Estos perfiles simulan permisos; la versión definitiva necesitará autenticación en el servidor.</p>
+                </form>
+                <div class="tabla-contenedor"><h2>Perfiles registrados</h2><div class="tabla-scroll"><table><thead><tr><th>Nombre</th><th>Rol</th><th>Estado</th><th>Acción</th></tr></thead><tbody id="listaUsuarios"></tbody></table></div></div>
+            </section>
 
+            <section id="respaldo" class="seccion">
+                <div class="encabezado"><h1>Respaldo de información</h1><p>Conserve una copia local de los registros del prototipo.</p></div>
+                <div class="formulario"><h2>Copia local</h2><p class="ayuda-texto">Descargue los datos antes de cambiar de equipo o borrar los datos del navegador.</p><button id="btnRespaldo" class="btn guardar" type="button">Descargar copia JSON</button><p id="ultimoRespaldo" class="ayuda-texto">Todavía no se ha descargado una copia.</p></div>
+                <div class="formulario"><h2>Respaldo en la nube · Cloudflare R2</h2><span class="estado estado-pendiente">Pendiente de integración</span><p class="ayuda-texto">La versión definitiva generará copias de MySQL desde Node.js/Express y las enviará a un espacio privado en R2. Este prototipo guarda los datos en el navegador; descargar una copia no los sube a la nube.</p></div>
+            </section>
+
+            <section id="ayuda" class="seccion">
+                <div class="encabezado"><h1>Guía de uso</h1><p>Pasos para las operaciones diarias.</p></div>
+                <div class="formulario">
+                    <h2>1. Productos e inventario</h2><p class="ayuda-texto">Registre el producto, su categoría y precio. Luego ingrese cada lote con código, cantidad y caducidad si corresponde.</p>
+                    <h2>2. Ventas</h2><p class="ayuda-texto">Seleccione producto, cantidad y tipo de venta. Para crédito, indique el cliente. Se consumen primero los lotes que caducan antes. Los lotes caducados nunca se venden. Si falta stock vigente, las unidades quedan pendientes de conciliar; si solo hay existencias caducadas, la venta se bloquea.</p>
+                    <h2>3. Abonos</h2><p class="ayuda-texto">En Cuentas por cobrar seleccione Abonar. Ingrese una parte o el saldo completo. El sistema actualiza la deuda y registra el ingreso una sola vez.</p>
+                    <h2>4. Control</h2><p class="ayuda-texto">Revise las alertas, registre las bajas por caducidad y consulte los reportes. Descargue una copia de los datos. Los perfiles son una simulación y no sustituyen un inicio de sesión real.</p>
+                </div>
+            </section>
         </main>
-
     </div>
 
-
-    <script src="app.js"></script>
-
+    <dialog id="dialogoAbono" aria-labelledby="tituloAbono">
+        <form id="formAbono">
+            <h2 id="tituloAbono">Registrar abono</h2>
+            <p id="detalleAbono" class="ayuda-texto"></p>
+            <div class="campo"><label for="abonoValor">Valor del abono</label><input id="abonoValor" type="number" min="0.01" step="0.01" required></div>
+            <div class="acciones"><button id="cancelarAbono" class="btn secundaria" type="button">Cancelar</button><button class="btn guardar" type="submit">Guardar abono</button></div>
+        </form>
+    </dialog>
 </body>
 </html>

@@ -65,3 +65,30 @@ test('entrada caducada no concilia ventas pendientes y rechaza fecha inexistente
     assert.equal(p.faltante, 2);
     assert.throws(() => M.entrada(s, { productoId: p.id, codigo: 'MAL', cantidad: 1, caducidad: '2026-02-30' }, admin, fecha), /Fecha/);
 });
+
+test('valida datos guardados después de una venta a crédito y un abono', () => {
+    const { s, p } = preparar();
+    const v = vender(s, p, { cantidad: 2, tipo: 'fiado' });
+    M.abono(s, v.id, 1, operador, fecha);
+    const recuperado = JSON.parse(JSON.stringify(s));
+    assert.equal(M.validarEstado(recuperado), recuperado);
+    assert.equal(recuperado.cuentas[0].saldo, 1.5);
+    assert.equal(M.stock(recuperado, p.id), -2);
+});
+
+test('rechaza almacenamiento dañado sin modificar sus registros', () => {
+    const casos = [
+        s => { s.usuarios[0].rol = 'desconocido'; },
+        s => { s.usuarios[0].activo = false; },
+        s => { s.productos.push({ id: 'x', nombre: 'Leche', categoria: 'Lácteos', precio: null, faltante: 0 }); },
+        s => { s.cuentas.push({ id: 'x', cliente: 'Cliente', producto: 'Leche', total: 5, saldo: -1, fecha }); },
+        s => { s.usuarios.push({ ...s.usuarios[0] }); }
+    ];
+    for (const cambiar of casos) {
+        const s = M.vacio();
+        cambiar(s);
+        const antes = JSON.stringify(s);
+        assert.throws(() => M.validarEstado(s));
+        assert.equal(JSON.stringify(s), antes);
+    }
+});

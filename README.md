@@ -2,6 +2,16 @@
 
 Esta carpeta contiene la adaptación del prototipo compartido. Se conservaron la barra lateral azul, los iconos, las tarjetas de colores, las tablas y los formularios del diseño original. `../Micro-Carmita-1` conserva la copia original sin modificaciones.
 
+## Organización del código reescrito
+
+- `index.html`: declara todas las pantallas y formularios, incluidos lotes, salidas y abonos. Carga los scripts con `defer`, primero el modelo y luego la interfaz.
+- `app.js`: conecta los eventos de los formularios y botones, muestra las tablas, migra los datos anteriores y guarda operaciones completas en el navegador.
+- `modelo.js`: contiene las reglas de inventario, FEFO, caducidad, créditos, cobros y permisos. También valida los registros guardados antes de utilizarlos.
+- `estilos.css`: conserva los colores y componentes del prototipo original, con reglas de adaptación agrupadas al final.
+- `modelo.test.cjs`: verifica las reglas y la validación del almacenamiento con las herramientas incluidas en Node.js.
+
+No se necesitan Express, MySQL2, dotenv ni nodemon para ejecutar este prototipo. Sus instalaciones existentes quedan fuera de esta reescritura.
+
 ## Abrir
 
 Abra `index.html` en un navegador o, desde esta carpeta, ejecute:
@@ -72,4 +82,4 @@ node --check modelo.js
 node --test modelo.test.cjs
 ```
 
-Las 10 pruebas cubren FEFO, exclusión de caducados, alerta a siete días, stock negativo y conciliación, abonos parciales, rechazo de sobrepagos, redondeo de dinero, validación de entradas y permisos. También se verificó en el navegador el flujo producto → lote → venta a crédito → abono → reporte y el cambio de perfil. Se revisó la distribución a 390 píxeles.
+Las 12 pruebas cubren FEFO, exclusión de caducados, alerta a siete días, stock negativo y conciliación, abonos parciales, rechazo de sobrepagos, redondeo de dinero, validación de entradas, permisos y validación del almacenamiento. La interfaz se verifica con el flujo producto → lote → venta a crédito → abono → reporte y el cambio de perfil.
