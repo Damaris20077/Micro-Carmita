@@ -35,12 +35,150 @@ function fechaActual() {
 
 let carrito = [];
 
+/* =========================================
+   SESIÓN, USUARIOS Y PERMISOS (prototipo local)
+========================================= */
+
+const CLAVE_USUARIOS = "micro-carmita-usuarios";
+const CLAVE_SESION = "micro-carmita-sesion";
+const permisosPorRol = {
+    vendedor: ["inicio", "ventas", "cuentas", "inventario"],
+    administrador: ["inicio", "ventas", "cuentas", "inventario", "movimientos", "reportes"],
+    superusuario: ["inicio", "ventas", "cuentas", "inventario", "movimientos", "reportes", "usuarios"]
+};
+
+function usuariosIniciales() {
+    return [
+        { id: "super-demo", nombre: "Super usuario", usuario: "superadmin", clave: "super123", rol: "superusuario", activo: true },
+        { id: "admin-demo", nombre: "Administrador", usuario: "admin", clave: "admin123", rol: "administrador", activo: true },
+        { id: "vendedor-demo", nombre: "Vendedor", usuario: "vendedor", clave: "venta123", rol: "vendedor", activo: true }
+    ];
+}
+
+function obtenerUsuarios() {
+    const usuarios = obtenerDatos(CLAVE_USUARIOS);
+    if (usuarios.length) return usuarios;
+    const iniciales = usuariosIniciales();
+    guardarDatos(CLAVE_USUARIOS, iniciales);
+    return iniciales;
+}
+
+function usuarioActual() {
+    const sesion = obtenerDatos(CLAVE_SESION);
+    return sesion?.id ? obtenerUsuarios().find(usuario => usuario.id === sesion.id && usuario.activo) : null;
+}
+
+function tienePermiso(permiso) {
+    const usuario = usuarioActual();
+    return Boolean(usuario && permisosPorRol[usuario.rol]?.includes(permiso));
+}
+
+function exigirPermiso(permiso) {
+    if (tienePermiso(permiso)) return true;
+    alert("No tiene permiso para realizar esta acción.");
+    return false;
+}
+
+function iniciarSesion(evento) {
+    evento.preventDefault();
+    const cuenta = document.getElementById("loginUsuario").value.trim().toLowerCase();
+    const clave = document.getElementById("loginClave").value;
+    const usuario = obtenerUsuarios().find(item => item.activo && item.usuario.toLowerCase() === cuenta && item.clave === clave);
+    const error = document.getElementById("errorLogin");
+    if (!usuario) {
+        error.textContent = "Usuario, contraseña o estado de cuenta inválido.";
+        return;
+    }
+    guardarDatos(CLAVE_SESION, { id: usuario.id });
+    document.getElementById("loginClave").value = "";
+    error.textContent = "";
+    aplicarSesion();
+}
+
+function cerrarSesion() {
+    localStorage.removeItem(CLAVE_SESION);
+    carrito = [];
+    aplicarSesion();
+}
+
+function aplicarSesion() {
+    const usuario = usuarioActual();
+    const login = document.getElementById("pantallaLogin");
+    login.classList.toggle("oculta", Boolean(usuario));
+    if (!usuario) return;
+
+    document.getElementById("nombreSesion").textContent = usuario.nombre;
+    document.getElementById("rolSesion").textContent = usuario.rol === "superusuario" ? "Super usuario" : usuario.rol;
+    document.querySelectorAll(".menu[data-permiso]").forEach(menu => {
+        menu.hidden = !tienePermiso(menu.dataset.permiso);
+    });
+    const formularioProducto = document.getElementById("formularioProducto");
+    if (formularioProducto) formularioProducto.hidden = usuario.rol === "vendedor";
+    const activa = document.querySelector(".seccion.activa-seccion");
+    if (activa && !tienePermiso(activa.id)) mostrarSeccion("inicio", document.querySelector(".menu"));
+    mostrarUsuarios();
+    actualizarTodo();
+}
+
+function crearUsuario() {
+    if (!exigirPermiso("usuarios")) return;
+    const nombre = document.getElementById("usuarioNombre").value.trim();
+    const cuenta = document.getElementById("usuarioCuenta").value.trim().toLowerCase();
+    const clave = document.getElementById("usuarioClave").value;
+    const rol = document.getElementById("usuarioRol").value;
+    if (!nombre || !/^[a-z0-9._-]{3,30}$/i.test(cuenta) || clave.length < 6 || !permisosPorRol[rol]) {
+        alert("Ingrese nombre, un usuario de 3 a 30 caracteres, contraseña de al menos 6 caracteres y un rol válido.");
+        return;
+    }
+    const usuarios = obtenerUsuarios();
+    if (usuarios.some(usuario => usuario.usuario.toLowerCase() === cuenta)) {
+        alert("Ese nombre de usuario ya está en uso.");
+        return;
+    }
+    usuarios.push({ id: `usuario-${Date.now()}`, nombre, usuario: cuenta, clave, rol, activo: true });
+    guardarDatos(CLAVE_USUARIOS, usuarios);
+    ["usuarioNombre", "usuarioCuenta", "usuarioClave"].forEach(id => document.getElementById(id).value = "");
+    mostrarUsuarios();
+}
+
+function cambiarEstadoUsuario(id) {
+    if (!exigirPermiso("usuarios")) return;
+    const usuarios = obtenerUsuarios();
+    const objetivo = usuarios.find(usuario => usuario.id === id);
+    const actual = usuarioActual();
+    if (!objetivo || objetivo.id === actual.id) {
+        alert("No puede desactivar su propia cuenta.");
+        return;
+    }
+    if (objetivo.rol === "superusuario" && objetivo.activo && usuarios.filter(usuario => usuario.rol === "superusuario" && usuario.activo).length === 1) {
+        alert("Debe conservar al menos un super usuario activo.");
+        return;
+    }
+    objetivo.activo = !objetivo.activo;
+    guardarDatos(CLAVE_USUARIOS, usuarios);
+    mostrarUsuarios();
+}
+
+function mostrarUsuarios() {
+    const lista = document.getElementById("listaUsuarios");
+    if (!lista || !tienePermiso("usuarios")) return;
+    lista.innerHTML = obtenerUsuarios().map(usuario => `
+        <tr><td>${textoSeguro(usuario.nombre)}</td><td>${textoSeguro(usuario.usuario)}</td>
+        <td>${textoSeguro(usuario.rol === "superusuario" ? "Super usuario" : usuario.rol)}</td>
+        <td>${usuario.activo ? "Activo" : "Inactivo"}</td>
+        <td><button class="btn-pagar" onclick="cambiarEstadoUsuario('${usuario.id}')">${usuario.activo ? "Desactivar" : "Activar"}</button></td></tr>`).join("");
+}
+
 
 /* =========================================
    NAVEGACIÓN
 ========================================= */
 
 function mostrarSeccion(nombreSeccion, boton) {
+    if (!tienePermiso(nombreSeccion)) {
+        alert("No tiene permiso para acceder a este módulo.");
+        return;
+    }
     document.querySelectorAll(".seccion").forEach(seccion => {
         seccion.classList.remove("activa-seccion");
     });
@@ -142,6 +280,7 @@ function actualizarPrecioVenta() {
 ========================================= */
 
 function agregarAlCarrito() {
+    if (!exigirPermiso("ventas")) return;
     const selector = document.getElementById("ventaProducto");
     const campoCantidad = document.getElementById("ventaCantidad");
 
@@ -255,6 +394,7 @@ function mostrarCarrito() {
 
 
 function quitarDelCarrito(id) {
+    if (!exigirPermiso("ventas")) return;
     carrito = carrito.filter(item =>
         String(item.id) !== String(id)
     );
@@ -268,6 +408,7 @@ function quitarDelCarrito(id) {
 ========================================= */
 
 function registrarVenta() {
+    if (!exigirPermiso("ventas")) return;
     const cliente = document.getElementById("ventaCliente").value.trim();
     const tipo = document.getElementById("ventaTipo").value;
 
@@ -516,6 +657,7 @@ function mostrarCuentas() {
 ========================================= */
 
 function abonarCuenta(id) {
+    if (!exigirPermiso("cuentas")) return;
     const cuentas = obtenerDatos("cuentas");
 
     const cuenta = cuentas.find(item =>
@@ -578,6 +720,7 @@ function abonarCuenta(id) {
 
 
 function marcarPagado(id) {
+    if (!exigirPermiso("cuentas")) return;
     abonarCuenta(id);
 }
 
@@ -587,6 +730,7 @@ function marcarPagado(id) {
 ========================================= */
 
 function agregarProducto() {
+    if (!exigirPermiso("inventario") || usuarioActual()?.rol === "vendedor") return alert("Solo administración puede modificar el inventario.");
     const nombre = document.getElementById("productoNombre").value.trim();
     const categoria = document.getElementById("productoCategoria").value.trim();
     const precio = Number(document.getElementById("productoPrecio").value);
@@ -644,6 +788,7 @@ function agregarProducto() {
 ========================================= */
 
 function editarProducto(id) {
+    if (!exigirPermiso("inventario") || usuarioActual()?.rol === "vendedor") return alert("Solo administración puede modificar el inventario.");
     const inventario = obtenerDatos("inventario");
 
     const producto = inventario.find(item =>
@@ -754,6 +899,7 @@ function editarProducto(id) {
 ========================================= */
 
 function eliminarProducto(id) {
+    if (!exigirPermiso("inventario") || usuarioActual()?.rol === "vendedor") return alert("Solo administración puede modificar el inventario.");
     const inventario = obtenerDatos("inventario");
 
     const producto = inventario.find(item =>
@@ -811,6 +957,7 @@ function mostrarInventario() {
 
     inventario.forEach(producto => {
         const disponible = Number(producto.cantidad) > 0;
+        const puedeModificar = usuarioActual()?.rol !== "vendedor";
 
         const fila = document.createElement("tr");
 
@@ -826,7 +973,7 @@ function mostrarInventario() {
                     ${disponible ? "Disponible" : "Agotado"}
                 </span>
             </td>
-            <td>
+            <td>${puedeModificar ? `
                 <button
                     class="btn-editar"
                     onclick="editarProducto(${Number(producto.id)})">
@@ -840,7 +987,7 @@ function mostrarInventario() {
                     <i class="fa-solid fa-trash"></i>
                     Eliminar
                 </button>
-            </td>
+            ` : "Solo consulta"}</td>
         `;
 
         lista.appendChild(fila);
@@ -853,6 +1000,7 @@ function mostrarInventario() {
 ========================================= */
 
 function registrarMovimiento() {
+    if (!exigirPermiso("movimientos")) return;
     const tipo = document.getElementById("movimientoTipo").value;
     const descripcion = document.getElementById("movimientoDescripcion").value.trim();
     const valor = Number(document.getElementById("movimientoValor").value);
@@ -1014,5 +1162,6 @@ function actualizarTodo() {
 ========================================= */
 
 document.addEventListener("DOMContentLoaded", () => {
-    actualizarTodo();
+    obtenerUsuarios();
+    aplicarSesion();
 });

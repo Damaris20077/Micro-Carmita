@@ -38,7 +38,7 @@ Para probar sin mezclar registros del negocio, visite `http://127.0.0.1:8765/?pr
 | Cuentas por cobrar y pagos parciales | Crédito con cliente obligatorio, saldo pendiente, abonos e historial de cobros |
 | Ingresos y egresos | Contado y abonos crean ingresos automáticamente una sola vez; se conservan movimientos manuales |
 | Reportes | Ventas, ingresos, egresos y balance por período; descarga de movimientos CSV |
-| Usuarios con diferentes permisos | Perfiles activos/inactivos; administración y operador; controles de acciones y navegación en el prototipo |
+| Usuarios con diferentes permisos | Inicio de sesión local, cuentas activas/inactivas y tres roles: vendedor, administrador y super usuario |
 | Ventas internas | No se emiten facturas ni comprobantes tributarios |
 | Interfaz sencilla y adaptable | Estilo original conservado, campos etiquetados, avisos, diálogo de abonos y tablas con desplazamiento horizontal |
 | Tutorías de uso | Pantalla Guía de uso con pasos y reglas de operación |
@@ -55,9 +55,21 @@ Los requisitos se reconstruyeron del texto disponible de las dos conversaciones.
 - El saldo financiero representa ingresos cobrados menos egresos registrados. No es una utilidad contable ni incluye un cálculo del costo de los productos.
 - La venta a crédito genera una deuda, pero no un ingreso de efectivo hasta recibir el abono. No registre manualmente un cobro que ya se generó automáticamente.
 
+## Accesos del prototipo
+
+Al abrir la aplicación se muestra el inicio de sesión. Las cuentas iniciales son:
+
+| Rol | Usuario | Contraseña | Alcance |
+| --- | --- | --- | --- |
+| Super usuario | `superadmin` | `super123` | Modifica toda la plataforma y crea, activa o desactiva usuarios. |
+| Administrador | `admin` | `admin123` | Administra ventas, cobros, inventario, movimientos y reportes. |
+| Vendedor | `vendedor` | `venta123` | Registra ventas y abonos, y consulta inventario; no puede modificar productos, movimientos, reportes ni usuarios. |
+
+Las cuentas se guardan únicamente en el almacenamiento local del navegador. Desde el módulo **Usuarios y roles**, el super usuario puede crear nuevas cuentas y administrar su estado.
+
 ## Límites del prototipo y siguiente implementación
 
-Este es un prototipo funcional local. Cambiar de perfil simula permisos y **no constituye autenticación ni una barrera de seguridad**. La información se guarda en `localStorage`, sin sincronización entre equipos y sin soporte de edición simultánea. La descarga JSON es una copia local; no existe restauración automática ni envío a la nube en esta versión.
+Este es un prototipo funcional local. El inicio de sesión y sus contraseñas se guardan en `localStorage`; por ello **no constituyen autenticación ni una barrera de seguridad real**. La información se guarda sin sincronización entre equipos y sin soporte de edición simultánea. La descarga JSON es una copia local; no existe restauración automática ni envío a la nube en esta versión.
 
 Para la versión definitiva quedan pendientes:
 

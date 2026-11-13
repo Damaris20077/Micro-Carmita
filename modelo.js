@@ -10,8 +10,11 @@
     'use strict';
 
     const permisos = {
-        administrador: ['inicio', 'ventas', 'cuentas', 'inventario', 'movimientos', 'reportes', 'usuarios', 'respaldo', 'ayuda'],
-        operador: ['inicio', 'ventas', 'cuentas', 'inventario', 'ayuda']
+        // operador se conserva para que los datos locales creados antes de los nuevos roles sigan funcionando.
+        operador: ['inicio', 'ventas', 'cuentas', 'inventario', 'ayuda'],
+        vendedor: ['inicio', 'ventas', 'cuentas', 'inventario', 'ayuda'],
+        administrador: ['inicio', 'ventas', 'cuentas', 'inventario', 'movimientos', 'reportes', 'ayuda'],
+        superusuario: ['inicio', 'ventas', 'cuentas', 'inventario', 'movimientos', 'reportes', 'usuarios', 'respaldo', 'ayuda']
     };
 
     function hoy() {
@@ -65,7 +68,9 @@
             inventarioMovimientos: [],
             usuarios: [
                 { id: 'admin-demo', nombre: 'Administración', rol: 'administrador', activo: true },
-                { id: 'operador-demo', nombre: 'Operador de ventas', rol: 'operador', activo: true }
+                { id: 'operador-demo', nombre: 'Operador de ventas', rol: 'operador', activo: true },
+                { id: 'super-demo', nombre: 'Super usuario', rol: 'superusuario', activo: true },
+                { id: 'vendedor-demo', nombre: 'Vendedor', rol: 'vendedor', activo: true }
             ]
         };
     }
