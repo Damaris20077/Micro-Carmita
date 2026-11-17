@@ -1,5 +1,17 @@
 # Clientes, proveedores e inventario
 
+## Estado posterior a la migración
+
+La comprobación de lectura más reciente confirmó `001_auth` y `002_catalogo_inventario` en schema_migrations. Las cinco tablas nuevas son consultables con micro_app y estaban vacías. El Administrador id 1 seguía activo. micro_app conserva SELECT, INSERT, UPDATE y DELETE sobre micro_carmita, sin privilegios administrativos. Los procedimientos de migración que aparecen más abajo se conservan como referencia histórica y no deben repetirse sobre este esquema ya migrado.
+
+El ensayo real todavía queda pendiente de ejecución personal. En esta revisión se reforzó su limpieza mediante `backend/verification-cleanup.js`. Un error al cerrar el servidor permite continuar con el rollback. Si el rollback falla, la conexión se destruye y el informe marca el fallo, en vez de devolverla al pool. El script comprueba previamente que las ocho tablas que modifica sean InnoDB. Los errores se informan por etapa y sin imprimir excepciones ni datos privados.
+
+La suite posterior a esta revisión pasó con 186 pruebas exitosas, cero fallidas, omitidas o canceladas, código de salida 0. Conserva las 181 anteriores e incorpora cinco pruebas aisladas de limpieza y rutas de error. El ensayo real de inventario no se ejecutó durante esta revisión.
+
+Las escrituras del ensayo se ejecutan en una conexión exclusiva y una transacción externa. El repositorio utiliza savepoints y nunca confirma la transacción externa. Se generan cuentas y registros temporales propios. La cuenta Administrador se utiliza como actor, sin cambios en sus campos, su contraseña o su rol. El cliente HTTP comienza sin cookies y solo utiliza las sesiones creadas por el ensayo. Después del rollback se comparan internamente todos los campos del Administrador y sus sesiones previas, sin mostrarlos. También se verifica la ausencia de contactos, producto, lotes, movimientos y Vendedor temporales. Los autoincrementos pueden conservar saltos.
+
+Se recomienda ejecutar el ensayo sin usar simultáneamente otras sesiones del mismo Administrador para que la comparación de sus sesiones anteriores sea concluyente. Un fallo de limpieza deja ok en false y enumera solo las etapas de cierre fallidas. Ante pérdida de conexión, el rollback se completa al cerrarse la conexión en MySQL. Ese caso no se presenta como una validación exitosa.
+
 ## Entrega y alcance
 
 Se implementan RF-09, RF-14, RF-15, RF-16, RF-17, RF-18 y RF-20 mediante API Express y una migración aditiva MySQL 8.0.46. El esquema de autenticación y el Administrador se conservan. Durante esta entrega se consultaron únicamente los metadatos reales, que mostraron las cinco tablas de autenticación y la versión `001_auth`. La migración `002_catalogo_inventario` sigue pendiente de autorización administrativa. Las operaciones de este bloque aún requieren validación contra MySQL real después de aplicarla.
@@ -97,6 +109,62 @@ Después, verifique la versión nueva, las cinco tablas adicionales, sus CHECK, 
 ## Archivos y pruebas
 
 La suite completa `npm test` pasó con 181 pruebas exitosas, cero fallidas, omitidas o canceladas, código de salida 0. Son las 138 pruebas anteriores y 43 adicionales para este bloque. Las pruebas usan datos aislados. La migración nueva no se ejecutó en la base real.
+
+## Preparación de activación en desarrollo-jose
+
+Se comprobó que la rama activa era `desarrollo-jose` y el árbol estaba limpio antes de esta preparación. La consulta real encontró únicamente las cinco tablas InnoDB de autenticación y la versión `001_auth`, con un Administrador activo. `usuarios.id` es INT UNSIGNED y coincide con la FK de movimientos_inventario. No se encontraron conflictos de nombres para las cinco tablas nuevas.
+
+La revisión estática de 002 confirma cinco claves primarias, cinco claves foráneas y cuatro restricciones de unicidad. Los índices de las FK que no estén cubiertos por índices explícitos serán creados por InnoDB. Las restricciones CHECK, DECIMAL, JSON, DATE y DEFAULT con expresiones están soportadas en MySQL 8.0.46. La migración carece de DROP, TRUNCATE, REPLACE, UPDATE, DELETE, GRANT y desactivación de restricciones. Su único INSERT registra la versión nueva. El archivo SQL revisado se conserva sin cambios.
+
+Después de autorizar la migración y aplicarla con root usando el comando por lotes anterior, verifique desde el cliente MySQL.
+
+```sql
+SELECT version FROM schema_migrations ORDER BY version;
+SELECT TABLE_NAME, ENGINE FROM information_schema.tables
+WHERE TABLE_SCHEMA='micro_carmita' ORDER BY TABLE_NAME;
+SELECT TABLE_NAME, CONSTRAINT_NAME, CONSTRAINT_TYPE
+FROM information_schema.table_constraints
+WHERE CONSTRAINT_SCHEMA='micro_carmita'
+AND TABLE_NAME IN ('clientes','proveedores','productos','lotes','movimientos_inventario')
+ORDER BY TABLE_NAME, CONSTRAINT_NAME;
+SELECT TABLE_NAME, COLUMN_NAME, REFERENCED_TABLE_NAME, REFERENCED_COLUMN_NAME
+FROM information_schema.key_column_usage
+WHERE TABLE_SCHEMA='micro_carmita'
+AND TABLE_NAME IN ('clientes','proveedores','productos','lotes','movimientos_inventario')
+AND REFERENCED_TABLE_NAME IS NOT NULL;
+SELECT TABLE_NAME, INDEX_NAME, COLUMN_NAME, NON_UNIQUE
+FROM information_schema.statistics
+WHERE TABLE_SCHEMA='micro_carmita'
+AND TABLE_NAME IN ('clientes','proveedores','productos','lotes','movimientos_inventario')
+ORDER BY TABLE_NAME, INDEX_NAME, SEQ_IN_INDEX;
+SELECT COUNT(*) AS administradores_activos
+FROM usuarios WHERE rol='administrador' AND activo=1;
+```
+
+Se esperan diez tablas en total y ambas versiones de migración. Las cinco FK nuevas relacionan productos con proveedores, lotes con productos y proveedores, y movimientos con productos y usuarios. Los registros reales de autenticación se conservan.
+
+El ensayo `backend/verify-inventory-real.js` queda preparado para ejecución manual posterior a la migración, usando micro_app. Exige la versión 002 antes de escribir. Carga Express y ambos repositorios reales sobre una conexión exclusiva. Las transacciones internas utilizan savepoints y toda la prueba termina en ROLLBACK. Genera nombres de ensayo únicos, crea un Vendedor temporal y nunca modifica al Administrador. Las escrituras de contactos, productos, lotes, movimientos, sesiones y auditoría se revierten. Los autoincrementos pueden dejar saltos. No utilice este ensayo como prueba de commits permanentes o de concurrencia entre conexiones, que requieren un entorno aislado adicional.
+
+En PowerShell integrado de VS Code, desde la raíz y después de autorizar el ensayo, introduzca personalmente las credenciales del Administrador.
+
+```powershell
+$claveEnsayo = $null
+try {
+    $env:AUTH_CHECK_USER = Read-Host 'Usuario Administrador'
+    $claveEnsayo = Read-Host 'Contraseña del Administrador' -AsSecureString
+    $env:AUTH_CHECK_PASSWORD = [System.Net.NetworkCredential]::new('', $claveEnsayo).Password
+    node backend/verify-inventory-real.js
+    if ($LASTEXITCODE -ne 0) { Write-Warning 'Ensayo incompleto. Revise únicamente la etapaFallida informada.' }
+} finally {
+    Remove-Item Env:AUTH_CHECK_USER, Env:AUTH_CHECK_PASSWORD -ErrorAction SilentlyContinue
+    if ($null -ne $claveEnsayo) { $claveEnsayo.Dispose() }
+    Remove-Variable claveEnsayo -ErrorAction SilentlyContinue
+}
+```
+
+El resultado esperado contiene ok y rollback en true. El informe excluye credenciales, hashes y tokens. Comprueba los siete RF, precios y campos obligatorios, proveedores válidos, duplicados, lotes con vencimiento a cinco y seis días, lotes vencidos, stocks 2, 0, negativo y 3, conciliación e historial. Comprueba HTTP 403 para escrituras administrativas del Vendedor y permite su registro de clientes. Al terminar verifica la ausencia del producto y del Vendedor de ensayo y la conservación del Administrador.
+
+Este procedimiento se preparó sin ejecutar la migración ni el ensayo sobre la base real. El árbol contiene los cambios de preparación en este documento y en el nuevo script, pendientes de revisión.
 
 Nuevos archivos de este bloque son `002_catalogo_inventario.sql`, `inventory-repository.js`, `inventory-service.js`, `inventory-routes.js`, sus pruebas en backend, `inventory-client.js` y este documento. Se modifican `backend/app.js`, `backend/server.js`, `modelo.js`, `auth-client.js`, `index.html` y `README.md`. El resto de pruebas históricas se conserva.
 
