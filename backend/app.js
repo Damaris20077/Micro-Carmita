@@ -2,8 +2,9 @@ const express = require('express');
 const path = require('node:path');
 const { crearAuth, digest, fallo } = require('./auth-service');
 const { rutasInventario } = require('./inventory-routes');
+const { rutasPedidos } = require('./order-routes');
 
-function crearApp({ repository, inventoryRepository, production = false, origin = 'http://127.0.0.1:3000', allowSuperuser = false } = {}) {
+function crearApp({ repository, inventoryRepository, orderRepository, production = false, origin = 'http://127.0.0.1:3000', allowSuperuser = false } = {}) {
     const app = express();
     app.disable('x-powered-by');
     app.use('/api', (req, res, next) => {
@@ -76,11 +77,12 @@ function crearApp({ repository, inventoryRepository, production = false, origin 
         const id = /^\d+$/.test(req.params.id) ? Number(req.params.id) : NaN;
         res.json({ usuario: await auth.update(req.usuario, id, req.body) });
     });
+    app.use('/api', rutasPedidos(orderRepository));
     app.use('/api', rutasInventario(inventoryRepository));
     app.use('/api', (req, res) => res.status(404).json({ error: 'Ruta inexistente.' }));
 
     const raiz = path.join(__dirname, '..');
-    for (const archivo of ['index.html', 'app.js', 'auth-client.js', 'inventory-client.js', 'estilos.css']) {
+    for (const archivo of ['index.html', 'app.js', 'auth-client.js', 'inventory-client.js', 'orders-client.js', 'estilos.css']) {
         app.get(archivo === 'index.html' ? ['/', '/index.html'] : `/${archivo}`, (req, res) => {
             res.sendFile(path.join(raiz, archivo));
         });

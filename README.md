@@ -2,6 +2,8 @@
 
 ## Backend de Fase 1
 
+El bloque de pedidos y recepciones se documenta en [ORDERS.md](ORDERS.md). Incluye estados, recepción parcial/completa, permisos, idempotencia y la migración administrativa pendiente `003_pedidos_recepciones.sql`.
+
 El bloque de clientes, proveedores e inventario se documenta en [INVENTORY.md](INVENTORY.md), con la migración administrativa pendiente `002_catalogo_inventario.sql`, endpoints, formularios y alcance de las pruebas. El registro local de nuevas ventas queda pendiente de integrarse transaccionalmente con el inventario remoto.
 
 La autenticación y gestión de usuarios de RF-01, RF-02 y RF-03 están implementadas. Consulte [AUTH.md](AUTH.md) para migraciones administrativas, primera cuenta, configuración, endpoints y pruebas. La aplicación completa se abre desde Express mediante `npm start`. La aplicación de la migración y la comprobación con MySQL real quedan pendientes del paso administrativo.

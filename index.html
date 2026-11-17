@@ -59,6 +59,7 @@
                 <span>Reportes</span>
             </button>
 
+            <button class="menu" data-permiso="pedidos" onclick="mostrarSeccion('pedidos', this)">Pedidos y recepciones</button>
             <button class="menu" data-permiso="usuarios" onclick="mostrarSeccion('usuarios', this)">
                 <i class="fa-solid fa-users-gear"></i>
                 <span>Usuarios</span>
@@ -549,6 +550,30 @@
 
         </section>
 
+        <section id="pedidos" class="seccion">
+            <div class="encabezado"><h1>Pedidos y recepciones</h1></div>
+            <p id="estadoPedidos" role="status"></p>
+            <div id="crearPedidoFormulario" class="formulario" hidden>
+                <h2>Nuevo pedido</h2>
+                <div class="form-grid">
+                    <div class="campo"><label>Proveedor</label><select id="pedidoProveedor"></select></div>
+                    <div class="campo"><label>Observaciones</label><input id="pedidoObservaciones" maxlength="255"></div>
+                    <div class="campo"><label>Producto</label><select id="pedidoProducto"></select></div>
+                    <div class="campo"><label>Cantidad solicitada</label><input id="pedidoCantidad" type="number" min="1" step="1"></div>
+                    <div class="campo"><label>Precio de compra acordado</label><input id="pedidoPrecio" type="number" min="0" step="0.01"></div>
+                </div>
+                <button class="btn guardar" onclick="MicroCarmitaPedidos.agregar()">Agregar línea</button>
+                <div class="tabla-scroll"><table><thead><tr><th>Producto ID</th><th>Cantidad</th><th>Precio de compra</th><th>Acción</th></tr></thead><tbody id="pedidoDetalles"></tbody></table></div>
+                <button class="btn guardar" onclick="MicroCarmitaPedidos.crear()">Crear pedido</button>
+            </div>
+            <div class="tabla-contenedor"><h2>Pedidos registrados</h2><div class="tabla-scroll"><table><thead><tr><th>Pedido</th><th>Proveedor</th><th>Estado</th><th>Acción</th></tr></thead><tbody id="listaPedidos"></tbody></table></div></div>
+            <div class="formulario">
+                <h2 id="detallePedidoTitulo">Seleccione un pedido</h2><p id="detallePedidoObservaciones"></p>
+                <div class="tabla-scroll"><table><thead><tr><th>Producto</th><th>Solicitado</th><th>Recibido</th><th>Pendiente</th><th>A recibir</th><th>Lote</th><th>Ingreso</th><th>Caducidad</th><th>Precio compra</th></tr></thead><tbody id="recepcionDetalles"></tbody></table></div>
+                <button id="recibirPedidoBoton" class="btn guardar" onclick="MicroCarmitaPedidos.recibir()" disabled>Registrar recepción</button>
+                <h2>Historial de recepciones</h2><pre id="historialRecepciones"></pre>
+            </div>
+        </section>
         <section id="usuarios" class="seccion">
             <div class="encabezado">
                 <div>
@@ -593,6 +618,7 @@
 <script src="app.js"></script>
 <script src="auth-client.js"></script>
 <script src="inventory-client.js"></script>
+<script src="orders-client.js"></script>
 
 </body>
 </html>

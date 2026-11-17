@@ -105,10 +105,21 @@ function crearInventarioServicio(repo, fechaActual = M.hoy) {
             s.lotes.push(lote);
         }
         lote.id = await tx.crearLote(p.id, datos, lote.cantidad);
-        return registrar(tx, actor, s, antes, datos.cantidad, tipo, tipo === 'alta' ? 'Alta de producto' : 'Entrada de lote',
+        const resultado = await registrar(tx, actor, s, antes, datos.cantidad, tipo, tipo === 'alta' ? 'Alta de producto' : 'Entrada de lote',
             { loteId: lote.id, recibido: datos.cantidad, disponible: lote.cantidad, conciliado: datos.cantidad - lote.cantidad });
+        return { ...resultado, loteId: lote.id };
     }
     return {
+        // Entrada interna dentro de la transacción de un pedido ya autorizado.
+        async recibirPedido(tx, actor, id, d) {
+            leer(actor);
+            if (!['administrador', 'vendedor'].includes(actor.rol)) throw fallo(403, 'Recepción no autorizada.');
+            const datos = datosLote(d);
+            cantidad(datos.cantidad, false);
+            const s = await cargar(tx, id);
+            if (!s.productos[0].activo) throw fallo(409, 'Producto archivado.');
+            return entrada(tx, actor, s, datos, 'entrada');
+        },
         async contactos(actor, tipo) { leer(actor); return repo.contactos(tipo); },
         async crearContacto(actor, tipo, d) {
             campos(d, ['nombre', 'identificacion', 'telefono', 'direccion']);

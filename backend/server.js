@@ -3,6 +3,7 @@ const { crearApp } = require('./app');
 const { crearPool } = require('./database');
 const { crearRepositorio } = require('./auth-repository');
 const { crearInventarioRepositorio } = require('./inventory-repository');
+const { crearPedidosRepositorio } = require('./order-repository');
 
 const port = Number(process.env.PORT ?? 3000);
 
@@ -19,7 +20,7 @@ if (url.origin !== origin || (production && url.protocol !== 'https:')) {
     throw new Error('APP_ORIGIN debe ser un origen válido y usar HTTPS en producción.');
 }
 const pool = crearPool();
-const app = crearApp({ repository: crearRepositorio(pool), inventoryRepository: crearInventarioRepositorio(pool), production, origin,
+const app = crearApp({ repository: crearRepositorio(pool), inventoryRepository: crearInventarioRepositorio(pool), orderRepository: crearPedidosRepositorio(pool), production, origin,
     allowSuperuser: !production && process.env.ALLOW_DEV_SUPERUSER === 'true' });
 const server = app.listen(port, '127.0.0.1', () => {
     console.log(`Micro Carmita API disponible en http://127.0.0.1:${server.address().port}`);
