@@ -132,7 +132,7 @@
                     <div>
                         <h3>Ingresos</h3>
                         <strong id="totalIngresos">$0.00</strong>
-                        <p>Ingresos registrados</p>
+                        <p>Cobros netos de ventas</p>
                     </div>
                 </div>
 
@@ -156,6 +156,9 @@
                 <div>
                     <h1>Gestión de Ventas</h1>
                     <p>Registre las ventas realizadas en Micro Carmita.</p>
+                    <p id="estadoVentas" role="status" aria-live="polite"></p>
+                    <button type="button" onclick="MicroCarmitaVentas.cargar()">Actualizar ventas y cuentas</button>
+                    <button type="button" onclick="MicroCarmitaVentas.cancelarEdicion()">Limpiar carrito / cancelar edición</button>
                 </div>
             </div>
 
@@ -170,7 +173,7 @@
 
                     <div class="campo">
                         <label>Cliente</label>
-                        <input type="text" id="ventaCliente" placeholder="Nombre del cliente">
+                        <select id="ventaCliente"><option value="">Consumidor final (solo contado)</option></select>
                     </div>
 
                     <div class="campo">
@@ -275,6 +278,9 @@
             <div class="encabezado">
                 <div>
                     <h1>Cuentas por cobrar</h1>
+                    <pre id="historialCobros" aria-live="polite"></pre>
+                    <label>Historial por cliente <select id="cuentasCliente"></select></label>
+                    <button type="button" onclick="MicroCarmitaVentas.cliente(Number(document.getElementById('cuentasCliente').value))">Consultar historial</button>
                     <p>Controle las ventas realizadas a crédito.</p>
                 </div>
             </div>
@@ -619,6 +625,7 @@
 <script src="auth-client.js"></script>
 <script src="inventory-client.js"></script>
 <script src="orders-client.js"></script>
+<script src="sales-client.js"></script>
 
 </body>
 </html>

@@ -1,0 +1,38 @@
+El sistema deberá permitir el inicio de sesión mediante usuario y contraseña.
+El sistema deberá diferenciar los permisos de acceso correspondientes a los roles Administrador y Vendedor.
+El Administrador deberá poder crear, modificar, activar o desactivar usuarios del sistema.
+El sistema deberá permitir registrar ventas indicando los productos, cantidades, valores y total de la operación.
+El sistema deberá descontar automáticamente del inventario las cantidades correspondientes a los productos vendidos.
+El sistema deberá permitir registrar ventas con stock igual a cero o insuficiente cuando el producto exista físicamente, generando temporalmente inventario negativo hasta que este sea regularizado mediante la recepción de mercadería o un ajuste autorizado por el Administrador.
+El sistema deberá impedir la venta de productos cuya fecha de caducidad haya vencido.
+Únicamente el Administrador podrá modificar o eliminar una venta previamente registrada.
+El sistema deberá permitir registrar clientes cuando sea necesario asociarlos con una venta o valor pendiente de pago.
+El sistema deberá permitir registrar ventas fiadas asociándolas con el cliente correspondiente.
+El sistema deberá registrar el valor total adeudado, los abonos realizados y el saldo pendiente de cada cliente.
+El sistema deberá permitir registrar pagos parciales o abonos y actualizar automáticamente el saldo restante.
+El sistema deberá permitir consultar el historial de valores pendientes y pagos realizados por cada cliente.
+El sistema deberá permitir registrar productos con nombre, categoría, precio de compra, precio de venta, cantidad disponible, proveedor, fecha de ingreso y fecha de caducidad.
+El sistema deberá manejar diferentes lotes de un mismo producto, diferenciándolos mediante su fecha de caducidad.
+El sistema deberá generar una alerta cuando un producto se encuentre a cinco días de su fecha de caducidad.
+El sistema deberá generar una alerta de stock bajo cuando la cantidad disponible sea menor a tres unidades.
+El Administrador deberá poder realizar ajustes manuales de inventario para corregir diferencias entre las existencias físicas y las registradas en el sistema, indicando el motivo del ajuste.
+El sistema deberá incrementar las existencias del inventario cuando se registre la recepción de nueva mercadería.
+El sistema deberá permitir registrar proveedores y relacionarlos con los productos y pedidos correspondientes.
+El Administrador deberá poder crear pedidos a proveedores indicando los productos y cantidades solicitadas.
+El sistema deberá manejar los estados de pedido: Pendiente, Recibido parcialmente, Recibido completo y Cancelado.
+El sistema deberá permitir registrar la recepción total o parcial de la mercadería correspondiente a un pedido.
+El Vendedor podrá registrar la recepción de pedidos, pero no podrá crear pedidos nuevos sin intervención del Administrador.
+El sistema deberá permitir registrar ingresos relacionados con las operaciones del emprendimiento.
+El sistema deberá permitir registrar egresos y clasificarlos según su origen.
+El sistema deberá permitir registrar gastos administrativos relacionados con el funcionamiento del negocio.
+El sistema deberá permitir consultar ingresos y egresos por fecha o rango de fechas.
+El sistema deberá generar reportes de ventas aplicando filtros por fecha o rango de fechas.
+El sistema deberá generar un reporte de cierre diario que muestre el total de ventas y egresos registrados durante el día.
+El sistema deberá generar un reporte de clientes con valores pendientes de pago, mostrando deuda, abonos y saldo.
+El sistema deberá generar un reporte semanal de los pagos o abonos realizados por los clientes.
+El sistema deberá generar reportes de ingresos y egresos por período.
+El sistema deberá generar un reporte del inventario que permita identificar existencias, productos con stock bajo y productos próximos a caducar.
+El sistema deberá permitir consultar información relacionada con los pedidos realizados a proveedores y su estado.
+El sistema deberá permitir exportar o imprimir los reportes en formato PDF.
+El sistema deberá permitir generar copias de seguridad de la base de datos para su almacenamiento en Cloudflare R2.
+Los respaldos de la información deberán realizarse con una periodicidad quincenal.

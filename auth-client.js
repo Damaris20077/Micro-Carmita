@@ -29,7 +29,7 @@
         const contenido = respuesta.status === 204 ? {} : await respuesta.json();
         if (!respuesta.ok) {
             if (respuesta.status === 401 && sesion === identidad) limpiarSesion();
-            throw new Error(contenido.error || 'No se pudo completar la operación.');
+            throw Object.assign(new Error(contenido.error || 'No se pudo completar la operación.'), { status: respuesta.status });
         }
         return contenido;
     }

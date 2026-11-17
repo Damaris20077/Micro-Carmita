@@ -165,3 +165,7 @@ node --test modelo.test.cjs
 ```
 
 Las 14 pruebas cubren FEFO, exclusión de caducados, alerta a siete días, stock negativo y conciliación, abonos parciales, rechazo de sobrepagos, redondeo de dinero, validación de entradas, permisos, validación del almacenamiento y edición de productos conservando lotes y ventas anteriores. La interfaz se verifica con el flujo producto → lote → venta a crédito → abono → reporte y el cambio de perfil. El precio del producto se muestra con un prefijo `$` y completa el formato `00.00` al salir del campo.
+
+## Ventas y cobros
+
+El módulo de ventas, fiados y abonos se documenta en [SALES.md](SALES.md). La migración administrativa 004 y el ensayo reversible están preparados y pendientes de ejecución autorizada. Inicie con `npm start` después de aplicar la migración; ejecute `npm test` para las comprobaciones aisladas.
