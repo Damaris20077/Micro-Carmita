@@ -85,7 +85,7 @@
                     <i class="fa-solid fa-circle-user"></i>
                     <span id="nombreSesion"></span>
                     <small id="rolSesion"></small>
-                    <button type="button" onclick="cerrarSesion()">Salir</button>
+                    <button type="button" onclick="MicroCarmitaAuth.cerrarSesion()">Salir</button>
                 </div>
             </div>
 
@@ -240,6 +240,7 @@
                     <i class="fa-solid fa-save"></i>
                     Registrar venta
                 </button>
+                <p>El registro de nuevas ventas requiere la siguiente fase de integración con inventario remoto. El historial local se conserva.</p>
 
             </div>
 
@@ -345,6 +346,12 @@
                         <input type="number" id="productoCantidad" min="0" value="1">
                     </div>
 
+                    <div class="campo"><label>Precio de compra</label><input id="productoCompra" type="number" min="0" step="0.01"></div>
+                    <div class="campo"><label>Proveedor</label><select id="productoProveedor"></select></div>
+                    <div class="campo"><label>Código del lote inicial</label><input id="productoCodigo" maxlength="60"></div>
+                    <div class="campo"><label>Fecha de ingreso</label><input id="productoFecha" type="date"></div>
+                    <div class="campo"><label>Caducidad (opcional)</label><input id="productoCaducidad" type="date"></div>
+
                 </div>
 
                 <button class="btn guardar" onclick="agregarProducto()">
@@ -357,6 +364,9 @@
             <div class="tabla-contenedor">
 
                 <h2>Productos registrados</h2>
+                <p id="estadoInventario" role="status"></p>
+                <p id="alertasInventario" role="status"></p>
+                <button data-inventario-admin hidden onclick="MicroCarmitaInventario.exportarAnterior()">Descargar inventario local anterior</button>
 
                 <div class="tabla-scroll">
                     <table>
@@ -375,6 +385,59 @@
                     </table>
                 </div>
 
+            </div>
+
+            <div class="tabla-contenedor">
+                <h2>Lotes y caducidad</h2>
+                <div class="tabla-scroll"><table><thead><tr><th>Producto</th><th>Lote</th><th>Cantidad</th><th>Ingreso</th><th>Caducidad</th><th>Estado</th></tr></thead><tbody id="listaLotes"></tbody></table></div>
+            </div>
+            <div class="formulario" data-inventario-admin hidden>
+                <h2>Entrada de lote</h2>
+                <div class="form-grid">
+                    <div class="campo"><label>Producto</label><select id="entradaProducto"></select></div>
+                    <div class="campo"><label>Proveedor</label><select id="entradaProveedor"></select></div>
+                    <div class="campo"><label>Código de lote</label><input id="entradaCodigo" maxlength="60"></div>
+                    <div class="campo"><label>Cantidad recibida</label><input id="entradaCantidad" type="number" min="0" step="1"></div>
+                    <div class="campo"><label>Precio de compra</label><input id="entradaCompra" type="number" min="0" step="0.01"></div>
+                    <div class="campo"><label>Fecha de ingreso</label><input id="entradaFecha" type="date"></div>
+                    <div class="campo"><label>Caducidad (opcional)</label><input id="entradaCaducidad" type="date"></div>
+                </div>
+                <button class="btn guardar" onclick="MicroCarmitaInventario.entrada()">Registrar entrada</button>
+            </div>
+            <div class="formulario" data-inventario-admin hidden>
+                <h2>Ajuste manual de inventario</h2>
+                <div class="form-grid">
+                    <div class="campo"><label>Producto</label><select id="ajusteProducto" onchange="MicroCarmitaInventario.lotesAjuste()"></select></div>
+                    <div class="campo"><label>Variación (positiva o negativa)</label><input id="ajusteCantidad" type="number" step="1"></div>
+                    <div class="campo"><label>Lote para aumento</label><select id="ajusteLote"></select></div>
+                    <div class="campo"><label>Motivo obligatorio</label><input id="ajusteMotivo" maxlength="255"></div>
+                </div>
+                <button class="btn guardar" onclick="MicroCarmitaInventario.ajustar()">Registrar ajuste</button>
+            </div>
+            <div class="tabla-contenedor"><h2>Historial de inventario</h2><pre id="historialInventario"></pre></div>
+            <div class="formulario">
+                <h2>Clientes</h2>
+                <div class="form-grid">
+                    <div class="campo"><label>Nombre</label><input id="clientesNombre" maxlength="100"></div>
+                    <div class="campo"><label>Identificación (opcional)</label><input id="clientesIdentificacion" maxlength="30"></div>
+                    <div class="campo"><label>Teléfono (opcional)</label><input id="clientesTelefono" maxlength="30"></div>
+                    <div class="campo"><label>Dirección (opcional)</label><input id="clientesDireccion" maxlength="255"></div>
+                </div>
+                <button class="btn guardar" onclick="MicroCarmitaInventario.contacto('clientes')">Registrar cliente</button>
+                <pre id="listaClientes"></pre>
+            </div>
+            <div class="formulario">
+                <h2>Proveedores</h2>
+                <div data-inventario-admin hidden>
+                    <div class="form-grid">
+                        <div class="campo"><label>Nombre</label><input id="proveedoresNombre" maxlength="100"></div>
+                        <div class="campo"><label>Identificación (opcional)</label><input id="proveedoresIdentificacion" maxlength="30"></div>
+                        <div class="campo"><label>Teléfono (opcional)</label><input id="proveedoresTelefono" maxlength="30"></div>
+                        <div class="campo"><label>Dirección (opcional)</label><input id="proveedoresDireccion" maxlength="255"></div>
+                    </div>
+                    <button class="btn guardar" onclick="MicroCarmitaInventario.contacto('proveedores')">Registrar proveedor</button>
+                </div>
+                <pre id="listaProveedores"></pre>
             </div>
 
         </section>
@@ -490,7 +553,7 @@
             <div class="encabezado">
                 <div>
                     <h1>Usuarios y roles</h1>
-                    <p>Administre accesos a la plataforma. Este módulo es exclusivo del super usuario.</p>
+                    <p>Administración de usuarios del negocio. Para cambiar una contraseña, escríbala en el formulario antes de pulsar Editar.</p>
                 </div>
             </div>
 
@@ -499,10 +562,10 @@
                 <div class="form-grid">
                     <div class="campo"><label>Nombre completo</label><input id="usuarioNombre" type="text" placeholder="Ej: María Pérez"></div>
                     <div class="campo"><label>Usuario</label><input id="usuarioCuenta" type="text" placeholder="Ej: maria.perez" autocomplete="username"></div>
-                    <div class="campo"><label>Contraseña</label><input id="usuarioClave" type="password" placeholder="Mínimo 6 caracteres" autocomplete="new-password"></div>
-                    <div class="campo"><label>Rol</label><select id="usuarioRol"><option value="vendedor">Vendedor</option><option value="administrador">Administrador</option><option value="superusuario">Super usuario</option></select></div>
+                    <div class="campo"><label>Contraseña</label><input id="usuarioClave" type="password" placeholder="Entre 8 y 128 caracteres; evite claves comunes" autocomplete="new-password" minlength="8" maxlength="128"></div>
+                    <div class="campo"><label>Rol</label><select id="usuarioRol"><option value="vendedor">Vendedor</option><option value="administrador">Administrador</option></select></div>
                 </div>
-                <button class="btn guardar" type="button" onclick="crearUsuario()"><i class="fa-solid fa-plus"></i> Crear usuario</button>
+                <button class="btn guardar" type="button" onclick="MicroCarmitaAuth.crearUsuario()"><i class="fa-solid fa-plus"></i> Crear usuario</button>
             </div>
 
             <div class="tabla-contenedor">
@@ -516,7 +579,7 @@
 </div>
 
 <div id="pantallaLogin" class="pantalla-login" aria-modal="true" role="dialog">
-    <form class="login-card" onsubmit="iniciarSesion(event)">
+    <form class="login-card" onsubmit="MicroCarmitaAuth.iniciarSesion(event)">
         <div class="login-logo"><i class="fa-solid fa-store"></i></div>
         <h1>Micro Carmita</h1>
         <p>Ingrese sus credenciales para continuar</p>
@@ -524,11 +587,12 @@
         <label>Contraseña<input id="loginClave" type="password" required autocomplete="current-password"></label>
         <p id="errorLogin" class="error-login" aria-live="polite"></p>
         <button class="btn guardar" type="submit">Iniciar sesión <i class="fa-solid fa-arrow-right-to-bracket"></i></button>
-        <small>Accesos iniciales: superadmin / super123, admin / admin123 y vendedor / venta123.</small>
     </form>
 </div>
 
 <script src="app.js"></script>
+<script src="auth-client.js"></script>
+<script src="inventory-client.js"></script>
 
 </body>
 </html>

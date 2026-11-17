@@ -94,12 +94,12 @@
         return existencias - (producto?.faltante || 0);
     }
 
-    function estadoLote(lote, fecha = hoy()) {
+    function estadoLote(lote, fecha = hoy(), diasAlerta = 7) {
         if (!lote.caducidad) return 'Sin caducidad';
         if (lote.caducidad < fecha) return 'Caducado';
         const diferencia = Date.parse(lote.caducidad + 'T00:00:00Z') - Date.parse(fecha + 'T00:00:00Z');
         const dias = Math.round(diferencia / 86400000);
-        return dias <= 7 ? 'Por caducar' : 'Vigente';
+        return dias <= diasAlerta ? 'Por caducar' : 'Vigente';
     }
 
     function producto(estado, datos, usuarioId) {
@@ -313,7 +313,7 @@
     }
 
     return {
-        hoy, id, redondear, vacio, permisos, autorizar, stock, estadoLote,
+        hoy, id, redondear, fechaValida, vacio, permisos, autorizar, stock, estadoLote,
         producto, editarProducto, entrada, venta, abono, salida, movimiento, validarEstado
     };
 });

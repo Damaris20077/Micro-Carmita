@@ -1,5 +1,81 @@
 # Micro Carmita — prototipo adaptado
 
+## Backend de Fase 1
+
+El bloque de clientes, proveedores e inventario se documenta en [INVENTORY.md](INVENTORY.md), con la migración administrativa pendiente `002_catalogo_inventario.sql`, endpoints, formularios y alcance de las pruebas. El registro local de nuevas ventas queda pendiente de integrarse transaccionalmente con el inventario remoto.
+
+La autenticación y gestión de usuarios de RF-01, RF-02 y RF-03 están implementadas. Consulte [AUTH.md](AUTH.md) para migraciones administrativas, primera cuenta, configuración, endpoints y pruebas. La aplicación completa se abre desde Express mediante `npm start`. La aplicación de la migración y la comprobación con MySQL real quedan pendientes del paso administrativo.
+
+La estructura inicial utiliza Express instalado en el proyecto y CommonJS.
+
+- `backend/app.js` define la aplicación y el endpoint de salud, y exporta la aplicación para probarla.
+- `backend/server.js` inicia el servidor en `127.0.0.1` y lee el puerto de la variable de entorno `PORT`. El valor predeterminado es `3000`.
+- `backend/health.test.cjs` prueba el endpoint mediante HTTP real con un puerto temporal, usando las herramientas integradas de Node.js.
+
+Desde la raíz del proyecto, inicie el servidor con Node.js 22 o posterior.
+
+```powershell
+npm start
+```
+
+Para elegir otro puerto en PowerShell, configure la variable antes de iniciar.
+
+```powershell
+$env:PORT = '3001'
+npm start
+```
+
+En otra terminal, compruebe el servidor con el puerto elegido.
+
+```powershell
+Invoke-WebRequest http://127.0.0.1:3001/api/health
+```
+
+Con el puerto predeterminado, utilice `http://127.0.0.1:3000/api/health`. La respuesta esperada tiene estado HTTP `200`, tipo `application/json` y cuerpo `{"status":"ok"}`. Detenga el servidor con `Ctrl+C`. Para volver al puerto predeterminado, elimine la variable de la sesión de PowerShell mediante `Remove-Item Env:PORT`.
+
+Ejecute todas las pruebas desde la raíz.
+
+```powershell
+npm test
+```
+
+El script `test` ejecuta directamente `node --test modelo.test.cjs app.test.cjs backend/*.test.cjs`. Conserva las 56 pruebas previas e incorpora pruebas de autenticación, autorización, gestión de usuarios y adaptación del frontend. También puede ejecutar la prueba HTTP de salud directamente mediante `node --test backend/health.test.cjs`.
+
+El frontend utiliza el mismo origen HTTP de Express para autenticación y usuarios. Las secciones históricas sobre el prototipo se contrastan con `BASELINE.md` y `AUTH.md` para conocer la evolución y las diferencias funcionales verificadas.
+
+### Configuración MySQL
+
+`backend/database.js` exporta `crearPool()` mediante `mysql2/promise` y `comprobarConexion(pool)`. El pool admite hasta cinco conexiones y utiliza un tiempo de conexión de cinco segundos. La comprobación ejecuta únicamente `SELECT 1` y devuelve un booleano. Las pruebas inyectan un cliente o pool simulado y funcionan sin MySQL real.
+
+Desde la raíz, copie `.env.example` a `.env` si todavía carece de configuración local.
+
+```powershell
+Copy-Item .env.example .env
+```
+
+Complete `.env` con los valores de su servidor y una base de datos ya existente.
+
+| Variable | Configuración |
+| --- | --- |
+| `DB_HOST` | Dirección real del servidor MySQL. El ejemplo usa `127.0.0.1` para desarrollo local. |
+| `DB_PORT` | Puerto MySQL. Se utiliza `3306` si la variable está ausente. |
+| `DB_USER` | Usuario autorizado de su servidor. El ejemplo queda vacío. |
+| `DB_PASSWORD` | Contraseña local. El ejemplo queda vacío. Se permite una cadena vacía solo si el servidor está configurado así. |
+| `DB_NAME` | Nombre de una base existente. El ejemplo queda vacío. |
+| `PORT` | Puerto HTTP de Express, con valor predeterminado `3000`. |
+
+`npm start` y `npm run db:check` cargan `.env` con dotenv, conservando la prioridad de las variables ya definidas en el proceso. Ejecute el comando siguiente para comprobar MySQL.
+
+```powershell
+npm run db:check
+```
+
+Una comprobación correcta informa `Conexión MySQL verificada mediante SELECT 1.` y termina con código `0`. Ante configuración incompleta o fallo de conexión, el comando muestra un mensaje genérico y termina con código `1`. El pool se cierra al terminar la comprobación. Los mensajes evitan imprimir credenciales y detalles internos del servidor.
+
+La conexión real queda pendiente de proporcionar la configuración local. Esta entrega prepara el módulo y sus pruebas simuladas. El comando de comprobación utiliza una base existente. El arranque HTTP y `/api/health` funcionan independientemente de MySQL.
+
+`.gitignore` excluye `.env`, sus variantes, respaldos y logs. La excepción `.env.example` permite compartir la plantilla vacía. Guarde las credenciales reales únicamente en la configuración local o en las variables del entorno de ejecución.
+
 Esta carpeta contiene la adaptación del prototipo compartido. Se conservaron la barra lateral azul, los iconos, las tarjetas de colores, las tablas y los formularios del diseño original. `../Micro-Carmita-1` conserva la copia original sin modificaciones.
 
 ## Organización del código reescrito
@@ -55,26 +131,18 @@ Los requisitos se reconstruyeron del texto disponible de las dos conversaciones.
 - El saldo financiero representa ingresos cobrados menos egresos registrados. No es una utilidad contable ni incluye un cálculo del costo de los productos.
 - La venta a crédito genera una deuda, pero no un ingreso de efectivo hasta recibir el abono. No registre manualmente un cobro que ya se generó automáticamente.
 
-## Accesos del prototipo
+## Accesos del sistema
 
-Al abrir la aplicación se muestra el inicio de sesión. Las cuentas iniciales son:
-
-| Rol | Usuario | Contraseña | Alcance |
-| --- | --- | --- | --- |
-| Super usuario | `superadmin` | `super123` | Modifica toda la plataforma y crea, activa o desactiva usuarios. |
-| Administrador | `admin` | `admin123` | Administra ventas, cobros, inventario, movimientos y reportes. |
-| Vendedor | `vendedor` | `venta123` | Registra ventas y abonos, y consulta inventario; no puede modificar productos, movimientos, reportes ni usuarios. |
-
-Las cuentas se guardan únicamente en el almacenamiento local del navegador. Desde el módulo **Usuarios y roles**, el super usuario puede crear nuevas cuentas y administrar su estado.
+El inicio de sesión utiliza cuentas de MySQL. El primer Administrador se aprovisiona mediante el procedimiento de `AUTH.md`. El Administrador gestiona las cuentas operativas. Superusuario queda reservado a desarrollo y pruebas y se bloquea en producción.
 
 ## Límites del prototipo y siguiente implementación
 
-Este es un prototipo funcional local. El inicio de sesión y sus contraseñas se guardan en `localStorage`; por ello **no constituyen autenticación ni una barrera de seguridad real**. La información se guarda sin sincronización entre equipos y sin soporte de edición simultánea. La descarga JSON es una copia local; no existe restauración automática ni envío a la nube en esta versión.
+La autenticación y los usuarios utilizan el backend y MySQL. Los datos del negocio siguen en almacenamiento local, sin sincronización entre equipos ni soporte de edición simultánea. La descarga JSON descrita en el prototipo es una copia local. La integración de copias a la nube queda pendiente.
 
 Para la versión definitiva quedan pendientes:
 
 1. Backend Node.js/Express, base de datos MySQL y transacciones para ventas, lotes, abonos y movimientos.
-2. Inicio de sesión real, contraseñas protegidas, sesiones y autorización en cada operación del servidor.
+2. Completar la integración del resto de operaciones del negocio con las sesiones y la autorización del servidor.
 3. Copias periódicas de MySQL hacia un espacio privado en Cloudflare R2, política de conservación y prueba de restauración. Las credenciales deben permanecer en el servidor.
 4. Validación del documento oficial y de los permisos definitivos por rol con los responsables del negocio.
 

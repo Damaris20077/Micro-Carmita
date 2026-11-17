@@ -27,3 +27,5 @@ desktop.ini
 # Salidas de herramientas de prueba y cobertura
 coverage/
 .nyc_output/
+.auth-provision.ps1
+.auth-real-check.cjs

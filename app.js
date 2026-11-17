@@ -48,11 +48,7 @@ const permisosPorRol = {
 };
 
 function usuariosIniciales() {
-    return [
-        { id: "super-demo", nombre: "Super usuario", usuario: "superadmin", clave: "super123", rol: "superusuario", activo: true },
-        { id: "admin-demo", nombre: "Administrador", usuario: "admin", clave: "admin123", rol: "administrador", activo: true },
-        { id: "vendedor-demo", nombre: "Vendedor", usuario: "vendedor", clave: "venta123", rol: "vendedor", activo: true }
-    ];
+    return [];
 }
 
 function obtenerUsuarios() {
@@ -126,8 +122,9 @@ function crearUsuario() {
     const cuenta = document.getElementById("usuarioCuenta").value.trim().toLowerCase();
     const clave = document.getElementById("usuarioClave").value;
     const rol = document.getElementById("usuarioRol").value;
-    if (!nombre || !/^[a-z0-9._-]{3,30}$/i.test(cuenta) || clave.length < 6 || !permisosPorRol[rol]) {
-        alert("Ingrese nombre, un usuario de 3 a 30 caracteres, contraseña de al menos 6 caracteres y un rol válido.");
+    const minimoClave = rol === "superusuario" ? 15 : 8;
+    if (!nombre || !/^[a-z0-9._-]{3,30}$/i.test(cuenta) || clave.length < minimoClave || clave.length > 128 || !permisosPorRol[rol]) {
+        alert(`Ingrese nombre, un usuario de 3 a 30 caracteres, contraseña de ${minimoClave} a 128 caracteres y un rol válido.`);
         return;
     }
     const usuarios = obtenerUsuarios();
@@ -1161,7 +1158,4 @@ function actualizarTodo() {
    INICIAR SISTEMA
 ========================================= */
 
-document.addEventListener("DOMContentLoaded", () => {
-    obtenerUsuarios();
-    aplicarSesion();
-});
+// El arranque de sesión del navegador está en auth-client.js.
