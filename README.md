@@ -169,3 +169,7 @@ Las 14 pruebas cubren FEFO, exclusión de caducados, alerta a siete días, stock
 ## Ventas y cobros
 
 El módulo de ventas, fiados y abonos se documenta en [SALES.md](SALES.md). La migración administrativa 004 y el ensayo reversible están preparados y pendientes de ejecución autorizada. Inicie con `npm start` después de aplicar la migración; ejecute `npm test` para las comprobaciones aisladas.
+
+## Movimientos financieros
+
+Ingresos, egresos, gastos administrativos y filtros por fecha se documentan en [FINANCE.md](FINANCE.md). La consulta integra la caja de ventas sin copiar sus registros. La migración 005 y el ensayo reversible requieren autorización antes de ejecutarse.

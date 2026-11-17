@@ -478,6 +478,9 @@
                     <div class="campo">
                         <label>Descripción</label>
                         <input type="text" id="movimientoDescripcion" placeholder="Descripción">
+                        <label>Categoría / origen<input id="finanzaCategoria" maxlength="80" placeholder="Operación, luz, agua, internet…"></label>
+                        <label>Fecha<input id="finanzaFecha" type="date" required></label>
+                        <label><input id="finanzaAdministrativo" type="checkbox"> Gasto administrativo (egreso)</label>
                     </div>
 
                     <div class="campo">
@@ -497,6 +500,13 @@
             <div class="tabla-contenedor">
 
                 <h2>Movimientos registrados</h2>
+                <p>Ventas, abonos y devoluciones aparecen automáticamente. Registre aquí únicamente operaciones manuales adicionales.</p>
+                <label>Desde <input id="finanzaDesde" type="date"></label>
+                <label>Hasta <input id="finanzaHasta" type="date"></label>
+                <button type="button" onclick="MicroCarmitaFinanzas.cargar()">Consultar</button>
+                <button type="button" onclick="MicroCarmitaFinanzas.todos()">Todas las fechas</button>
+                <p id="estadoFinanzas" role="status" aria-live="polite"></p>
+                <p id="resumenFinanzas"></p>
 
                 <div class="tabla-scroll">
                     <table>
@@ -626,6 +636,7 @@
 <script src="inventory-client.js"></script>
 <script src="orders-client.js"></script>
 <script src="sales-client.js"></script>
+<script src="finance-client.js"></script>
 
 </body>
 </html>
