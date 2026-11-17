@@ -533,10 +533,21 @@
                 <div>
                     <h1>Reportes</h1>
                     <p>Consulte el resumen financiero del emprendimiento.</p>
+                    <label>Reporte <select id="reporteTipo" onchange="MicroCarmitaReportes.seleccionar()">
+                        <option value="ventas">Ventas</option><option value="cierre">Cierre diario</option>
+                        <option value="pendientes">Clientes con saldo pendiente</option><option value="pagos">Abonos semanales</option>
+                        <option value="finanzas">Ingresos y egresos</option><option value="inventario">Inventario</option><option value="pedidos">Pedidos</option>
+                    </select></label>
+                    <label>Fecha / día de la semana <input id="reporteFecha" type="date"></label>
+                    <label>Desde <input id="reporteDesde" type="date"></label><label>Hasta <input id="reporteHasta" type="date"></label>
+                    <button type="button" onclick="MicroCarmitaReportes.cargar()">Consultar reporte</button>
+                    <button type="button" onclick="MicroCarmitaReportes.descargar()">Descargar PDF / imprimir</button>
+                    <p id="estadoReportes" role="status" aria-live="polite"></p>
+                    <div id="contenidoReportes"></div>
                 </div>
             </div>
 
-            <div class="reporte-grid">
+            <div class="reporte-grid" id="resumenReportesAnterior">
 
                 <div class="reporte-card">
                     <i class="fa-solid fa-cart-shopping"></i>
@@ -637,6 +648,7 @@
 <script src="orders-client.js"></script>
 <script src="sales-client.js"></script>
 <script src="finance-client.js"></script>
+<script src="reports-client.js"></script>
 
 </body>
 </html>

@@ -5,8 +5,9 @@ const { rutasInventario } = require('./inventory-routes');
 const { rutasPedidos } = require('./order-routes');
 const { rutasVentas } = require('./sales-routes');
 const { rutasFinanzas } = require('./finance-routes');
+const { rutasReportes } = require('./report-routes');
 
-function crearApp({ repository, inventoryRepository, orderRepository, salesRepository, financeRepository, production = false, origin = 'http://127.0.0.1:3000', allowSuperuser = false } = {}) {
+function crearApp({ repository, inventoryRepository, orderRepository, salesRepository, financeRepository, reportRepository, production = false, origin = 'http://127.0.0.1:3000', allowSuperuser = false } = {}) {
     const app = express();
     app.disable('x-powered-by');
     app.use('/api', (req, res, next) => {
@@ -82,11 +83,12 @@ function crearApp({ repository, inventoryRepository, orderRepository, salesRepos
     app.use('/api', rutasPedidos(orderRepository));
     app.use('/api', rutasVentas(salesRepository));
     app.use('/api', rutasFinanzas(financeRepository));
+    app.use('/api', rutasReportes(reportRepository));
     app.use('/api', rutasInventario(inventoryRepository));
     app.use('/api', (req, res) => res.status(404).json({ error: 'Ruta inexistente.' }));
 
     const raiz = path.join(__dirname, '..');
-    for (const archivo of ['index.html', 'app.js', 'auth-client.js', 'inventory-client.js', 'orders-client.js', 'sales-client.js', 'finance-client.js', 'estilos.css']) {
+    for (const archivo of ['index.html', 'app.js', 'auth-client.js', 'inventory-client.js', 'orders-client.js', 'sales-client.js', 'finance-client.js', 'reports-client.js', 'estilos.css']) {
         app.get(archivo === 'index.html' ? ['/', '/index.html'] : `/${archivo}`, (req, res) => {
             res.sendFile(path.join(raiz, archivo));
         });

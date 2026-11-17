@@ -151,6 +151,18 @@
         } catch (error) { alert(error.message); }
     }
 
-    globalThis.MicroCarmitaAuth = { iniciarSesion, cerrarSesion, crearUsuario, editarUsuario, api };
+    async function archivo(ruta) {
+        const identidad=sesion;
+        const respuesta=await fetch(`/api${ruta}`,{credentials:'same-origin'});
+        if(!respuesta.ok){
+            if(respuesta.status===401&&sesion===identidad)limpiarSesion();
+            throw Object.assign(new Error('No se pudo descargar el reporte.'),{status:respuesta.status});
+        }
+        if(!respuesta.headers.get('content-type')?.startsWith('application/pdf'))throw new Error('Respuesta PDF inválida.');
+        const blob=await respuesta.blob();
+        if(sesion!==identidad)throw new Error('La sesión cambió durante la descarga.');
+        return blob;
+    }
+    globalThis.MicroCarmitaAuth = { iniciarSesion, cerrarSesion, crearUsuario, editarUsuario, api, archivo };
     document.addEventListener('DOMContentLoaded', restaurarSesion);
 })();

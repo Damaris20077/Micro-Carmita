@@ -173,3 +173,7 @@ El módulo de ventas, fiados y abonos se documenta en [SALES.md](SALES.md). La m
 ## Movimientos financieros
 
 Ingresos, egresos, gastos administrativos y filtros por fecha se documentan en [FINANCE.md](FINANCE.md). La consulta integra la caja de ventas sin copiar sus registros. La migración 005 y el ensayo reversible requieren autorización antes de ejecutarse.
+
+## Reportes y PDF
+
+Los reportes de ventas, cierre diario, pendientes, abonos semanales, finanzas, inventario y pedidos, con descarga PDF, están documentados en [REPORTS.md](REPORTS.md). Usan las tablas existentes sin migración adicional. El ensayo reversible queda preparado para ejecución autorizada.

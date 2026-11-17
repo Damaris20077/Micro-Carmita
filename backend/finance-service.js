@@ -11,6 +11,13 @@ function filtros(d){
     const r={};if(d.desde!==undefined)r.desde=fecha(d.desde);if(d.hasta!==undefined)r.hasta=fecha(d.hasta);
     if(r.desde&&r.hasta&&r.desde>r.hasta)throw fallo(400,'Rango de fechas invertido.');return r;
 }
+function resumirFinanzas(filas){
+    const movimientos=filas.map(m=>({...m,importe:Number(m.importe),gastoAdministrativo:Number(m.gastoAdministrativo)===1}));
+    let ingresos=0,egresos=0;
+    for(const m of movimientos){const n=Math.round(m.importe*100);if(m.tipo==='ingreso')ingresos+=n;else egresos+=n;}
+    if(!Number.isSafeInteger(ingresos)||!Number.isSafeInteger(egresos))throw fallo(409,'Totales fuera del rango exacto de cálculo. Reduzca el período.');
+    return {movimientos,ingresos:ingresos/100,egresos:egresos/100,neto:(ingresos-egresos)/100};
+}
 function crearFinanzasServicio(repo){return {
     async registrar(actor,datos){
         autorizar(actor);campos(datos,['clave','tipo','categoria','motivo','importe','fecha','gastoAdministrativo']);
@@ -32,12 +39,8 @@ function crearFinanzasServicio(repo){return {
     async consultar(actor,datos={}){
         autorizar(actor);const f=filtros(datos);
         return repo.transaction(async tx=>{
-            const movimientos=(await tx.listar(f)).map(m=>({...m,importe:Number(m.importe),gastoAdministrativo:Number(m.gastoAdministrativo)===1}));
-            let ingresos=0,egresos=0;
-            for(const m of movimientos){const n=Math.round(m.importe*100);if(m.tipo==='ingreso')ingresos+=n;else egresos+=n;}
-            if(!Number.isSafeInteger(ingresos)||!Number.isSafeInteger(egresos))throw fallo(409,'Totales fuera del rango exacto de cálculo. Reduzca el período.');
-            return {filtros:f,movimientos,ingresos:ingresos/100,egresos:egresos/100,neto:(ingresos-egresos)/100};
+            return {filtros:f,...resumirFinanzas(await tx.listar(f))};
         });
     }
 };}
-module.exports={crearFinanzasServicio};
+module.exports={crearFinanzasServicio,resumirFinanzas};
