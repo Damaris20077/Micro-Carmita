@@ -72,6 +72,17 @@ function preparar() {
 const pedido = (extra = {}) => ({ proveedorId: 1, observaciones: 'Ensayo', detalles: [{ productoId: 1, cantidad: 5, precioCompra: 0.8 }], ...extra });
 const recepcion = (extra = {}) => ({ clave: 'recepcion_primera', lineas: [{ detalleId: 1, cantidad: 2, codigo: 'L1', fechaIngreso: M.hoy(), caducidad: '', precioCompra: 0.8 }], ...extra });
 
+test('recepción sin código genera lote una sola vez al repetir la clave del pedido', async () => {
+    const f = preparar(); await f.servicio.crear(f.admin, pedido());
+    const r = recepcion({ lineas: [{ ...recepcion().lineas[0], codigo: '' }] });
+    const uno = await f.servicio.recibir(f.vendedor, 1, r);
+    const dos = await f.servicio.recibir(f.vendedor, 1, { ...r, lineas: r.lineas.map(({ codigo, ...l }) => l) });
+    assert.equal(uno.id, dos.id); assert.equal(dos.repetida, true);
+    assert.equal(f.db.recepciones.length, 1); assert.equal(f.db.lotes.length, 1); assert.equal(f.db.lotes[0].cantidad, 2);
+    assert.match(f.db.lotes[0].codigo, /^MC-[a-f0-9-]{36}$/);
+    assert.equal(f.db.detalles[0].recibida, 2);
+});
+
 test('Administrador crea y consulta pedido con proveedor, detalles y estado Pendiente', async () => {
     const f = preparar();
     const r = await f.servicio.crear(f.admin, pedido());
@@ -266,6 +277,7 @@ test('HTTP real aplica sesión, CSRF, permisos y respuesta idempotente', async t
     assert.equal((await pedir('/orders', 'POST', pedido(), tokens[0], false)).status, 403);
     assert.equal((await pedir('/orders', 'POST', pedido())).status, 201);
     assert.equal((await pedir('/orders/1', 'GET', undefined, tokens[1])).status, 200);
+    assert.equal((await pedir('/orders', 'GET', undefined, tokens[1])).status, 200);
     assert.equal((await pedir('/orders/1/cancel', 'POST', { motivo: 'Intento' }, tokens[1])).status, 403);
     assert.equal((await pedir('/orders/1/receipts', 'POST', recepcion(), tokens[1])).status, 201);
     assert.equal((await pedir('/orders/1/receipts', 'POST', recepcion(), tokens[1])).status, 200);

@@ -1,5 +1,7 @@
 const M = require('../modelo');
 const { fallo } = require('./auth-service');
+const { randomUUID, createHash } = require('node:crypto');
+const { normalizarCodigo } = require('./lot-code');
 
 function texto(valor, campo, maximo) {
     if (typeof valor !== 'string' || !valor.trim() || valor.trim().length > maximo) throw fallo(400, `${campo} inválido.`);
@@ -31,7 +33,7 @@ function datosLote(d) {
     if (!M.fechaValida(d.fechaIngreso) || (d.caducidad !== '' && d.caducidad !== null && !M.fechaValida(d.caducidad))) {
         throw fallo(400, 'Fecha inválida.');
     }
-    return { codigo: texto(d.codigo, 'Código de lote', 60), cantidad: cantidad(d.cantidad),
+    return { codigo: normalizarCodigo(d.codigo), cantidad: cantidad(d.cantidad),
         precioCompra: dinero(d.precioCompra), proveedorId: idValido(d.proveedorId),
         fechaIngreso: d.fechaIngreso, caducidad: d.caducidad || '' };
 }
@@ -49,7 +51,23 @@ function snapshot(productos, lotes, fecha) {
     });
 }
 
-function crearInventarioServicio(repo, fechaActual = M.hoy) {
+function crearInventarioServicio(repo, fechaActual = M.hoy, { generarCodigo = () => `MC-${randomUUID()}` } = {}) {
+    function operacion(d, contenido) {
+        if (d.clave === undefined) {
+            if (contenido.lote.codigo === null) throw fallo(400, 'Se requiere una clave de operación para generar el lote y reintentar sin duplicarlo.');
+            return null; // Compatibilidad con clientes anteriores que envían un código explícito.
+        }
+        if (typeof d.clave !== 'string' || !/^[A-Za-z0-9_-]{8,80}$/.test(d.clave)) throw fallo(400, 'Clave de operación inválida.');
+        return { clave: d.clave, hash: createHash('sha256').update(JSON.stringify(contenido)).digest('hex') };
+    }
+    async function anterior(tx, actor, op) {
+        if (!op) return null;
+        // escritura() ya bloqueó el usuario: serializa la clave entre procesos.
+        const previa = await tx.operacionLote(actor.id, op.clave);
+        if (!previa) return null;
+        if (previa.hash !== op.hash) throw fallo(409, 'Clave de operación utilizada con otros datos.');
+        return previa.respuesta;
+    }
     function leer(actor) {
         if (!actor?.activo || !['administrador', 'vendedor', 'superusuario'].includes(actor.rol)) throw fallo(403, 'Operación no autorizada.');
     }
@@ -89,11 +107,20 @@ function crearInventarioServicio(repo, fechaActual = M.hoy) {
         await tx.movimiento({ productoId: p.id, usuarioId: actor.id, tipo, cantidad: delta, antes, despues, motivo, detalle });
         return { productoId: p.id, stock: despues };
     }
-    async function entrada(tx, actor, s, datos, tipo) {
+    async function entrada(tx, actor, s, originales, tipo, op = null) {
+        const automatico = originales.codigo === null;
+        const nuevoCodigo = () => {
+            for (let i = 0; i < 3; i++) {
+                const codigo = generarCodigo();
+                if (!s.lotes.some(l => l.codigo.toLowerCase() === codigo.toLowerCase())) return codigo;
+            }
+            throw fallo(409, 'No se pudo generar un código único; reintente la misma operación.');
+        };
+        const datos = { ...originales, codigo: automatico ? nuevoCodigo() : originales.codigo };
         const p = s.productos[0];
         const antes = M.stock(s, p.id);
         await proveedor(tx, datos.proveedorId);
-        if (s.lotes.some(l => l.codigo.toLowerCase() === datos.codigo.toLowerCase())) throw fallo(409, 'Código de lote duplicado.');
+        if (!automatico && s.lotes.some(l => l.codigo.toLowerCase() === datos.codigo.toLowerCase())) throw fallo(409, 'Código de lote duplicado.');
         // Reutiliza la conciliación de faltantes y exclusión de caducados del modelo.
         s.usuarios = [{ ...actor, rol: 'administrador' }];
         let lote;
@@ -104,10 +131,20 @@ function crearInventarioServicio(repo, fechaActual = M.hoy) {
             lote = { codigo: datos.codigo, cantidad: 0, productoId: p.id, fecha: datos.fechaIngreso, caducidad: datos.caducidad };
             s.lotes.push(lote);
         }
-        lote.id = await tx.crearLote(p.id, datos, lote.cantidad);
+        // Reintentar solo el INSERT del código generado, nunca los movimientos de stock.
+        for (let intento = 0; intento < 3; intento++) {
+            try { lote.id = await tx.crearLote(p.id, datos, lote.cantidad); break; }
+            catch (error) {
+                if (!automatico || error.code !== 'ER_DUP_ENTRY') throw error;
+                if (intento === 2) throw fallo(409, 'No se pudo generar un código único; reintente la misma operación.');
+                datos.codigo = nuevoCodigo(); lote.codigo = datos.codigo;
+            }
+        }
+        const respuesta = { productoId: p.id, stock: M.stock(s, p.id), loteId: lote.id, codigo: datos.codigo };
         const resultado = await registrar(tx, actor, s, antes, datos.cantidad, tipo, tipo === 'alta' ? 'Alta de producto' : 'Entrada de lote',
-            { loteId: lote.id, recibido: datos.cantidad, disponible: lote.cantidad, conciliado: datos.cantidad - lote.cantidad });
-        return { ...resultado, loteId: lote.id };
+            { loteId: lote.id, recibido: datos.cantidad, disponible: lote.cantidad, conciliado: datos.cantidad - lote.cantidad,
+                ...(op ? { operacion: { ...op, respuesta } } : {}) });
+        return { ...resultado, loteId: lote.id, codigo: datos.codigo };
     }
     return {
         // Entrada interna dentro de la transacción de un pedido ya autorizado.
@@ -134,13 +171,15 @@ function crearInventarioServicio(repo, fechaActual = M.hoy) {
             return repo.transaction(async tx => snapshot(await tx.productos(), await tx.lotes(), fechaActual()));
         },
         async crearProducto(actor, d) {
-            campos(d, ['nombre', 'categoria', 'precioCompra', 'precioVenta', 'proveedorId', 'codigo', 'cantidad', 'fechaIngreso', 'caducidad']);
+            campos(d, ['nombre', 'categoria', 'precioCompra', 'precioVenta', 'proveedorId', 'codigo', 'cantidad', 'fechaIngreso', 'caducidad', 'clave']);
             const producto = ficha(d);
             const lote = datosLote(d);
+            const op = operacion(d, { tipo: 'alta', producto, lote });
             return escritura(actor, async tx => {
+                const previa = await anterior(tx, actor, op); if (previa) return previa;
                 await proveedor(tx, producto.proveedorId);
                 const nuevo = await tx.crearProducto(producto);
-                return entrada(tx, actor, estado(nuevo, []), lote, 'alta');
+                return entrada(tx, actor, estado(nuevo, []), lote, 'alta', op);
             });
         },
         async editarProducto(actor, id, d) {
@@ -156,12 +195,15 @@ function crearInventarioServicio(repo, fechaActual = M.hoy) {
             });
         },
         async entrada(actor, id, d) {
-            campos(d, ['codigo', 'cantidad', 'precioCompra', 'proveedorId', 'fechaIngreso', 'caducidad']);
+            campos(d, ['codigo', 'cantidad', 'precioCompra', 'proveedorId', 'fechaIngreso', 'caducidad', 'clave']);
             const datos = datosLote(d);
+            idValido(id);
+            const op = operacion(d, { tipo: 'entrada', productoId: id, lote: datos });
             return escritura(actor, async tx => {
+                const previa = await anterior(tx, actor, op); if (previa) return previa;
                 const s = await cargar(tx, id);
                 if (!s.productos[0].activo) throw fallo(409, 'Producto archivado.');
-                return entrada(tx, actor, s, datos, 'entrada');
+                return entrada(tx, actor, s, datos, 'entrada', op);
             });
         },
         async ajustar(actor, id, d) {

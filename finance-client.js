@@ -19,7 +19,7 @@
             movimientos=r.movimientos;
             el('listaMovimientos').innerHTML=movimientos.map(m=>`<tr><td>${textoSeguro(m.tipo)} · ${textoSeguro(m.origen)}</td>
                 <td>${textoSeguro(m.categoria)}${m.gastoAdministrativo?' · Gasto administrativo':''}<br>${textoSeguro(m.motivo)}<br>${textoSeguro(m.responsable)} · ${textoSeguro(m.id)}</td>
-                <td>${dinero(m.importe)}</td><td>${textoSeguro(m.fecha)}<br>${textoSeguro(m.registradoEn)}</td></tr>`).join('');
+                <td>${dinero(m.importe)}</td><td>${textoSeguro(MicroCarmitaFechas.calendario(m.fecha))}<br>${textoSeguro(MicroCarmitaFechas.instante(m.registradoEn))}</td></tr>`).join('');
             el('resumenFinanzas').textContent=`Ingresos ${dinero(r.ingresos)} · Egresos ${dinero(r.egresos)} · Neto ${dinero(r.neto)}`;
             el('estadoFinanzas').textContent='';
         }catch(e){if(usuarioActual()!==identidad||numero!==consulta)return;limpiar();el('estadoFinanzas').textContent=e.message;}

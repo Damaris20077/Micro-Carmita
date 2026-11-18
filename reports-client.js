@@ -41,7 +41,6 @@
             enlace.click();setTimeout(()=>URL.revokeObjectURL(objeto),1000);el('estadoReportes').textContent='PDF descargado. Puede abrirlo e imprimirlo desde su visor.';
         }catch(e){if(usuarioActual()===identidad)el('estadoReportes').textContent=e.message}finally{descargando=false}
     }
-    mostrarReportes=cargar;
     globalThis.MicroCarmitaReportes={cargar,descargar,seleccionar};
     document.addEventListener('microcarmita:sesion',()=>{consulta++;el('contenidoReportes').innerHTML='';el('estadoReportes').textContent='';});
     seleccionar();

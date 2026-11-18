@@ -501,7 +501,7 @@ tbody tr:hover {
 ========================================= */
 
 .btn-pagar {
-    background: #27ae60;
+    background: #18733b;
     border: none;
     color: white;
     padding: 7px 12px;
@@ -511,7 +511,7 @@ tbody tr:hover {
 }
 
 .btn-pagar:hover {
-    background: #219150;
+    background: #145d30;
 }
 
 
@@ -622,3 +622,58 @@ tbody tr:hover {
 .error-login { min-height: 20px; color: #c0392b; font-size: .9rem; }
 .menu[hidden] { display: none; }
 @media (max-width: 750px) { .sesion-actual { margin-top: 14px; width: max-content; } }
+
+/* Accesibilidad y límites de contenido; comprobar también en un navegador real. */
+[hidden] { display: none !important; }
+button, input, select { min-height: 44px; }
+button { min-width: 44px; }
+:focus-visible { outline: 3px solid #1769aa; outline-offset: 3px; }
+.sidebar :focus-visible { outline-color: white; }
+button:disabled { cursor: wait; opacity: .7; }
+.contenido, .campo, .tarjeta { min-width: 0; }
+.encabezado p, .tarjeta p, .bienvenida p, .reporte-card span { color: #475569; }
+.sesion-actual { max-width: 100%; flex-wrap: wrap; overflow-wrap: anywhere; }
+.tabla-scroll { overflow-x: auto; }
+pre { white-space: pre-wrap; overflow-wrap: anywhere; }
+.pantalla-login { overflow-y: auto; }
+@media (max-width: 600px) {
+    .campo input, .campo select { font-size: 16px; }
+    .sidebar nav { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .menu { padding: 12px 8px; gap: 6px; font-size: 14px; }
+    .login-card { padding: 24px; margin-block: auto; }
+}
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { transition: none !important; animation: none !important; }
+}
+
+/* Controles de consulta y detalle: mismos colores, jerarquía y espacio. */
+.btn.secundaria, .contenido button:not([class]), .contenido button[class=""] {
+    border: 1px solid #1769aa;
+    border-radius: 8px;
+    background: #edf4fa;
+    color: #12568b;
+    padding: 10px 14px;
+    font: inherit;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+    margin: 3px;
+}
+.btn.secundaria:hover, .contenido button:not([class]):hover { background: #dcebf7; }
+.filtros-reportes { display: grid; grid-template-columns: 2fr repeat(3, minmax(0, 1fr)); gap: 18px; margin: 24px 0 18px; }
+.filtros-reportes label { display: flex; flex-direction: column; gap: 8px; font-size: 14px; font-weight: bold; min-width: 0; }
+.filtros-reportes input, .filtros-reportes select { width: 100%; border: 1px solid #a7bbcd; border-radius: 8px; padding: 10px; background: white; font-size: 16px; }
+.acciones-reportes { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 18px; }
+#estadoReportes { margin: 12px 0; }
+.historial-panel:not(:empty) { background: white; padding: 22px; border: 1px solid #cfdae5; border-left: 4px solid #1769aa; border-radius: 10px; margin: 24px 0; }
+.historial-panel h3 { color: #12568b; margin-bottom: 12px; }
+.historial-panel h4 { margin: 20px 0 10px; }
+.historial-panel p { margin: 10px 0; line-height: 1.6; }
+.historial-panel td { overflow-wrap: anywhere; }
+.historial-venta + .historial-venta { border-top: 1px solid #cfdae5; margin-top: 20px; }
+@media (max-width: 1000px) { .filtros-reportes { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 600px) {
+    .filtros-reportes { grid-template-columns: 1fr; }
+    .acciones-reportes button { width: 100%; margin: 0; }
+    .historial-panel:not(:empty) { padding: 14px; }
+}

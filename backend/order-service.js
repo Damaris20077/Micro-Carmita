@@ -1,5 +1,6 @@
 const { createHash } = require('node:crypto');
 const M = require('../modelo');
+const { normalizarCodigo } = require('./lot-code');
 const { fallo } = require('./auth-service');
 const { crearInventarioServicio } = require('./inventory-service');
 
@@ -97,9 +98,9 @@ function crearPedidosServicio(repo) {
             const lineas = d.lineas.map(l => {
                 campos(l, ['detalleId', 'cantidad', 'codigo', 'caducidad', 'fechaIngreso', 'precioCompra']);
                 if (!M.fechaValida(l.fechaIngreso) || (l.caducidad !== '' && l.caducidad !== null && !M.fechaValida(l.caducidad))) throw fallo(400, 'Fecha inválida.');
-                return { detalleId: id(l.detalleId), cantidad: cantidad(l.cantidad), codigo: texto(l.codigo, 60),
+                return { detalleId: id(l.detalleId), cantidad: cantidad(l.cantidad), codigo: normalizarCodigo(l.codigo),
                     caducidad: l.caducidad || '', fechaIngreso: l.fechaIngreso, precioCompra: precio(l.precioCompra) };
-            }).sort((a,b) => a.detalleId - b.detalleId || a.codigo.localeCompare(b.codigo));
+            }).sort((a,b) => a.detalleId - b.detalleId || String(a.codigo ?? '').localeCompare(String(b.codigo ?? '')));
             const hash = createHash('sha256').update(JSON.stringify(lineas)).digest('hex');
             return transaccion(actor, false, async (tx, actual) => {
                 const p = await buscar(tx, pedidoId, true);

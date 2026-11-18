@@ -20,6 +20,9 @@ function crearPool(env = process.env, cliente = mysql) {
         user: env.DB_USER,
         password: env.DB_PASSWORD,
         database: env.DB_NAME,
+        // Los DATETIME del negocio se escriben con UTC_TIMESTAMP; no reinterpretarlos
+        // como hora local del host al serializar las respuestas JSON.
+        timezone: 'Z',
         waitForConnections: true,
         connectionLimit: 5,
         connectTimeout: 5000

@@ -31,7 +31,42 @@ test('reporte desconocido se rechaza sin consultar datos',async()=>{const f=prep
 test('repositorio parametriza fechas y no multiplica abonos con detalles',async()=>{const consultas=[];const repo=crearReportesRepositorio({async execute(sql,p){consultas.push({sql,p});return [[]]}});await repo.pagos({desde:'2026-11-16',hasta:'2026-11-22'});await repo.pendientes();assert.deepEqual(consultas[0].p,['2026-11-16','2026-11-22']);assert.doesNotMatch(consultas[0].sql,/venta_detalles/);assert.match(consultas[1].sql,/HAVING SUM\(v.saldo\)>0/);assert.ok(consultas.every(c=>c.sql.startsWith('SELECT')))});
 function contenidoPDF(buffer){const textos=[];const s=buffer.toString('latin1');for(const m of s.matchAll(/stream\r?\n/g)){const inicio=m.index+m[0].length,fin=s.indexOf('\nendstream',inicio);if(fin<0)continue;try{const data=zlib.inflateSync(buffer.subarray(inicio,fin)).toString('latin1');for(const hex of data.matchAll(/<([a-f0-9]+)>/gi))textos.push(Buffer.from(hex[1],'hex').toString('latin1'))}catch{}}
     return textos.join('');}
-test('RF-36 PDF real tiene estructura, acentos, filtros, totales y pie de página',async()=>{const f=preparar(),r=await f.s.generar(f.admin,'ventas',{fecha:'2026-11-17'}),b=await generarPDF(r);assert.equal(b.subarray(0,5).toString(),'%PDF-');assert.match(b.toString('latin1'),/%%EOF/);const txt=contenidoPDF(b);assert.match(txt,/Micro Carmita/);assert.match(txt,/María/);assert.match(txt,/2026-11-17/);assert.match(txt,/10\.00/);assert.match(txt,/1 \/ 1/);const xref=Number(/startxref\s+(\d+)/.exec(b.toString('latin1'))[1]);assert.equal(b.subarray(xref,xref+4).toString(),'xref')});
-test('PDF pagina textos largos y mantiene registros sin recortar contenido',async()=>{const f=preparar(),r=await f.s.generar(f.admin,'inventario');r.filas=Array.from({length:30},(_,i)=>({...r.filas[1],nombre:`Producto ${i}`,lotes:'Lote con detalle verificable '.repeat(50)}));const b=await generarPDF(r),txt=contenidoPDF(b);assert.ok((b.toString('latin1').match(/\/Type \/Page\b/g)||[]).length>1);assert.match(txt,/Producto 29/);assert.match(txt,/Registro 30/)});
+test('RF-36 PDF real tiene estructura, acentos, filtros, totales y pie de página',async()=>{const f=preparar(),r=await f.s.generar(f.admin,'ventas',{fecha:'2026-11-17'}),b=await generarPDF(r);assert.equal(b.subarray(0,5).toString(),'%PDF-');assert.match(b.toString('latin1'),/%%EOF/);const txt=contenidoPDF(b);assert.match(txt,/Micro Carmita/);assert.match(txt,/María/);assert.match(txt,/17 de noviembre de 2026/);assert.match(txt,/10\.00/);assert.match(txt,/1 \/ 1/);const xref=Number(/startxref\s+(\d+)/.exec(b.toString('latin1'))[1]);assert.equal(b.subarray(xref,xref+4).toString(),'xref')});
+test('PDF pagina textos largos y mantiene registros sin recortar contenido',async()=>{const f=preparar(),r=await f.s.generar(f.admin,'inventario');r.filas=Array.from({length:30},(_,i)=>({...r.filas[1],nombre:`Producto ${i}`,lotes:'Lote con detalle verificable '.repeat(50)}));const b=await generarPDF(r),txt=contenidoPDF(b);assert.ok((b.toString('latin1').match(/\/Type \/Page\b/g)||[]).length>1);assert.match(txt,/Producto 29/);assert.match(txt,/Producto 0/);assert.match(txt,/Lotes y caducidad/)});
 test('PDF vacío informa ausencia de registros sin fallar',async()=>{const f=preparar(),r=await f.s.generar(f.admin,'ventas',{fecha:'2026-11-18'});assert.match(contenidoPDF(await generarPDF(r)),/Sin registros/)});
 test('Express JSON y PDF comparten filtros y permisos, con descarga adjunta',async t=>{const f=preparar(),token=randomBytes(32).toString('hex');let actor=f.admin;const server=crearApp({repository:{async findSession(){return actor},async touchSession(){}},reportRepository:f.repo}).listen(0,'127.0.0.1');t.after(()=>new Promise(r=>server.close(r)));await once(server,'listening');const base=`http://127.0.0.1:${server.address().port}/api/reports/ventas`;const headers={Cookie:`mc_session=${token}`};const json=await fetch(base+'?fecha=2026-11-17',{headers});assert.equal(json.status,200);assert.equal((await json.json()).totales.totalVentas,10);const pdf=await fetch(base+'/pdf?fecha=2026-11-17',{headers});assert.equal(pdf.status,200);assert.match(pdf.headers.get('content-type'),/application\/pdf/);assert.match(pdf.headers.get('content-disposition'),/attachment/);assert.equal(Buffer.from(await pdf.arrayBuffer()).subarray(0,5).toString(),'%PDF-');actor={id:2,activo:true,rol:'vendedor'};assert.equal((await fetch(base+'/pdf',{headers})).status,403);assert.equal((await fetch(base,{headers})).status,403)});
+
+for (const tipo of ['ventas', 'cierre', 'pendientes', 'pagos', 'finanzas', 'inventario', 'pedidos']) {
+    test('presentación PDF consistente: ' + tipo, async () => {
+        const f = preparar(), r = await f.s.generar(f.admin, tipo);
+        const original = JSON.stringify(r), pdf = await generarPDF(r), txt = contenidoPDF(pdf);
+        assert.equal(JSON.stringify(r), original, 'El generador no altera cifras ni filas');
+        assert.match(txt, /Micro Carmita/);
+        assert.ok(txt.includes(r.titulo));
+        assert.match(txt, /17 de noviembre de 2026, 10:00/);
+        assert.match(txt, /America\/Guayaquil/);
+        assert.match(txt, /Página 1 \/ 1/);
+        assert.equal((pdf.toString('latin1').match(/\/Type \/Page\b/g) || []).length, 1);
+        for (const c of r.columnas) assert.ok(txt.includes(c.titulo.replace(/ /g, '')) || txt.replace(/ /g, '').includes(c.titulo.replace(/ /g, '')), c.titulo);
+        for (const t of r.resumen.filter(v => v.formato === 'dinero')) assert.ok(txt.includes('$' + Number(t.valor).toFixed(2)));
+    });
+}
+test('PDF compacto no crea una página por registro y repite encabezados en cada página', async () => {
+    const f = preparar(), r = await f.s.generar(f.admin, 'pendientes');
+    r.filas = Array.from({ length: 45 }, (_, i) => ({ id: i + 1, nombre: 'Cliente ficticio ' + i, deuda: 12, abonos: 2, saldo: 10 }));
+    const pdf = await generarPDF(r), txt = contenidoPDF(pdf), paginas = (pdf.toString('latin1').match(/\/Type \/Page\b/g) || []).length;
+    assert.ok(paginas >= 2 && paginas <= 3);
+    assert.equal((txt.match(/Cliente ID/g) || []).length, paginas);
+    assert.match(txt, /Cliente ficticio 44/);
+    assert.match(txt, new RegExp('Página ' + paginas + ' / ' + paginas));
+});
+test('fecha calendario no retrocede de día y generación UTC se presenta en Ecuador', async () => {
+    const f = preparar(), r = await f.s.generar(f.admin, 'ventas', { fecha: '2026-11-17' });
+    r.generadoEn = '2026-11-18T02:30:00Z';
+    const txt = contenidoPDF(await generarPDF(r));
+    assert.match(txt, /Fecha: 17 de noviembre de 2026/);
+    assert.match(txt, /Generado: 17 de noviembre de 2026, 21:30/);
+    assert.match(txt, /17\/11\/2026/);
+    assert.match(txt, /Anulada/);
+    assert.equal(r.totales.totalVentas, 10);
+});

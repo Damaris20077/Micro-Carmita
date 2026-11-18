@@ -16,7 +16,7 @@ test('crearPool entrega configuración de entorno a mysql2 sin abrir conexiones'
         createPool(config) {
             assert.deepEqual(config, {
                 host: env.DB_HOST, port: 3307, user: env.DB_USER,
-                password: env.DB_PASSWORD, database: env.DB_NAME,
+                password: env.DB_PASSWORD, database: env.DB_NAME, timezone: 'Z',
                 waitForConnections: true, connectionLimit: 5, connectTimeout: 5000
             });
             return poolSimulado;

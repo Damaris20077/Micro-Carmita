@@ -67,6 +67,32 @@ function prepararCliente({ real = false } = {}) {
     return { contexto, campos, peticiones, respuestas, eventos, avisos, clasesLogin };
 }
 
+test('login concurrente envía una sola petición y libera el botón al terminar', async () => {
+    const f = prepararCliente();
+    f.campos.loginBoton = { disabled: false };
+    let resolver;
+    f.contexto.fetch = () => new Promise(r => { resolver = r; });
+    const primero = f.contexto.iniciarSesion({ preventDefault() {} });
+    assert.equal(f.campos.loginBoton.disabled, true);
+    await f.contexto.iniciarSesion({ preventDefault() {} });
+    resolver({ ok: false, status: 400, async json() { return { error: 'Rechazado' }; } });
+    await primero;
+    assert.equal(f.campos.loginBoton.disabled, false);
+    assert.equal(f.campos.errorLogin.textContent, 'Rechazado');
+});
+
+test('panel queda inerte sin sesión y se habilita solo tras autenticación', async () => {
+    const f = prepararCliente();
+    const panel = { inert: true };
+    f.contexto.document.querySelector = () => panel;
+    f.respuestas.push({ status: 200, body: { usuario: { id: 1, rol: 'administrador' }, csrfToken: 'simulado' } });
+    await f.contexto.iniciarSesion({ preventDefault() {} });
+    assert.equal(panel.inert, false);
+    f.respuestas.push({ status: 204 });
+    await f.contexto.cerrarSesion();
+    assert.equal(panel.inert, true);
+});
+
 test('frontend inicia y cierra sesión por API sin leer ni escribir credenciales locales', async () => {
     const f = prepararCliente();
     f.campos.loginUsuario.value = 'admin.prueba';

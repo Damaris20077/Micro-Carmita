@@ -1,6 +1,8 @@
 # Autenticación y usuarios — RF-01, RF-02 y RF-03
 
-## Estado de la entrega
+Corte de revisión del 17/11/2026: consultas de solo lectura confirman un Administrador activo, cero Superusuarios activos, 22 tablas y migraciones 001–005. Los ensayos reales previos satisfactorios fueron confirmados por el responsable del proyecto; no se repitieron en esta auditoría. Véase FINAL_QA.md para el estado actual y las validaciones pendientes. Las cifras y el esquema vacío de la sección siguiente corresponden a la entrega inicial.
+
+## Estado de la entrega inicial (registro histórico)
 
 El backend implementa inicio y cierre de sesión, autorización y gestión de usuarios. El frontend utiliza `auth-client.js` para estas operaciones. Las 56 pruebas anteriores se conservan. La migración `001_auth` ya se aplicó en `micro_carmita` sobre MySQL 8.0.46 como `root@localhost`, después de comprobar que el esquema estaba vacío. El aprovisionamiento del primer Administrador y el ensayo funcional contra MySQL real quedan pendientes.
 

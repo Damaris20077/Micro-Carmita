@@ -1,9 +1,17 @@
-/* Adaptador del frontend para sesiones HTTP. Los datos del negocio siguen en el navegador. */
+/* Adaptador del frontend para sesiones HTTP y permisos de la API. */
 (() => {
     'use strict';
     let sesion = null;
     let csrfToken = '';
     let usuarios = [];
+    let entrando = false;
+    const renderizarSesion = aplicarSesion;
+    aplicarSesion = () => {
+        const panel = document.querySelector?.('.contenedor');
+        if (panel) panel.inert = !sesion;
+        renderizarSesion();
+        if (!sesion) document.getElementById('loginUsuario')?.focus?.();
+    };
     permisosPorRol.administrador = [...permisosPorRol.administrador, 'usuarios'];
 
     function limpiarSesion() {
@@ -51,6 +59,10 @@
 
     iniciarSesion = async evento => {
         evento.preventDefault();
+        if (entrando) return;
+        entrando = true;
+        const boton = document.getElementById('loginBoton');
+        if (boton) { boton.disabled = true; boton.setAttribute?.('aria-busy', 'true'); }
         const error = document.getElementById('errorLogin');
         try {
             const datos = await api('/auth/login', 'POST', {
@@ -65,6 +77,9 @@
             document.dispatchEvent?.(new Event('microcarmita:sesion'));
         } catch (problema) {
             error.textContent = problema.message;
+        } finally {
+            entrando = false;
+            if (boton) { boton.disabled = false; boton.removeAttribute?.('aria-busy'); }
         }
     };
 

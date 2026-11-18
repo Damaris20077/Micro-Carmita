@@ -26,6 +26,7 @@ function preparar() {
             finally { liberar(); }
         },
         async actor(id) { return copia(id === 1 ? admin : vendedor); },
+        async operacionLote(actor, clave) { return copia(db.movimientos.find(m => m.usuarioId === actor && m.detalle.operacion?.clave === clave)?.detalle.operacion); },
         async contactos(tipo) { return copia(db[tipo]); },
         async contacto(tipo, id) { return copia(db[tipo].find(v => v.id === id)); },
         async crearContacto(tipo, d) {
@@ -70,6 +71,81 @@ function lote(extra = {}) {
     const { codigo, cantidad, precioCompra, proveedorId, fechaIngreso, caducidad } = datos(extra);
     return { codigo, cantidad, precioCompra, proveedorId, fechaIngreso, caducidad };
 }
+
+test('alta sin código genera lote interno y reintenta sin duplicar producto, stock ni historial', async () => {
+    const f = preparar(), d = datos({ codigo: '', clave: 'alta_automatica_1' });
+    const [uno, dos] = await Promise.all([f.servicio.crearProducto(f.admin, d), f.servicio.crearProducto(f.admin, d)]);
+    assert.deepEqual(uno, dos);
+    assert.match(uno.codigo, /^MC-[a-f0-9-]{36}$/);
+    assert.equal(f.db.productos.length, 1); assert.equal(f.db.lotes.length, 1); assert.equal(f.db.movimientos.length, 1);
+    assert.equal(uno.stock, 4);
+    await assert.rejects(f.servicio.crearProducto(f.admin, { ...d, cantidad: 5 }), { status: 409 });
+    assert.equal(f.db.lotes[0].cantidad, 4);
+});
+
+test('entrada sin código conserva FEFO/caducidad y devuelve la misma respuesta tras reintento', async () => {
+    const f = preparar(); await f.servicio.crearProducto(f.admin, datos());
+    const entrada = { ...lote({ codigo: null, cantidad: 2, caducidad: '2026-11-18' }), clave: 'entrada_auto_1' };
+    const uno = await f.servicio.entrada(f.admin, 1, entrada);
+    const dos = await f.servicio.entrada(f.admin, 1, entrada);
+    assert.deepEqual(dos, uno); assert.equal(f.db.lotes.length, 2); assert.equal(uno.stock, 6);
+    const [p] = await f.servicio.inventario(f.admin);
+    assert.equal(p.lotes[1].caducidad, '2026-11-18'); assert.equal(p.lotes[1].estado, 'Por caducar');
+    assert.equal(f.db.lotes[0].codigo, 'L1');
+});
+
+test('código omitido requiere clave estable; códigos inválidos no se convierten en automáticos', async () => {
+    const f = preparar();
+    for (const codigo of [undefined, '', null]) await assert.rejects(f.servicio.crearProducto(f.admin, datos({ codigo })), { status: 400 });
+    for (const codigo of [123, {}, 'x'.repeat(61)]) await assert.rejects(f.servicio.crearProducto(f.admin, datos({ codigo, clave: 'codigo_invalido' })), { status: 400 });
+    assert.equal(f.db.productos.length, 0);
+});
+
+test('código proporcionado se conserva y un duplicado no aumenta existencias', async () => {
+    const f = preparar(); const r = await f.servicio.crearProducto(f.admin, datos({ codigo: 'Fabricante-A', clave: 'codigo_explicito' }));
+    assert.equal(r.codigo, 'Fabricante-A');
+    await assert.rejects(f.servicio.entrada(f.admin, 1, { ...lote({ codigo: 'fabricante-a' }), clave: 'duplicado_entrada' }), { status: 409 });
+    assert.equal(f.db.lotes.length, 1); assert.equal(f.db.movimientos.length, 1);
+});
+
+test('colisión SQL de código generado reintenta INSERT sin duplicar stock', async () => {
+    const f = preparar(); let intentos = 0;
+    const insertar = f.repo.crearLote;
+    f.repo.crearLote = async (...args) => { if (++intentos === 1) throw Object.assign(new Error('Colisión simulada'), { code: 'ER_DUP_ENTRY' }); return insertar(...args); };
+    const codigos = ['MC-colision', 'MC-nuevo'];
+    const servicio = crearInventarioServicio(f.repo, () => '2026-11-17', { generarCodigo: () => codigos.shift() });
+    const r = await servicio.crearProducto(f.admin, datos({ codigo: undefined, clave: 'colision_sql_1' }));
+    assert.equal(r.codigo, 'MC-nuevo'); assert.equal(intentos, 2);
+    assert.equal(f.db.lotes.length, 1); assert.equal(f.db.lotes[0].cantidad, 4); assert.equal(f.db.movimientos.length, 1);
+});
+
+test('agotamiento de colisiones y fallo de historial revierten todo el alta automática', async () => {
+    const f = preparar(); let intentos = 0;
+    f.repo.crearLote = async () => { intentos++; throw Object.assign(new Error(), { code: 'ER_DUP_ENTRY' }); };
+    await assert.rejects(f.servicio.crearProducto(f.admin, datos({ codigo: '', clave: 'colision_total_1' })), { status: 409 });
+    assert.equal(intentos, 3); assert.equal(f.db.productos.length, 0); assert.equal(f.db.movimientos.length, 0);
+    const g = preparar(); g.fallarHistorial();
+    await assert.rejects(g.servicio.crearProducto(g.admin, datos({ codigo: '', clave: 'fallo_historial_1' })), /Fallo/);
+    assert.equal(g.db.lotes.length, 0); assert.equal(g.db.productos.length, 0);
+});
+
+test('generador evita un código interno ya visible sin modificar el lote anterior', async () => {
+    const f = preparar(); await f.servicio.crearProducto(f.admin, datos({ codigo: 'MC-existente' }));
+    const codigos = ['MC-existente', 'MC-nuevo'];
+    const servicio = crearInventarioServicio(f.repo, () => '2026-11-17', { generarCodigo: () => codigos.shift() });
+    const r = await servicio.entrada(f.admin, 1, { ...lote({ codigo: '' }), clave: 'colision_snapshot' });
+    assert.equal(r.codigo, 'MC-nuevo'); assert.equal(f.db.lotes[0].codigo, 'MC-existente');
+    assert.equal(f.db.lotes.length, 2); assert.equal(r.stock, 8);
+});
+
+test('repositorio recupera clave de alta/entrada de JSON con parámetros y sin escribir', async () => {
+    const consultas = [];
+    const op = { clave: 'clave_estable_1', hash: 'hash_ficticio', respuesta: { productoId: 1, stock: 4 } };
+    const repo = crearInventarioRepositorio({ async execute(sql, params) { consultas.push({ sql, params }); return [[{ operacion: JSON.stringify(op) }]]; } });
+    assert.deepEqual(await repo.operacionLote(1, op.clave), op);
+    assert.deepEqual(consultas[0].params, [1, op.clave]);
+    assert.match(consultas[0].sql, /^SELECT/); assert.match(consultas[0].sql, /JSON_EXTRACT/);
+});
 
 test('RF-09 y RF-20 crean y consultan clientes/proveedores con IDs estables', async () => {
     const f = preparar();
@@ -276,6 +352,9 @@ test('HTTP integrado protege inventario, contactos y alertas por sesión y CSRF'
     assert.equal((await pedir('/inventory/alerts')).body.stockBajo.length, 1);
     assert.equal((await pedir('/inventory/alerts')).body.caducidad.length, 1);
     assert.equal((await pedir('/clientes', 'POST', { nombre: 'Cliente API' }, tokens[1])).status, 201);
+    for (const ruta of ['/inventory/alerts', '/clientes', '/proveedores', '/products/1/history']) {
+        assert.equal((await pedir(ruta, 'GET', undefined, tokens[1])).status, 200);
+    }
     assert.equal((await pedir('/proveedores', 'POST', { nombre: 'Proveedor API' }, tokens[1])).status, 403);
     assert.equal((await pedir('/products/1/adjustments', 'POST', { cantidad: -3, motivo: 'Conteo' })).status, 200);
     assert.equal((await pedir('/products/1/history')).body.movimientos.length, 2);

@@ -261,3 +261,28 @@ test('abonos cero, negativos, fraccionarios de centavo o no numéricos se rechaz
     for(const n of [0,-1,0.001,'1',NaN,Infinity])await assert.rejects(f.servicio.abonar(f.vendedor,1,pago(n)),{status:400});
     assert.deepEqual(f.db,antes);
 });
+
+test('HTTP Vendedor registra venta y abono y consulta saldos con servicios reales y repositorio simulado', async t => {
+    const f = preparar(), token = randomBytes(32).toString('hex');
+    const origin = 'http://micro.example';
+    const server = crearApp({ repository: {
+        async findSession(hash) { return hash.equals(digest(token)) ? f.vendedor : undefined; }, async touchSession() {}
+    }, salesRepository: f.repo, origin }).listen(0, '127.0.0.1');
+    t.after(() => new Promise(resolve => server.close(resolve)));
+    await once(server, 'listening');
+    async function pedir(ruta, method = 'GET', datos) {
+        const response = await fetch(`http://127.0.0.1:${server.address().port}/api${ruta}`, {
+            method, headers: { Origin: origin, Cookie: `mc_session=${token}`, 'Content-Type': 'application/json',
+                'X-CSRF-Token': digest(`csrf:${token}`).toString('hex') }, body: datos === undefined ? undefined : JSON.stringify(datos)
+        });
+        return { status: response.status, body: await response.json() };
+    }
+    const creada = await pedir('/sales', 'POST', venta({ tipo: 'fiado', clienteId: 1 }));
+    assert.equal(creada.status, 201); assert.equal(creada.body.total, 4);
+    assert.equal((await pedir('/sales/1/payments', 'POST', pago())).status, 201);
+    assert.equal((await pedir('/sales')).status, 200);
+    assert.equal((await pedir('/sales/1')).status, 200);
+    const saldo = await pedir('/customers/1/receivables');
+    assert.equal(saldo.status, 200); assert.equal(saldo.body.saldo, 3);
+    assert.equal(f.db.lotes[0].cantidad, 8); assert.equal(f.db.pagos.length, 1); assert.equal(f.db.caja.length, 1);
+});

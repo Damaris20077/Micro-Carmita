@@ -4,6 +4,7 @@ function preparar(rol='administrador'){
     const c=vm.createContext({Intl,Date,crypto:{randomUUID},document:{getElementById(id){return campos[id]??={value:'',checked:false,innerHTML:'',textContent:''}},addEventListener(n,fn){eventos[n]=fn}},usuarioActual:()=>actor,
         textoSeguro:v=>String(v).replace(/</g,'&lt;'),dinero:v=>String(v),obtenerDatos(){throw new Error('Lectura local prohibida')},guardarDatos(){throw new Error('Escritura local prohibida')},mostrarMovimientos(){},registrarMovimiento(){},
         MicroCarmitaAuth:{async api(ruta,metodo,datos){solicitudes.push({ruta,metodo,datos});if(espera)await espera;if(metodo==='POST'){intentos++;if(fallo&&intentos===1)throw new Error('Respuesta perdida');return {id:1}}return {movimientos:[{id:'manual:1',origen:'manual',tipo:'ingreso',categoria:'Operación',motivo:'<prueba>',importe:5,fecha:'2026-11-17',responsable:'QA',registradoEn:'2026-11-17'}],ingresos:5,egresos:0,neto:5}}}});
+    vm.runInContext(fs.readFileSync(path.join(__dirname, '..', 'date-formatter.js'), 'utf8'), c);
     vm.runInContext(fs.readFileSync(path.join(__dirname,'..','finance-client.js'),'utf8'),c);
     for(const [id,value]of Object.entries({movimientoTipo:'ingreso',movimientoDescripcion:'Operación',movimientoValor:'5',finanzaCategoria:'Aporte'}))c.document.getElementById(id).value=value;
     return {c,campos,solicitudes,perder(){fallo=true},salir(){actor=null;eventos['microcarmita:sesion']()},pausar(p){espera=p}};
@@ -13,3 +14,16 @@ test('Vendedor no consulta ni registra movimientos financieros',async()=>{const 
 test('cliente conserva clave ante respuesta perdida y bloquea envíos simultáneos',async()=>{const f=preparar();f.perder();await f.c.registrarMovimiento();await Promise.all([f.c.registrarMovimiento(),f.c.registrarMovimiento()]);const p=f.solicitudes.filter(s=>s.metodo==='POST');assert.equal(p.length,2);assert.equal(p[0].datos.clave,p[1].datos.clave)});
 test('cliente envía rango y limpia filtros al consultar todas las fechas',async()=>{const f=preparar();f.c.document.getElementById('finanzaDesde').value='2026-11-17';f.c.document.getElementById('finanzaHasta').value='2026-11-18';await f.c.MicroCarmitaFinanzas.cargar();assert.match(f.solicitudes[0].ruta,/desde=2026-11-17&hasta=2026-11-18/);await f.c.MicroCarmitaFinanzas.todos();assert.equal(f.solicitudes[1].ruta,'/finance')});
 test('consulta tardía tras cerrar sesión no recupera datos del Administrador',async()=>{const f=preparar();let resolver;f.pausar(new Promise(r=>resolver=r));const p=f.c.MicroCarmitaFinanzas.cargar();f.salir();resolver();await p;assert.equal(f.c.obtenerDatos('movimientos').length,0);assert.equal(f.campos.listaMovimientos.innerHTML,'')});
+
+test('finanzas formatea calendario e instante sin cambiar filtros ISO', async () => {
+    const f = preparar();
+    f.c.MicroCarmitaAuth.api = async ruta => {
+        f.solicitudes.push({ ruta });
+        return { movimientos: [{ id: 'manual:1', tipo: 'ingreso', importe: 1, fecha: '2026-11-18', registradoEn: '2026-11-18T04:59:00Z' }], ingresos: 1, egresos: 0, neto: 1 };
+    };
+    f.c.document.getElementById('finanzaDesde').value = '2026-11-18';
+    await f.c.MicroCarmitaFinanzas.cargar();
+    assert.match(f.campos.listaMovimientos.innerHTML, /18.*nov.*2026/);
+    assert.match(f.campos.listaMovimientos.innerHTML, /17.*nov.*2026.*23:59/);
+    assert.equal(f.solicitudes[0].ruta, '/finance?desde=2026-11-18');
+});

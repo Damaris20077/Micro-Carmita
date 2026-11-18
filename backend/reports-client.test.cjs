@@ -2,7 +2,7 @@ const test=require('node:test'),assert=require('node:assert/strict'),vm=require(
 function preparar(rol='administrador'){
     const campos={},peticiones=[],eventos={};let actor={id:1,rol},espera,descargas=0;
     const c=vm.createContext({document:{getElementById(id){return campos[id]??={value:id==='reporteTipo'?'ventas':'',style:{},innerHTML:'',textContent:''}},addEventListener(n,f){eventos[n]=f},createElement(){return {click(){descargas++}}}},usuarioActual:()=>actor,
-        mostrarReportes(){},textoSeguro:v=>String(v??'').replace(/</g,'&lt;'),dinero:v=>String(v),URL:{createObjectURL:()=> 'blob:ensayo',revokeObjectURL(){}},setTimeout:f=>f(),
+        textoSeguro:v=>String(v??'').replace(/</g,'&lt;'),dinero:v=>String(v),URL:{createObjectURL:()=> 'blob:ensayo',revokeObjectURL(){}},setTimeout:f=>f(),
         MicroCarmitaAuth:{async api(ruta){peticiones.push(ruta);if(espera)await espera;return {titulo:'Ventas',generadoEn:'2026-11-17',resumen:[{etiqueta:'Ventas',valor:2}],notas:['<nota>'],columnas:[{clave:'nombre',titulo:'Cliente'}],filas:[{nombre:'<Cliente>'}]}},async archivo(ruta){peticiones.push(ruta);return {}}}});
     vm.runInContext(fs.readFileSync(path.join(__dirname,'..','reports-client.js'),'utf8'),c);
     return {c,campos,peticiones,get descargas(){return descargas},pausar(p){espera=p},salir(){actor=null;eventos['microcarmita:sesion']()}};

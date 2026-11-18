@@ -19,6 +19,12 @@ function crearInventarioRepositorio(db) {
             } finally { connection.release(); }
         },
         async actor(id) { return (await query('SELECT id,rol,activo FROM usuarios WHERE id = ? FOR UPDATE', [id]))[0]; },
+        async operacionLote(actor, clave) {
+            const filas = await query(`SELECT JSON_EXTRACT(detalle,'$.operacion') AS operacion FROM movimientos_inventario
+                WHERE usuario_id=? AND tipo IN ('alta','entrada') AND JSON_UNQUOTE(JSON_EXTRACT(detalle,'$.operacion.clave'))=? LIMIT 1`, [actor, clave]);
+            const op = filas[0]?.operacion;
+            return typeof op === 'string' ? JSON.parse(op) : op;
+        },
         async contactos(tipo) { return query(`SELECT * FROM ${tipo === 'clientes' ? 'clientes' : 'proveedores'} ORDER BY id`); },
         async contacto(tipo, id) { return (await query(`SELECT id FROM ${tipo === 'clientes' ? 'clientes' : 'proveedores'} WHERE id = ?`, [id]))[0]; },
         async crearContacto(tipo, datos) {

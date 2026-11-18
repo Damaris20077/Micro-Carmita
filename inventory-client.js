@@ -1,10 +1,17 @@
 /* Inventario remoto. localStorage se conserva únicamente para las funciones históricas restantes. */
 (() => {
     'use strict';
-    const api = (...args) => MicroCarmitaAuth.api(...args);
+    const api = async (...args) => {
+        const identidad = usuarioActual();
+        const respuesta = await MicroCarmitaAuth.api(...args);
+        if (usuarioActual() !== identidad) throw new Error('La sesión cambió durante la operación.');
+        return respuesta;
+    };
     let productos = [];
     let proveedores = [];
     let cargando;
+    let operacionActiva;
+    let lotePendiente;
     const datosLocales = obtenerDatos;
     const guardarLocal = guardarDatos;
     obtenerDatos = clave => clave === 'inventario'
@@ -35,11 +42,11 @@
             <button onclick="eliminarProducto(${p.id})">Archivar</button>` : 'Solo consulta'}</td></tr>`).join('');
         elemento('listaLotes').innerHTML = productos.flatMap(p => p.lotes.map(l => `<tr>
             <td>${textoSeguro(p.nombre)}</td><td>${textoSeguro(l.codigo)}</td><td>${l.cantidad}</td>
-            <td>${textoSeguro(l.fecha_ingreso)}</td><td>${textoSeguro(l.caducidad || 'Sin caducidad')}</td><td>${textoSeguro(l.estado)}</td></tr>`)).join('');
+            <td>${textoSeguro(MicroCarmitaFechas.calendario(l.fecha_ingreso))}</td><td>${textoSeguro(l.caducidad ? MicroCarmitaFechas.calendario(l.caducidad) : 'Sin caducidad')}</td><td>${textoSeguro(l.estado)}</td></tr>`)).join('');
         const alertas = productos.flatMap(p => [
             ...(p.stockBajo ? [`${p.nombre}: stock bajo (${p.stock})`] : []),
             ...p.lotes.filter(l => l.cantidad > 0 && ['Por caducar', 'Caducado'].includes(l.estado))
-                .map(l => `${p.nombre}, lote ${l.codigo}: ${l.estado} (${l.caducidad})`)
+                .map(l => `${p.nombre}, lote ${l.codigo}: ${l.estado} (${MicroCarmitaFechas.calendario(l.caducidad)})`)
         ]);
         elemento('alertasInventario').textContent = alertas.join(' · ') || 'Sin alertas de inventario.';
         for (const id of ['productoProveedor', 'entradaProveedor']) opciones(id, proveedores);
@@ -81,15 +88,35 @@
         return cargando;
     }
     async function operar(fn) {
-        try { await fn(); await cargar(); }
-        catch (error) { elemento('estadoInventario').textContent = error.message; }
+        const identidad = usuarioActual();
+        if (!identidad || operacionActiva?.identidad === identidad) return;
+        const token = { identidad }; operacionActiva = token;
+        elemento('estadoInventario').textContent = 'Procesando…';
+        try { await fn(); if (usuarioActual() === identidad) await cargar(); }
+        catch (error) { if (usuarioActual() === identidad) elemento('estadoInventario').textContent = error.message
+            + (!error.status ? ' Si la respuesta se perdió, compruebe el historial antes de repetir una escritura.' : ''); }
+        finally { if (operacionActiva === token) operacionActiva = null; }
     }
     function loteFormulario(prefijo) {
         return { codigo: valor(`${prefijo}Codigo`), cantidad: numero(`${prefijo}Cantidad`),
             proveedorId: numero(`${prefijo}Proveedor`), precioCompra: numero(`${prefijo}Compra`),
             fechaIngreso: valor(`${prefijo}Fecha`), caducidad: valor(`${prefijo}Caducidad`) };
     }
-    agregarProducto = () => operar(() => api('/products', 'POST', {
+    async function enviarLote(ruta, datos) {
+        const firma = JSON.stringify([ruta, datos]);
+        if (lotePendiente && lotePendiente.firma !== firma) throw new Error('Hay un lote sin confirmar. Reintente con los mismos datos antes de iniciar otro.');
+        if (!lotePendiente) lotePendiente = { firma, clave: crypto.randomUUID() };
+        const actual = lotePendiente;
+        try {
+            const resultado = await api(ruta, 'POST', { ...datos, clave: actual.clave });
+            if (lotePendiente === actual) lotePendiente = null;
+            return resultado;
+        } catch (error) {
+            if (error.status >= 400 && error.status < 500 && lotePendiente === actual) lotePendiente = null;
+            throw error;
+        }
+    }
+    agregarProducto = () => operar(() => enviarLote('/products', {
         ...loteFormulario('producto'), nombre: valor('productoNombre'), categoria: valor('productoCategoria'), precioVenta: numero('productoPrecio')
     }));
     editarProducto = id => operar(async () => {
@@ -134,7 +161,7 @@
             enlace.click();
             setTimeout(() => URL.revokeObjectURL(url), 1000);
         },
-        entrada: () => operar(() => api(`/products/${numero('entradaProducto')}/lots`, 'POST', loteFormulario('entrada'))),
+        entrada: () => operar(() => enviarLote(`/products/${numero('entradaProducto')}/lots`, loteFormulario('entrada'))),
         ajustar: () => operar(() => {
             const datos = { cantidad: numero('ajusteCantidad'), motivo: valor('ajusteMotivo') };
             if (datos.cantidad > 0) datos.loteId = numero('ajusteLote');
@@ -147,12 +174,13 @@
         historial: id => operar(async () => {
             const datos = await api(`/products/${id}/history`);
             elemento('historialInventario').textContent = datos.movimientos.map(m =>
-                `${m.ocurrido_en} | ${m.responsable} | ${m.tipo} ${m.cantidad} | ${m.stock_antes} → ${m.stock_despues} | ${m.motivo}`).join('\n') || 'Sin movimientos.';
+                `${MicroCarmitaFechas.instante(m.ocurrido_en)} | ${m.responsable} | ${m.tipo} ${m.cantidad} | ${m.stock_antes} → ${m.stock_despues} | ${m.motivo}`).join('\n') || 'Sin movimientos.';
         })
     };
     document.addEventListener('microcarmita:sesion', () => {
         productos = [];
         proveedores = [];
+        lotePendiente = null;
         elemento('listaInventario').textContent = '';
         elemento('listaLotes').textContent = '';
         elemento('listaClientes').textContent = '';

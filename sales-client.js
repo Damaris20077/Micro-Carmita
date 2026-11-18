@@ -8,8 +8,13 @@
         if (usuarioActual() !== identidad) throw new Error('La sesión cambió durante la consulta.');
         return datos;
     };
+    const fechaLegible = MicroCarmitaFechas.instante;
+    const tabla = (titulos, filas) => '<div class="tabla-scroll"><table><thead><tr>' + titulos.map(t => '<th scope="col">' + textoSeguro(t) + '</th>').join('')
+        + '</tr></thead><tbody>' + (filas.length ? filas.map(f => '<tr>' + f.map(c => '<td>' + textoSeguro(c) + '</td>').join('') + '</tr>').join('')
+        : '<tr><td colspan="' + titulos.length + '">Sin registros.</td></tr>') + '</tbody></table></div>';
     const admin = () => usuarioActual()?.rol === 'administrador';
     let ventas = [], clientes = [], edicion = null, ocupado = false, pendiente = null;
+    let consulta = 0;
     const obtenerAnterior = obtenerDatos, guardarAnterior = guardarDatos;
     obtenerDatos = clave => clave === 'ventas' ? ventas.filter(v => v.estado === 'Activa')
         : clave === 'cuentas' ? ventas.filter(v => v.tipo === 'fiado' && v.estado === 'Activa') : obtenerAnterior(clave);
@@ -19,17 +24,17 @@
     };
     function pintar() {
         el('listaVentas').innerHTML = ventas.map(v => `<tr><td>${textoSeguro(v.cliente || 'Consumidor final')}</td>
-            <td>Venta ${v.id} · ${textoSeguro(v.estado)}</td><td>Ver detalle</td><td>${dinero(v.total)}</td>
-            <td>${textoSeguro(v.tipo)}</td><td>${textoSeguro(v.creado_en)}
+            <td>Venta ${v.id} · ${textoSeguro(v.estado)}</td><td>${textoSeguro(v.estado)}</td><td>${dinero(v.total)}</td>
+            <td>${textoSeguro(v.tipo)}</td><td>${textoSeguro(fechaLegible(v.creado_en))}
             <button onclick="MicroCarmitaVentas.detalle(${v.id})">Detalle</button>
             ${admin() && v.estado === 'Activa' ? `<button onclick="MicroCarmitaVentas.editar(${v.id})">Modificar</button>
             <button onclick="MicroCarmitaVentas.anular(${v.id})">Anular</button>` : ''}</td></tr>`).join('');
-        const fiados = ventas.filter(v => v.tipo === 'fiado');
+        const fiados = ventas.filter(v => v.tipo === 'fiado' && v.estado === 'Activa' && Number(v.saldo) > 0);
         el('listaCuentas').innerHTML = fiados.map(v => `<tr><td>${textoSeguro(v.cliente)}</td><td>Venta ${v.id}</td>
             <td>Total ${dinero(v.total)} · Abonos ${dinero(v.abonado)} · Saldo ${dinero(v.saldo)}</td>
-            <td>${textoSeguro(v.creado_en)}</td><td>${textoSeguro(v.estado === 'Anulada' ? 'Anulada' : Number(v.saldo) ? 'Pendiente' : 'Pagada')}</td>
+            <td>${textoSeguro(fechaLegible(v.creado_en))}</td><td>${textoSeguro(v.estado === 'Anulada' ? 'Anulada' : Number(v.saldo) ? 'Pendiente' : 'Pagada')}</td>
             <td>${v.estado === 'Activa' && Number(v.saldo) > 0 ? `<button onclick="abonarCuenta(${v.id})">Registrar abono</button>` : ''}
-            <button onclick="MicroCarmitaVentas.cliente(${v.cliente_id})">Historial del cliente</button></td></tr>`).join('');
+            <button onclick="MicroCarmitaVentas.cliente(${v.cliente_id})">Historial del cliente</button></td></tr>`).join('') || '<tr><td colspan="6">No hay saldos pendientes. Consulte el historial para ver ventas pagadas o anuladas.</td></tr>';
         const saldo = ventas.filter(v => v.estado === 'Activa').reduce((s,v) => s + Number(v.saldo), 0);
         el('saldoPendiente').textContent = dinero(saldo);
         el('totalCobrar').textContent = dinero(saldo);
@@ -45,13 +50,14 @@
     async function cargar() {
         const identidad = usuarioActual();
         if (!identidad) return;
+        const numero = ++consulta;
         try {
             const [v,c] = await Promise.all([api('/sales'), api('/clientes')]);
-            if (usuarioActual() !== identidad) return;
+            if (usuarioActual() !== identidad || numero !== consulta) return;
             ventas = v.ventas; clientes = c.registros;
             pintar(); el('estadoVentas').textContent = '';
         } catch (error) {
-            if (usuarioActual() !== identidad) return;
+            if (usuarioActual() !== identidad || numero !== consulta) return;
             ventas = []; clientes = []; pintar();
             el('estadoVentas').textContent = `${error.message} Compruebe la activación de ventas.`;
         }
@@ -135,16 +141,24 @@
         },
         detalle: id => operar(async () => {
             const v = await api(`/sales/${id}`);
-            el('historialCobros').textContent = `Venta ${v.id} · ${v.estado}\n` + v.detalles.map(l => `${l.nombre}: ${l.cantidad} × ${dinero(l.precio)} · Lotes ${l.asignaciones.map(a => `${a.loteId}: ${a.cantidad}`).join(', ')} · Faltante ${l.sin_existencia}`).join('\n')
-                + '\n' + v.historial.map(h => `${h.creado_en} · ${h.responsable} · ${h.accion} · ${h.motivo}`).join('\n')
-                + '\nCaja\n' + v.caja.map(c => `${c.creado_en} · ${c.tipo} · ${dinero(c.importe)}`).join('\n');
+            el('historialVentas').innerHTML = '<h3>Venta ' + Number(v.id) + ' · ' + textoSeguro(v.estado) + '</h3>'
+                + '<p>Total de la venta: <strong>' + textoSeguro(dinero(v.total)) + '</strong> · Saldo: <strong>' + textoSeguro(dinero(v.saldo)) + '</strong></p>'
+                + '<h4>Productos y lotes</h4>' + tabla(['Producto', 'Cantidad', 'Precio', 'Lotes descontados', 'Faltante'], v.detalles.map(l => [l.nombre, l.cantidad, dinero(l.precio),
+                    (l.asignaciones || []).map(a => 'Lote ' + a.loteId + ': ' + a.cantidad).join(', ') || 'Sin asignaciones', l.sin_existencia || 0]))
+                + '<h4>Historial de cambios</h4>' + tabla(['Fecha', 'Responsable', 'Acción', 'Motivo'], v.historial.map(h => [fechaLegible(h.creado_en), h.responsable, h.accion, h.motivo]))
+                + '<h4>Movimientos de caja</h4>' + tabla(['Fecha', 'Concepto', 'Importe'], v.caja.map(c => [fechaLegible(c.creado_en), c.tipo, dinero(c.importe)]));
+            el('historialVentas').hidden = false;
+            el('historialVentas').scrollIntoView?.({ block: 'start', behavior: 'auto' });
         }),
         cliente: id => operar(async () => {
             const r = await api(`/customers/${id}/receivables`);
-            el('historialCobros').textContent = `Cliente ${id} · Deuda ${dinero(r.totalAdeudado)} · Abonos ${dinero(r.abonado)} · Saldo ${dinero(r.saldo)}\n`
-                + r.ventas.map(v => `Venta ${v.id} · ${v.estado} · Total ${dinero(v.total)} · Saldo ${dinero(v.saldo)}\n`
-                    + v.abonos.map(a => `${a.creado_en} · ${a.responsable} · Abono ${dinero(a.importe)}`).join('\n')
-                    + '\n' + v.caja.filter(c => Number(c.importe) < 0).map(c => `${c.creado_en} · Devolución ${dinero(-Number(c.importe))}`).join('\n')).join('\n');
+            el('historialCobros').innerHTML = '<h3>Historial del cliente ' + Number(id) + '</h3>'
+                + '<p>Deuda vigente: <strong>' + textoSeguro(dinero(r.totalAdeudado)) + '</strong> · Abonos: <strong>' + textoSeguro(dinero(r.abonado))
+                + '</strong> · Saldo: <strong>' + textoSeguro(dinero(r.saldo)) + '</strong></p>'
+                + r.ventas.map(v => '<section class="historial-venta"><h4>Venta ' + Number(v.id) + ' · ' + textoSeguro(v.estado) + '</h4>'
+                    + '<p>Total: ' + textoSeguro(dinero(v.total)) + ' · Saldo: ' + textoSeguro(dinero(v.saldo)) + '</p>'
+                    + tabla(['Fecha', 'Responsable', 'Abono'], v.abonos.map(a => [fechaLegible(a.creado_en), a.responsable, dinero(a.importe)]))
+                    + tabla(['Fecha', 'Devolución'], v.caja.filter(c => Number(c.importe) < 0).map(c => [fechaLegible(c.creado_en), dinero(-Number(c.importe))])) + '</section>').join('');
         }),
         editar: id => operar(async () => {
             if (!admin() || pendiente) return;
@@ -171,8 +185,9 @@
         })
     };
     document.addEventListener('microcarmita:sesion', () => {
+        consulta++;
         ventas = []; clientes = []; carrito = []; edicion = null; pendiente = null;
-        el('historialCobros').textContent = ''; pintar(); mostrarCarrito();
+        el('historialCobros').innerHTML = ''; el('historialVentas').innerHTML = ''; el('historialVentas').hidden = true; pintar(); mostrarCarrito();
         if (usuarioActual()) cargar();
     });
 })();

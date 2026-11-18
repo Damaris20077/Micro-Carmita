@@ -34,11 +34,26 @@ function preparar(rol = 'administrador') {
             return {};
         }}
     });
+    vm.runInContext(fs.readFileSync(path.join(__dirname, '..', 'date-formatter.js'), 'utf8'), contexto);
     vm.runInContext(fs.readFileSync(path.join(__dirname,'..','sales-client.js'),'utf8'),contexto);
     contexto.document.getElementById('ventaTipo').value='contado';
     contexto.carrito=[{id:1,nombre:'Producto',cantidad:1,precio:2}];
     return {contexto,campos,solicitudes,eventos,mensajes,perder(){respuestaPerdida=true},rechazar(){rechazo=true},salir(){actor=null;eventos['microcarmita:sesion']()},pausar(p){esperar=p}};
 }
+
+test('consulta antigua no sobrescribe ventas de una consulta posterior de la misma sesión', async () => {
+    const f = preparar();
+    const resolver = [];
+    f.contexto.MicroCarmitaAuth.api = ruta => ruta === '/sales'
+        ? new Promise(r => resolver.push(r)) : Promise.resolve({ registros: [] });
+    const antigua = f.contexto.MicroCarmitaVentas.cargar();
+    const nueva = f.contexto.MicroCarmitaVentas.cargar();
+    resolver[1]({ ventas: [{ id: 2, estado: 'Activa', tipo: 'contado', total: 20 }] });
+    await nueva;
+    resolver[0]({ ventas: [{ id: 1, estado: 'Activa', tipo: 'contado', total: 10 }] });
+    await antigua;
+    assert.equal(f.contexto.obtenerDatos('ventas')[0].id, 2);
+});
 test('ventas y cuentas consumen API sin leer ni guardar datos locales',async()=>{
     const f=preparar();await f.contexto.MicroCarmitaVentas.cargar();
     assert.match(f.campos.listaVentas.innerHTML,/Cliente/);assert.match(f.campos.listaCuentas.innerHTML,/Registrar abono/);
@@ -69,4 +84,63 @@ test('RF-06 permite carrito con faltante solo tras confirmar existencia y caduci
 test('sesión cerrada borra caché y descarta consultas tardías',async()=>{
     const f=preparar();let resolver;f.pausar(new Promise(r=>{resolver=r}));const carga=f.contexto.MicroCarmitaVentas.cargar();
     f.salir();resolver();await carga;assert.equal(f.contexto.obtenerDatos('ventas').length,0);assert.doesNotMatch(f.campos.listaVentas.innerHTML,/Cliente/);
+});
+
+test('pendientes excluye fiados anulados y pagados sin quitarlos del historial de ventas', async () => {
+    const f = preparar();
+    const filas = [
+        { id: 1, cliente: 'Pendiente', cliente_id: 1, tipo: 'fiado', estado: 'Activa', total: 4, abonado: 1, saldo: 3 },
+        { id: 2, cliente: 'Anulada', cliente_id: 2, tipo: 'fiado', estado: 'Anulada', total: 8, abonado: 0, saldo: 0 },
+        { id: 3, cliente: 'Pagada', cliente_id: 3, tipo: 'fiado', estado: 'Activa', total: 6, abonado: 6, saldo: 0 }
+    ];
+    f.contexto.MicroCarmitaAuth.api = async ruta => ruta === '/sales' ? { ventas: filas } : { registros: [] };
+    await f.contexto.MicroCarmitaVentas.cargar();
+    assert.match(f.campos.listaCuentas.innerHTML, /Pendiente/);
+    assert.doesNotMatch(f.campos.listaCuentas.innerHTML, /Anulada|Pagada/);
+    assert.match(f.campos.listaVentas.innerHTML, /Anulada/);
+    assert.equal(f.campos.saldoPendiente.textContent, '3');
+});
+
+test('detalle de venta presenta tablas, trazabilidad y texto escapado en la propia pantalla', async () => {
+    const f = preparar();
+    f.contexto.MicroCarmitaAuth.api = async () => ({ id: 1, estado: 'Anulada', total: 4, saldo: 0,
+        detalles: [{ nombre: '<Producto>', cantidad: 2, precio: 2, asignaciones: [{ loteId: 7, cantidad: 2 }], sin_existencia: 0 }],
+        historial: [{ creado_en: '2026-11-17T15:00:00Z', responsable: '<Operador>', accion: 'anular', motivo: '<Motivo>' }],
+        caja: [{ creado_en: '2026-11-17T15:00:00Z', tipo: 'reembolso', importe: -4 }] });
+    await f.contexto.MicroCarmitaVentas.detalle(1);
+    const html = f.campos.historialVentas.innerHTML;
+    assert.match(html, /<table>/);
+    assert.match(html, /Venta 1 · Anulada/);
+    assert.match(html, /&lt;Producto>/);
+    assert.match(html, /Lote 7: 2/);
+    assert.match(html, /Historial de cambios/);
+    assert.match(html, /reembolso/);
+    assert.doesNotMatch(html, /<Motivo>|<Operador>|<Producto>/);
+    assert.equal(f.campos.historialVentas.hidden, false);
+    f.salir();
+    assert.equal(f.campos.historialVentas.innerHTML, '');
+    assert.equal(f.campos.historialVentas.hidden, true);
+});
+
+test('historial del cliente conserva ventas anuladas, pagos y devoluciones en tablas', async () => {
+    const f = preparar();
+    f.contexto.MicroCarmitaAuth.api = async () => ({ totalAdeudado: 0, abonado: 0, saldo: 0, ventas: [
+        { id: 2, estado: 'Anulada', total: 8, saldo: 0, abonos: [{ creado_en: '2026-11-17T15:00:00Z', responsable: '<Nombre>', importe: 2 }],
+            caja: [{ creado_en: '2026-11-17T15:00:00Z', importe: -2 }] }
+    ] });
+    await f.contexto.MicroCarmitaVentas.cliente(2);
+    assert.match(f.campos.historialCobros.innerHTML, /Venta 2 · Anulada/);
+    assert.match(f.campos.historialCobros.innerHTML, /Devolución/);
+    assert.match(f.campos.historialCobros.innerHTML, /&lt;Nombre>/);
+    assert.match(f.campos.historialCobros.innerHTML, /<table>/);
+});
+
+test('ventas y fiados muestran la misma fecha ecuatoriana conservando datos UTC del API', async () => {
+    const f = preparar();
+    const venta = { id: 1, tipo: 'fiado', cliente_id: 1, cliente: 'Cliente', estado: 'Activa', total: 4, abonado: 0, saldo: 4, creado_en: '2026-11-18T04:59:00Z' };
+    f.contexto.MicroCarmitaAuth.api = async ruta => ruta === '/sales' ? { ventas: [venta] } : { registros: [] };
+    await f.contexto.MicroCarmitaVentas.cargar();
+    assert.match(f.campos.listaVentas.innerHTML, /17.*nov.*2026.*23:59/);
+    assert.match(f.campos.listaCuentas.innerHTML, /17.*nov.*2026.*23:59/);
+    assert.equal(f.contexto.obtenerDatos('ventas')[0].creado_en, '2026-11-18T04:59:00Z');
 });
