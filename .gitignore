@@ -29,3 +29,14 @@ coverage/
 .nyc_output/
 .auth-provision.ps1
 .auth-real-check.cjs
+
+# Respaldos y material de recuperación: nunca publicar.
+*.mcbackup
+*.sql.gz
+*.sql.enc
+mysql.cnf
+backup-state/
+backup-*.sql
+restore-*.sql
+*.decrypted.sql
+!backend/backup-test-fixture.sql

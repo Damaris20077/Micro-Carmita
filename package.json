@@ -7,7 +7,12 @@
     "test": "node --test modelo.test.cjs app.test.cjs backend/*.test.cjs",
     "db:check": "node backend/check-db.js",
     "auth:bootstrap": "node backend/bootstrap.js",
-    "start": "node backend/server.js"
+    "start": "node backend/server.js",
+    "backup:status": "node backend/backup-cli.js status",
+    "backup:run": "node backend/backup-cli.js run",
+    "backup:worker": "node backend/backup-cli.js worker",
+    "backup:unlock": "node backend/backup-cli.js unlock",
+    "backup:decrypt": "node backend/backup-cli.js decrypt"
   },
   "repository": {
     "type": "git",
@@ -22,6 +27,7 @@
   },
   "homepage": "https://github.com/Damaris20077/Micro-Carmita#readme",
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1171.0",
     "dotenv": "^18.0.4",
     "express": "^5.2.1",
     "mysql2": "^3.24.5",

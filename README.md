@@ -177,3 +177,7 @@ Ingresos, egresos, gastos administrativos y filtros por fecha se documentan en [
 ## Reportes y PDF
 
 Los reportes de ventas, cierre diario, pendientes, abonos semanales, finanzas, inventario y pedidos, con descarga PDF, están documentados en [REPORTS.md](REPORTS.md). Usan las tablas existentes sin migración adicional. El ensayo reversible queda preparado para ejecución autorizada.
+
+## Respaldos privados
+
+RF-37 y RF-38 se implementan mediante un worker de respaldo MySQL cifrado y almacenamiento privado en R2, desactivado por defecto. Configuración, programación quincenal y ensayo de recuperación aislado en [BACKUP.md](BACKUP.md). No se ejecutan respaldos al iniciar Express ni hay restauración automática.
