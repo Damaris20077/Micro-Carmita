@@ -353,3 +353,9 @@ button.btn.peligro:hover:not(:disabled) { background: var(--color-danger-soft); 
     #inventario .formulario > button, #pedidos #crearPedidoFormulario > button, #pedidos #recibirPedidoBoton { width: 100%; }
     .acciones-fila { gap: var(--space-3); }
 }
+
+/* Clientes en Ventas: acceso rápido junto al selector existente. */
+#ventas .venta-cliente-selector { display: flex; flex-wrap: wrap; align-items: stretch; gap: var(--space-2); }
+#ventas .venta-cliente-selector select { flex: 1 1 10rem; min-width: 0; }
+#ventas .venta-cliente-selector button { flex-shrink: 0; }
+@media (max-width: 480px) { #ventas .venta-cliente-selector { flex-direction: column; } }

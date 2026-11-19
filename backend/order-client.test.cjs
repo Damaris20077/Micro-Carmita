@@ -47,6 +47,17 @@ function preparar(rol = 'administrador') {
     return { contexto, campos, peticiones, callbacks, controles, perderRespuesta() { falloRecepcion = true; } };
 }
 
+test('borrador de pedido muestra producto por nombre y conserva ID interno en el POST',async()=>{
+    const f=preparar(),api=f.contexto.MicroCarmitaAuth.api;
+    f.contexto.MicroCarmitaAuth.api=(r,...a)=>r==='/inventory'?Promise.resolve({productos:[{id:812,nombre:'Arroz QA',activo:true}]}):api(r,...a);
+    await f.contexto.MicroCarmitaPedidos.cargar();
+    for(const [id,value]of Object.entries({pedidoProveedor:'1',pedidoProducto:'812',pedidoCantidad:'3',pedidoPrecio:'2'}))f.contexto.document.getElementById(id).value=value;
+    f.contexto.MicroCarmitaPedidos.agregar();assert.match(f.campos.pedidoDetalles.innerHTML,/Arroz QA/);assert.doesNotMatch(f.campos.pedidoDetalles.innerHTML,/>812</);
+    await f.contexto.MicroCarmitaPedidos.crear();
+    assert.equal(f.peticiones.find(p=>p.metodo==='POST').datos.detalles[0].productoId,812);
+    assert.match(f.campos.detallePedidoTitulo.textContent,/Pedido 1/);
+});
+
 test('lista de pedidos descarta una consulta anterior de la misma sesión',async()=>{
     const f=preparar(),resolver=[],api=f.contexto.MicroCarmitaAuth.api;
     f.contexto.MicroCarmitaAuth.api=(r,...a)=>r==='/orders'?new Promise(res=>resolver.push(res)):api(r,...a);

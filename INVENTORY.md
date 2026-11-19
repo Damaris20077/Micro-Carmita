@@ -169,3 +169,14 @@ Este procedimiento se preparó sin ejecutar la migración ni el ensayo sobre la 
 Nuevos archivos de este bloque son `002_catalogo_inventario.sql`, `inventory-repository.js`, `inventory-service.js`, `inventory-routes.js`, sus pruebas en backend, `inventory-client.js` y este documento. Se modifican `backend/app.js`, `backend/server.js`, `modelo.js`, `auth-client.js`, `index.html` y `README.md`. El resto de pruebas históricas se conserva.
 
 Las pruebas cubren validación, permisos por rol, snapshot con límites de alertas, lotes, conciliación y stock negativo, motivos y responsables, conservación de lotes al editar, archivo, rollback ante fallo de historial y ajustes concurrentes. La integración HTTP utiliza Express y middleware de sesión/CSRF reales con persistencia simulada. Las pruebas del frontend cargan `app.js` junto al adaptador y comprueban que el catálogo procede de la API. La ejecución contra MySQL real del bloque nuevo permanece pendiente de aplicar `002`.
+
+
+## Ubicación actual de Clientes — 19 de noviembre de 2026
+
+El formulario y listado de Clientes dejan Inventario y pasan a Gestión de Ventas, entre preparación/carrito e historial. Se mantienen sus IDs, campos y evento de registro; no se elimina funcionalidad ni se crea otra tabla o ruta. Para registrar un cliente, abrir Ventas y utilizar + Nuevo cliente o Gestión de clientes.
+
+inventory-client.js carga exclusivamente inventario y proveedores; no consulta ni pinta listaClientes. El catálogo de clientes, los selectores de ventas/cuentas y el alta son responsabilidad de sales-client.js. El método público contacto('clientes') se conserva como delegación para compatibilidad del evento existente. contacto('proveedores') mantiene su operación anterior.
+
+Productos, lotes, caducidad, alertas, entradas, ajustes, historial, proveedores y Archivar/Reactivar permanecen sin cambios en este traslado. Administrador y Vendedor conservan exactamente sus permisos de clientes mediante los servicios existentes. No cambia SQL, esquema, datos reales ni dependencias. Los textos anteriores de este documento que ubican Clientes en Inventario describen el estado histórico previo.
+
+Suite final: 665 exitosas, 0 fallidas/omitidas; producción 0 vulnerabilidades; diff --check sin errores. Las comprobaciones son aisladas; no se reejecuta una migración ni un ensayo de escritura en MySQL real. Pendiente revisar visualmente Inventario sin el bloque retirado y Ventas con el formulario único, manteniendo todas las otras secciones.

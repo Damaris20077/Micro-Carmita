@@ -56,6 +56,7 @@ function prepararCliente({ real = false } = {}) {
         function iniciarSesion() {}
         function cerrarSesion() {}
         function mostrarUsuarios() {}
+        function mostrarSeccion() {}
         function crearUsuario() {}
         function cambiarEstadoUsuario() {}
         function aplicarSesion() { renderizados += 1; }

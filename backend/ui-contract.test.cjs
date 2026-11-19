@@ -13,7 +13,8 @@ test('rediseño conserva IDs, eventos y atributos funcionales de los 161 control
         for (const x of m[2].matchAll(/([\w:-]+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+)))?/g)) {
             if (/^(id|type|name|value|min|max|step|maxlength|minlength|autocomplete|data-permiso|required|disabled|hidden|readonly|onsubmit|onclick|onchange)$/.test(x[1])) a[x[1]] = x[2] ?? x[3] ?? x[4] ?? true;
         }
-        return Object.keys(a).length && !['contenido-principal', 'finanzaRegistroEstado'].includes(a.id) && !a.id?.startsWith('inicioPanel') ? { tag: m[1], ...a } : null;
+        return Object.keys(a).length && !['contenido-principal', 'finanzaRegistroEstado', 'estadoClientes'].includes(a.id)
+            && a.onclick !== 'MicroCarmitaVentas.nuevoCliente()' && !a.id?.startsWith('inicioPanel') ? { tag: m[1], ...a } : null;
     }).filter(Boolean).sort((a, b) => JSON.stringify(a).localeCompare(JSON.stringify(b), 'en'));
     assert.equal(controles.length, 161);
     // Contrato anterior a esta fase, sin clases/estilos ni orden global de presentación.
@@ -24,7 +25,7 @@ test('rediseño conserva IDs, eventos y atributos funcionales de los 161 control
 
 test('Inventario conserva sus secciones en flujo vertical y sin pestañas', () => {
     const inventario = html.slice(html.indexOf('<section id="inventario"'), html.indexOf('<section id="movimientos"'));
-    const titulos = ['Agregar producto', 'Productos registrados', 'Lotes y caducidad', 'Entrada de lote', 'Ajuste manual de inventario', 'Historial de inventario', 'Clientes', 'Proveedores'];
+    const titulos = ['Agregar producto', 'Productos registrados', 'Lotes y caducidad', 'Entrada de lote', 'Ajuste manual de inventario', 'Historial de inventario', 'Proveedores'];
     let posicion = -1;
     for (const titulo of titulos) { const siguiente = inventario.indexOf(titulo, posicion + 1); assert.ok(siguiente > posicion, titulo); posicion = siguiente; }
     assert.doesNotMatch(inventario, /role="tab(list|panel)?"/);

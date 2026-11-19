@@ -35,7 +35,7 @@
             if(usuarioActual()!==identidad||numero!==consulta)return;
             movimientos=r.movimientos;
             el('listaMovimientos').innerHTML=movimientos.map(m=>`<tr><td><span class="finanza-tipo finanza-tipo--${m.tipo==='ingreso'?'ingreso':'egreso'}">${textoSeguro(m.tipo)}</span><span class="finanza-meta">${textoSeguro(m.origen)}</span></td>
-                <td><strong>${textoSeguro(m.categoria)}</strong>${m.gastoAdministrativo?' · Gasto administrativo':''}<span class="finanza-descripcion">${textoSeguro(m.motivo)}</span><span class="finanza-meta">${textoSeguro(m.responsable)} · ${textoSeguro(m.id)}</span></td>
+                <td><strong>${textoSeguro(m.categoria)}</strong>${m.gastoAdministrativo?' · Gasto administrativo':''}<span class="finanza-descripcion">${textoSeguro(m.motivo)}</span><span class="finanza-meta">${textoSeguro(m.responsable)}</span></td>
                 <td class="finanza-importe">${textoSeguro(dinero(m.importe))}</td><td>${textoSeguro(MicroCarmitaFechas.calendario(m.fecha))}<span class="finanza-meta">${textoSeguro(MicroCarmitaFechas.instante(m.registradoEn))}</span></td></tr>`).join('')||'<tr><td colspan="4">No hay movimientos en las fechas consultadas.</td></tr>';
             el('resumenFinanzas').innerHTML=`<span class="finanza-resumen finanza-resumen--ingreso">Ingresos<strong>${textoSeguro(dinero(r.ingresos))}</strong></span><span class="finanza-resumen finanza-resumen--egreso">Egresos<strong>${textoSeguro(dinero(r.egresos))}</strong></span><span class="finanza-resumen finanza-resumen--neto${Number(r.neto)<0?' finanza-resumen--negativo':''}">Saldo neto<strong>${textoSeguro(dinero(r.neto))}</strong></span>`;
             informar('estadoFinanzas','exito','Consulta actualizada.');return true;

@@ -34,11 +34,14 @@
         try{
             const r=await MicroCarmitaAuth.api(criterios);if(usuarioActual()!==identidad||numero!==consulta)return;
             if(ruta()!==criterios){el('contenidoReportes').innerHTML='';el('estadoReportes').textContent='Los filtros cambiaron. Consulte de nuevo.';return;}
+            const columnas = r.columnas.filter(c => c.clave !== 'id' || !['pendientes','inventario','finanzas','cierre'].includes(el('reporteTipo').value));
+            const dato = (fila, columna) => columna.clave === 'nombre' && el('reporteTipo').value === 'pendientes'
+                ? globalThis.MicroCarmitaVentas?.nombreCliente?.(fila.id) || fila[columna.clave] : fila[columna.clave];
             el('contenidoReportes').innerHTML=`<h2>${textoSeguro(r.titulo)}</h2><p>Generado UTC: ${textoSeguro(r.generadoEn)}</p>`
                 +r.resumen.map(s=>`<p><strong>${textoSeguro(s.etiqueta)}: ${textoSeguro(valor(s.valor,s.formato))}</strong></p>`).join('')
                 +r.notas.map(n=>`<p>${textoSeguro(n)}</p>`).join('')
-                +`<div class="tabla-scroll"><table><thead><tr>${r.columnas.map(c=>`<th>${textoSeguro(c.titulo)}</th>`).join('')}</tr></thead><tbody>`
-                +r.filas.map(f=>`<tr>${r.columnas.map(c=>`<td style="white-space:pre-wrap">${textoSeguro(valor(f[c.clave],c.formato))}</td>`).join('')}</tr>`).join('')+'</tbody></table></div>'
+                +`<div class="tabla-scroll"><table><thead><tr>${columnas.map(c=>`<th>${textoSeguro(c.titulo)}</th>`).join('')}</tr></thead><tbody>`
+                +r.filas.map(f=>`<tr>${columnas.map(c=>`<td style="white-space:pre-wrap">${textoSeguro(valor(dato(f,c),c.formato))}</td>`).join('')}</tr>`).join('')+'</tbody></table></div>'
                 +(r.filas.length?'':'<p>Sin registros para los criterios seleccionados.</p>');
             el('estadoReportes').textContent='';
         }catch(e){if(usuarioActual()!==identidad||numero!==consulta)return;el('contenidoReportes').innerHTML='';el('estadoReportes').textContent=ruta()!==criterios?'Los filtros cambiaron. Consulte de nuevo.':e.message;}

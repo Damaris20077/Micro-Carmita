@@ -4,7 +4,7 @@ const vm = require('node:vm');
 const fs = require('node:fs');
 const path = require('node:path');
 
-function preparar(rol = 'administrador') {
+function preparar(rol = 'administrador', {stock=2,activo=true} = {}) {
     const campos = {};
     const llamadas = [];
     const avisos = [];
@@ -12,8 +12,8 @@ function preparar(rol = 'administrador') {
     const controles = [{ disabled:false, attrs:{}, setAttribute(k,v){this.attrs[k]=v}, removeAttribute(k){delete this.attrs[k]} }];
     let fallo = false;
     const productos = [{ id: 1, nombre: 'Leche', categoria: 'Lácteos', precio_compra: 0.8, precio_venta: 1.25,
-        proveedor_id: 1, activo: true, stock: 2, stockBajo: true,
-        lotes: [{ id: 1, codigo: 'L1', cantidad: 2, fecha_ingreso: '2026-11-17', caducidad: '2026-11-22', estado: 'Por caducar' }] }];
+        proveedor_id: 1, activo, stock, stockBajo: stock<3,
+        lotes: [{ id: 1, codigo: 'L1', cantidad: stock, fecha_ingreso: '2026-11-17', caducidad: '2026-11-22', estado: 'Por caducar' }] }];
     const contexto = vm.createContext({
         crypto: { randomUUID: require('node:crypto').randomUUID },
         document: {
@@ -33,6 +33,7 @@ function preparar(rol = 'administrador') {
             setItem() { assert.fail('Se escribió en almacenamiento local'); }
         },
         alert(mensaje) { avisos.push(mensaje); },
+        confirm:()=>true,
         MicroCarmitaAuth: {
             async api(ruta, metodo, datos) {
                 llamadas.push({ ruta, metodo, datos });
@@ -40,6 +41,7 @@ function preparar(rol = 'administrador') {
                 if (ruta === '/inventory') return { productos: structuredClone(productos) };
                 if (ruta === '/proveedores') return { registros: [{ id: 1, nombre: 'Proveedor' }] };
                 if (ruta === '/clientes') return { registros: [{ id: 1, nombre: 'Cliente' }] };
+                if (ruta === '/products/1' && metodo === 'PATCH') { productos[0].activo=datos.activo; return {id:1}; }
                 return {};
             }
         }
@@ -52,6 +54,105 @@ function preparar(rol = 'administrador') {
     vm.runInContext(fs.readFileSync(path.join(__dirname, '..', 'inventory-client.js'), 'utf8'), contexto);
     return { contexto, campos, llamadas, avisos, adminControls, controles, fallar() { fallo = true; } };
 }
+
+test('proveedores muestran nombres y contexto sin prefijo ID; selección conserva proveedorId del lote',async()=>{
+    const f=preparar(),api=f.contexto.MicroCarmitaAuth.api,posts=[];
+    f.contexto.MicroCarmitaAuth.api=(r,m,d)=>{
+        if(r==='/proveedores')return Promise.resolve({registros:[{id:13,nombre:'Distribuidor',telefono:'0001'},{id:27,nombre:'Distribuidor',telefono:'0002'}]});
+        if(m==='POST')posts.push({r,d});return api(r,m,d);
+    };
+    await f.contexto.MicroCarmitaInventario.cargar();
+    assert.doesNotMatch(f.campos.listaProveedores.textContent,/\b(?:13|27) —/);
+    assert.match(f.campos.productoProveedor.innerHTML,/<option value="13">Distribuidor — Tel\.: 0001/);
+    assert.match(f.campos.productoProveedor.innerHTML,/<option value="27">Distribuidor — Tel\.: 0002/);
+    for(const [id,value]of Object.entries({entradaProducto:'1',entradaProveedor:'27',entradaCodigo:'LOTE-QA',entradaCantidad:'1',entradaCompra:'2',entradaFecha:'2026-11-19',entradaCaducidad:''}))f.contexto.document.getElementById(id).value=value;
+    await f.contexto.MicroCarmitaInventario.entrada();assert.equal(posts[0].d.proveedorId,27);assert.equal(posts[0].r,'/products/1/lots');
+    assert.equal(f.contexto.MicroCarmitaInventario.codigoLote(1),'L1');assert.match(f.campos.listaLotes.innerHTML,/L1/);
+});
+
+test('edición mantiene la entrada numérica necesaria de proveedor con opciones contextualizadas en el propio diálogo',async()=>{
+    const f=preparar();await f.contexto.MicroCarmitaInventario.cargar();
+    const respuestas=['Leche','Lácteos','0.8','1.25','1'],preguntas=[];
+    f.contexto.prompt=(mensaje,valor)=>{preguntas.push({mensaje,valor});return respuestas.shift()};
+    await f.contexto.editarProducto(1);
+    assert.match(preguntas[4].mensaje,/1: Proveedor/);assert.equal(preguntas[4].valor,1);
+    assert.equal(f.llamadas.find(l=>l.metodo==='PATCH').datos.proveedorId,1);
+});
+
+test('archivar con stock positivo o negativo muestra la regla sin enviar PATCH',async()=>{
+    for(const stock of [2,-1]){
+        const f=preparar('administrador',{stock});await f.contexto.MicroCarmitaInventario.cargar();await f.contexto.eliminarProducto(1);
+        assert.match(f.campos.estadoInventario.textContent,/existencias deben ser cero/);
+        assert.equal(f.campos.estadoInventario.attrs['data-estado'],'error');
+        assert.equal(f.llamadas.filter(l=>l.metodo==='PATCH').length,0);
+    }
+});
+
+test('Archivar confirma, conserva datos y muestra Reactivar en la lista completa',async()=>{
+    const f=preparar('administrador',{stock:0});await f.contexto.MicroCarmitaInventario.cargar();let confirmacion;
+    f.contexto.confirm=m=>{confirmacion=m;return true};await f.contexto.eliminarProducto(1);
+    assert.match(confirmacion,/conservando sus lotes, historial y registros relacionados/);
+    const patches=f.llamadas.filter(l=>l.metodo==='PATCH');assert.equal(patches.length,1);assert.equal(patches[0].datos.activo,false);
+    assert.match(f.campos.listaInventario.innerHTML,/Archivado/);assert.match(f.campos.listaInventario.innerHTML,/MicroCarmitaInventario.reactivar\(1\)/);
+    assert.equal(f.contexto.obtenerDatos('inventario').length,0);
+    assert.match(f.campos.estadoInventario.textContent,/Producto archivado correctamente/);assert.match(f.campos.listaLotes.innerHTML,/L1/);
+});
+
+test('Reactivar reutiliza PATCH, restaura selección operativa y conserva lote y precios',async()=>{
+    const f=preparar('administrador',{stock:0,activo:false});await f.contexto.MicroCarmitaInventario.cargar();
+    await f.contexto.MicroCarmitaInventario.reactivar(1);
+    const patch=f.llamadas.find(l=>l.metodo==='PATCH');assert.equal(patch.datos.activo,true);
+    assert.equal(patch.datos.precioCompra,0.8);assert.equal(patch.datos.precioVenta,1.25);
+    assert.match(f.campos.listaInventario.innerHTML,/onclick="eliminarProducto\(1\)"/);
+    assert.equal(f.contexto.obtenerDatos('inventario').length,1);assert.match(f.campos.listaLotes.innerHTML,/L1/);
+    assert.match(f.campos.estadoInventario.textContent,/Producto reactivado correctamente/);
+});
+
+test('editar la ficha de un archivado no lo reactiva implícitamente',async()=>{
+    const f=preparar('administrador',{stock:0,activo:false});await f.contexto.MicroCarmitaInventario.cargar();
+    const respuestas=['Leche','Lácteos','0.8','1.25','1'];f.contexto.prompt=()=>respuestas.shift();
+    await f.contexto.editarProducto(1);assert.equal(f.llamadas.find(l=>l.metodo==='PATCH').datos.activo,false);
+    assert.match(f.campos.listaInventario.innerHTML,/Archivado/);
+});
+
+test('cancelar confirmación no escribe; Vendedor no puede archivar ni reactivar desde métodos directos',async()=>{
+    const f=preparar('administrador',{stock:0});await f.contexto.MicroCarmitaInventario.cargar();f.contexto.confirm=()=>false;await f.contexto.eliminarProducto(1);
+    assert.equal(f.llamadas.filter(l=>l.metodo==='PATCH').length,0);
+    const v=preparar('vendedor',{stock:0,activo:false});await v.contexto.MicroCarmitaInventario.cargar();
+    await v.contexto.MicroCarmitaInventario.reactivar(1);await v.contexto.eliminarProducto(1);
+    assert.equal(v.llamadas.filter(l=>l.metodo==='PATCH').length,0);assert.doesNotMatch(v.campos.listaInventario.innerHTML,/>Reactivar<|>Archivar</);
+    assert.match(v.campos.estadoInventario.textContent,/Solo el Administrador/);
+});
+
+test('archivo evita duplicados y errores HTTP quedan visibles con controles liberados',async()=>{
+    const f=preparar('administrador',{stock:0});await f.contexto.MicroCarmitaInventario.cargar();let rechazar,patches=0;
+    const api=f.contexto.MicroCarmitaAuth.api;
+    f.contexto.MicroCarmitaAuth.api=(r,m,d)=>m==='PATCH'?(patches++,new Promise((res,j)=>{rechazar=j})):api(r,m,d);
+    const archivo=f.contexto.eliminarProducto(1);await f.contexto.eliminarProducto(1);assert.equal(patches,1);assert.ok(f.controles[0].disabled);
+    rechazar(Object.assign(new Error('Solo se archivan productos con stock cero.'),{status:409}));await archivo;
+    assert.equal(f.campos.estadoInventario.attrs['data-estado'],'error');assert.match(f.campos.estadoInventario.textContent,/stock cero/);
+    assert.equal(f.controles[0].disabled,false);
+});
+
+test('archivo confirmado seguido de error de consulta advierte no repetir la escritura',async()=>{
+    const f=preparar('administrador',{stock:0});await f.contexto.MicroCarmitaInventario.cargar();const api=f.contexto.MicroCarmitaAuth.api;
+    f.contexto.MicroCarmitaAuth.api=(r,m,d)=>r==='/inventory'?Promise.reject(new Error('Sin conexión')):api(r,m,d);
+    await f.contexto.eliminarProducto(1);
+    assert.equal(f.llamadas.filter(l=>l.metodo==='PATCH').length,1);
+    assert.equal(f.campos.estadoInventario.attrs['data-estado'],'error');
+    assert.match(f.campos.estadoInventario.textContent,/archivado correctamente.*No repita la operación/);
+});
+
+test('archivo confirmado no reutiliza una lectura pendiente anterior a la escritura',async()=>{
+    const f=preparar('administrador',{stock:0});await f.contexto.MicroCarmitaInventario.cargar();
+    const api=f.contexto.MicroCarmitaAuth.api;let resolver,pendiente=true;
+    f.contexto.MicroCarmitaAuth.api=(r,m,d)=>r==='/inventory'&&pendiente?new Promise(res=>{resolver=res}):api(r,m,d);
+    const vieja=f.contexto.MicroCarmitaInventario.cargar();const archivo=f.contexto.eliminarProducto(1);
+    await new Promise(res=>setImmediate(res));pendiente=false;
+    resolver({productos:[{id:1,nombre:'Leche',categoria:'Lácteos',precio_compra:0.8,precio_venta:1.25,proveedor_id:1,activo:true,stock:0,lotes:[]}]});
+    await vieja;await archivo;
+    assert.match(f.campos.listaInventario.innerHTML,/Reactivar/);assert.match(f.campos.estadoInventario.textContent,/archivado correctamente/);
+});
 
 test('inventario distingue stock y caducidad remotos y separa alertas sin recalcular sus reglas', async () => {
     const f=preparar(); await f.contexto.MicroCarmitaInventario.cargar();

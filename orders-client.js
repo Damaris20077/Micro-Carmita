@@ -12,6 +12,7 @@
     let ocupado = false;
     let consultaDetalle = 0;
     let consultaLista = 0;
+    let productosCatalogo = [];
     const admin = () => usuarioActual()?.rol === 'administrador';
     function informar(tipo, mensaje) {
         el('estadoPedidos').textContent = mensaje;
@@ -35,8 +36,9 @@
             el('crearPedidoFormulario').hidden = !admin();
             const seleccionProveedor = valor('pedidoProveedor');
             el('pedidoProveedor').innerHTML = '<option value="">Seleccione</option>' + proveedores.registros
-                .map(p => `<option value="${Number(p.id)}">${textoSeguro(p.nombre)}</option>`).join('');
+                .map(p => `<option value="${Number(p.id)}">${textoSeguro(MicroCarmitaInventario.etiquetaProveedor?.(p, proveedores.registros) || p.nombre)}</option>`).join('');
             el('pedidoProveedor').value = seleccionProveedor;
+            productosCatalogo = inventario.productos;
             el('pedidoProducto').innerHTML = '<option value="">Seleccione</option>' + inventario.productos.filter(p => p.activo)
                 .map(p => `<option value="${Number(p.id)}">${textoSeguro(p.nombre)}</option>`).join('');
             el('listaPedidos').innerHTML = pedidos.pedidos.map(p => `<tr>
@@ -47,7 +49,7 @@
         } catch (error) { if (usuarioActual() === identidad && numero === consultaLista) informar('error', `${error.message} Compruebe la migración 003.`); }
     }
     function pintarDetalles() {
-        el('pedidoDetalles').innerHTML = detalles.map((d, i) => `<tr><td>${d.productoId}</td><td>${d.cantidad}</td>
+        el('pedidoDetalles').innerHTML = detalles.map((d, i) => `<tr><td>${textoSeguro(productosCatalogo.find(p => Number(p.id) === d.productoId)?.nombre || 'Producto no disponible')}</td><td>${d.cantidad}</td>
             <td>${dinero(d.precioCompra)}</td><td><button class="btn secundaria" data-pedido-control onclick="MicroCarmitaPedidos.quitar(${i})">Quitar</button></td></tr>`).join('') || '<tr><td colspan="4">Agregue los productos que solicitará al proveedor.</td></tr>';
         controles();
     }
@@ -178,7 +180,7 @@
     document.addEventListener('microcarmita:sesion', () => {
         consultaDetalle++;
         consultaLista++;
-        detalles = []; pedido = null; envio = null;
+        detalles = []; pedido = null; envio = null; productosCatalogo = [];
         el('listaPedidos').textContent = ''; el('recepcionDetalles').textContent = '';
         el('historialRecepciones').textContent = ''; el('detallePedidoTitulo').textContent = 'Seleccione un pedido';
         el('detallePedidoObservaciones').textContent = ''; pintarDetalles();

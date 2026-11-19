@@ -6,16 +6,58 @@
     let usuarios = [];
     let entrando = false;
     let revisionSesion = 0, consultaUsuarios = 0, operacionUsuarios = null;
+    const claveVista = 'micro-carmita-vista';
+    const secciones = ['inicio', 'ventas', 'cuentas', 'inventario', 'movimientos', 'reportes', 'pedidos', 'usuarios'];
+    function borrarVista() { try { globalThis.sessionStorage?.removeItem(claveVista); } catch {} }
+    function guardarVista(seccion) {
+        if (!sesion || !secciones.includes(seccion) || !tienePermiso(seccion)) return;
+        try { globalThis.sessionStorage?.setItem(claveVista, JSON.stringify({ usuarioId: sesion.id, seccion })); } catch {}
+    }
+    function restaurarVista() {
+        let nombre = 'inicio';
+        try {
+            const vista = JSON.parse(globalThis.sessionStorage?.getItem(claveVista) || 'null');
+            if (vista?.usuarioId === sesion.id && secciones.includes(vista.seccion)
+                && document.getElementById(vista.seccion) && tienePermiso(vista.seccion)) nombre = vista.seccion;
+        } catch {}
+        const actual = document.querySelector?.('.seccion.activa-seccion')?.id;
+        if (actual !== nombre && document.getElementById(nombre)) {
+            const boton = [...document.querySelectorAll('.menu[data-permiso]')].find(b => b.dataset.permiso === nombre);
+            mostrarSeccion(nombre, boton);
+        }
+        guardarVista(nombre);
+    }
+    const navegarAnterior = mostrarSeccion;
+    mostrarSeccion = (nombre, boton) => {
+        const resultado = navegarAnterior(nombre, boton);
+        if (sesion && secciones.includes(nombre) && document.getElementById(nombre) && tienePermiso(nombre)) guardarVista(nombre);
+        return resultado;
+    };
+    // Solo creación sin enviar: nunca se ejecuta al navegar entre módulos.
+    function limpiarCreacion() {
+        const selector = '#ventas .ventas-seleccion input, #ventas .ventas-seleccion select, #ventas .gestion-clientes input, #inventario .formulario input, #inventario .formulario select, #movimientos .finanzas-registro input, #movimientos .finanzas-registro select, #crearPedidoFormulario input, #crearPedidoFormulario select, #usuarios .formulario input, #usuarios .formulario select';
+        for (const campo of document.querySelectorAll(selector)) {
+            if (campo.id === 'finanzaFecha') {
+                const partes = Object.fromEntries(new Intl.DateTimeFormat('en-CA', { timeZone:'America/Guayaquil',year:'numeric',month:'2-digit',day:'2-digit' }).formatToParts(new Date()).map(p => [p.type,p.value]));
+                campo.value = `${partes.year}-${partes.month}-${partes.day}`;
+            } else if (campo.type === 'checkbox' || campo.type === 'radio') campo.checked = campo.defaultChecked;
+            else if (campo.tagName === 'SELECT') campo.value = [...campo.options].find(o => o.defaultSelected)?.value ?? campo.options[0]?.value ?? '';
+            else campo.value = campo.defaultValue || '';
+            if (campo.type !== 'password') campo.setAttribute?.('autocomplete', 'off');
+        }
+    }
     const renderizarSesion = aplicarSesion;
     aplicarSesion = () => {
         const panel = document.querySelector?.('.contenedor');
         if (panel) panel.inert = !sesion;
         renderizarSesion();
+        if (sesion) restaurarVista();
         if (!sesion) document.getElementById('loginUsuario')?.focus?.();
     };
     permisosPorRol.administrador = [...permisosPorRol.administrador, 'usuarios'];
 
     function limpiarSesion() {
+        borrarVista();
         revisionSesion++; consultaUsuarios++;
         sesion = null;
         csrfToken = '';
@@ -73,6 +115,7 @@
         evento.preventDefault();
         if (entrando) return;
         entrando = true;
+        borrarVista(); // Login explícito inicia una navegación nueva, aunque repita la cuenta.
         const revision = ++revisionSesion;
         const boton = document.getElementById('loginBoton');
         if (boton) { boton.disabled = true; boton.setAttribute?.('aria-busy', 'true'); }
@@ -207,5 +250,6 @@
         return blob;
     }
     globalThis.MicroCarmitaAuth = { iniciarSesion, cerrarSesion, crearUsuario, editarUsuario, api, archivo };
-    document.addEventListener('DOMContentLoaded', restaurarSesion);
+    document.addEventListener('DOMContentLoaded', () => { limpiarCreacion(); return restaurarSesion(); });
+    globalThis.addEventListener?.('pageshow', evento => { if (!evento.persisted) limpiarCreacion(); });
 })();

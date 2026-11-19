@@ -10,6 +10,21 @@ function preparar(rol='administrador'){
     return {c,campos,botones,peticiones,get descargas(){return descargas},pausar(p){espera=p},salir(){actor=null;eventos['microcarmita:sesion']()}};
 }
 
+test('reportes HTML ocultan columnas de ID técnico pero conservan referencias operativas y respuesta original',async()=>{
+    for(const tipo of ['pendientes','inventario','finanzas','cierre','ventas','pedidos','pagos']){
+        const f=preparar();f.c.document.getElementById('reporteTipo').value=tipo;
+        const respuesta={titulo:'QA',generadoEn:'2026-11-19',resumen:[],notas:[],columnas:[{clave:'id',titulo:'Referencia'},{clave:'nombre',titulo:'Nombre'}],filas:[{id:900,nombre:'Nombre QA'}]};
+        const antes=JSON.stringify(respuesta);f.c.MicroCarmitaAuth.api=async()=>respuesta;await f.c.MicroCarmitaReportes.cargar();
+        if(['ventas','pedidos','pagos'].includes(tipo))assert.match(f.campos.contenidoReportes.innerHTML,/>900</);
+        else assert.doesNotMatch(f.campos.contenidoReportes.innerHTML,/>900</);
+        assert.match(f.campos.contenidoReportes.innerHTML,/Nombre QA/);assert.equal(JSON.stringify(respuesta),antes);
+        if(tipo==='pendientes'){
+            f.c.MicroCarmitaVentas={nombreCliente:id=>id===900?'Nombre QA — Tel.: 0001':undefined};
+            await f.c.MicroCarmitaReportes.cargar();assert.match(f.campos.contenidoReportes.innerHTML,/Nombre QA — Tel\.: 0001/);
+        }
+    }
+});
+
 test('consulta de reportes muestra carga y libera botón ante un error de red',async()=>{
     const f=preparar();let rechazar;
     f.c.MicroCarmitaAuth.api=()=>new Promise((r,j)=>{rechazar=j});

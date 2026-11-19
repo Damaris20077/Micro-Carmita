@@ -4,7 +4,7 @@ Fecha: 17 de noviembre de 2026. Rama comprobada: desarrollo-jose. Entrega previs
 
 ## Dictamen y alcance
 
-El corte vigente del 18 de noviembre de 2026 queda en 634 pruebas exitosas; véase la auditoría funcional y de usabilidad al final. Las 573 de la auditoría de permisos y los demás resultados anteriores se conservan como evidencia histórica. El sistema tiene implementación de los 38 RF, pero no se declara aceptación integral de producción: RF-37/38 continúan desactivados y sin ensayo real; faltan navegación visual, concurrencia con conexiones independientes y persistencia tras commit/reinicio. No se ejecutaron escrituras sobre MySQL real, migraciones, respaldos, restauraciones ni transferencias a R2.
+El corte vigente del 19 de noviembre de 2026 queda en 673 pruebas exitosas; véase la revisión de identificadores visibles al final. Los resultados anteriores se conservan como evidencia histórica. El sistema tiene implementación de los 38 RF, pero no se declara aceptación integral de producción: RF-37/38 continúan desactivados y sin ensayo real; faltan navegación visual, concurrencia con conexiones independientes y persistencia tras commit/reinicio. No se ejecutaron escrituras sobre MySQL real, migraciones, respaldos, restauraciones ni transferencias a R2.
 
 Las integraciones reales satisfactorias de RF-01 a RF-36 proceden del contexto confirmado por el usuario. Esta revisión ejecutó pruebas aisladas, inspección de código y consultas MySQL exclusivamente SELECT; no volvió a autenticar usuarios reales ni a tocar sesiones. Un ensayo con rollback comprueba operaciones dentro de una transacción, pero no demuestra persistencia tras commit ni carreras entre dos conexiones independientes.
 
@@ -484,3 +484,149 @@ El escaneo completo de los candidatos no encontró coincidencias con el secreto 
 Verificación para cierre: npm test, **634 exitosas, 0 fallidas, 0 omitidas, 0 canceladas y 0 pendientes**, salida 0 (6745.6426 ms); npm audit --omit=dev --json, **0 vulnerabilidades de producción**, salida 0 tras consultar el registro fuera del entorno restringido; git diff --check sin errores. rf.txt está versionado e idéntico a HEAD; app.js, modelo.js, migraciones y dependencias no tienen cambios. UI_UX.md y este documento se incluyen con sus decisiones, matrices y limitaciones. El área de preparación estaba vacía antes del cierre y se utilizará una lista explícita de candidatos revisados.
 
 Este cierre solo autoriza un commit LOCAL. No cambia el diseño aprobado ni constituye autorización de push, merge, migraciones, datos MySQL o R2. Las verificaciones manuales, de concurrencia, persistencia y respaldo real descritas arriba siguen pendientes para publicación/aceptación posterior.
+
+
+## Archivar/Reactivar, recarga y navegación — 18 de noviembre de 2026
+
+Rama desarrollo-jose; HEAD inicial c48d31a y árbol limpio. Línea base ejecutada: 634 pruebas exitosas, 0 fallidas/omitidas (6582.6805 ms). Se utilizaron senior-qa y senior-backend con pruebas Node/VM y HTTP de Express, exclusivamente con persistencia simulada. No se ejecutó una operación contra MySQL real. La eliminación definitiva queda descartada; se mantiene activo/inactivo y la infraestructura existente.
+
+### Diagnóstico y evidencia
+
+| Comportamiento | Evidencia comprobada | Corrección / límite |
+|---|---|---|
+| Archivar parece no responder | El botón apunta a eliminarProducto(id); el adaptador usa PATCH /api/products/:id. La ruta llama editarProducto con autorización administrativa en servicio y transacción. La regla existente devuelve 409 con stock diferente de cero, incluido negativo. | Se conserva esa regla: la interfaz explica la condición antes de enviar y mantiene el rechazo del servidor para carreras. No se autoajusta stock. Sin captura de la petición del usuario no se afirma que este fuese el motivo exacto de su caso. |
+| Reactivación ausente | El servicio y repositorio ya aceptan activo=true; el listado GET incluye archivados. El frontend mostraba Archivar también para archivados y Editar enviaba siempre activo=true. | La misma lista identifica Archivado y ofrece Reactivar solo al Administrador. Editar conserva el estado actual; reactivar es explícito. |
+| Lista sin actualizar después de archivo | Una lectura en vuelo anterior a la escritura podía reutilizarse como refresco y volver a pintar el estado anterior. | Esperar la lectura en vuelo y realizar una consulta nueva después de la operación; prueba con promesas controladas. |
+| Mensajes de archivo | La operación terminaba con un mensaje genérico de consulta. | Confirmación antes del cambio, éxito específico y error visible. Si PATCH se confirma y falla GET, indicar que fue guardado y no repetirlo. Bloqueo de operación existente evita simultaneidad en la pestaña. |
+| Regreso a Inicio tras F5 | HTML inicial activa Inicio; no había persistencia de la sección. | Guardar la sección en sessionStorage y restaurarla solo después de /auth/me y de validar permisos del usuario real autenticado. |
+| Campos aparentan persistir | Los adaptadores no guardan borradores de creación en almacenamiento. Sí conservaban valores en el DOM tras algunas operaciones; el navegador también puede restaurar/autocompletar campos. | Limpieza de creación en DOMContentLoaded y pageshow de documento nuevo. La restauración/autocompletado específicos del navegador son hipótesis pendientes de ensayo real, no un hecho observado aquí. |
+| Datos guardados reaparecen | Inventario, clientes y ventas se consultan desde la API; son registros persistidos, distintos de campos sin enviar. | No se borran registros del servidor. Prueba de dos contextos nuevos consultando la misma fuente simulada y conservando productos archivados, lotes, clientes y ventas. |
+
+El GET de inventario ya trae todos los productos; no se añadió filtro, pantalla ni ruta nueva para consultar archivados. Se conservan lotes, historial y referencias, y los selectores operativos siguen usando productos activos. No se ejecutan DELETE ni se cambia SQL, esquema, reglas de stock, permisos, RF o finanzas. Los cambios de estado usan la ficha y estado booleano existentes. HTTP simulado confirma 409 con stock positivo/negativo, 200 al archivar con cero, 403 al reactivar como Vendedor y 200 como Administrador; el historial y lotes permanecen.
+
+### Persistencia de navegación y limpieza
+
+- Única clave nueva: micro-carmita-vista en sessionStorage. Contiene solo usuarioId (identificador interno, no credencial) y seccion. No contiene nombre, rol, contraseña, token, cookie, carrito ni datos de negocio; no se usa localStorage.
+- Se valida lista cerrada de ocho módulos, existencia en el DOM, identidad del usuario y tienePermiso derivado del perfil recibido del backend. El almacenamiento no concede permisos: Express conserva su autorización real. Valor inválido, módulo ausente/restringido o identidad distinta llevan a Inicio.
+- Logout y 401 eliminan solo esa clave. Login explícito empieza en Inicio, incluso con la misma cuenta; /auth/me al recargar conserva la sección de esa pestaña para el mismo usuario. Si cambia el rol se comprueban otra vez sus permisos. Si sessionStorage está bloqueado, login y menú siguen funcionando sin persistencia.
+- Se limpian únicamente inputs/selects de creación de ventas, productos/entradas/ajustes/contactos, movimiento manual, nuevo pedido y usuario. Se restauran defaultValue/defaultChecked/opción predeterminada; Fecha de movimiento vuelve a hoy en America/Guayaquil. No se cambian filtros de consulta, campos del login ni inputs de recepción cargados desde un pedido.
+- Se desaconseja restauración automática con autocomplete=off en esos campos de creación no sensibles; el campo password de usuario conserva su autocomplete original. No se modifica el autocompletado del login. Los gestores de contraseñas/extensiones pueden ignorar indicaciones del navegador: no se promete impedir todo autocompletado.
+- No hay limpieza al cambiar de módulo: borradores/edición en curso permanecen durante esa navegación. Una recarga nueva descarta los estados temporales de JavaScript como antes y ahora limpia también los campos. pageshow con persisted=true (retorno por bfcache, no F5) no borra una edición.
+
+### Resultado y regresiones
+
+npm test: **652 pruebas, 652 exitosas, 0 fallidas, 0 omitidas, 0 canceladas y 0 pendientes**, salida 0; duración 6564.9671 ms. Se conservan las 634 previas y se agregan 18: ocho de archivo/reactivación en cliente, una de servicio, ocho de estado de página y una integrada de conservación de registros al recargar. La prueba HTTP existente amplía los casos de archivo y reactivación, conservando su caso de stock negativo.
+
+Las pruebas incluyen confirmación cancelada, mensajes y errores, un único PATCH simultáneo, refresco anterior en vuelo, fallo de GET posterior al guardado, permisos, edición de archivado sin reactivación, ocho módulos tras recarga, JSON corrupto, módulo ausente, rol restringido, identidad distinta, pestaña nueva, logout/401, almacenamiento denegado, campos predeterminados, fecha local, navegación sin borrar edición y ausencia de datos sensibles en la clave.
+
+Una ejecución completa intermedia detectó un fixture de descarga PDF incompleto tras añadir navegación al adaptador: faltaban mostrarSeccion, tienePermiso y querySelectorAll. Se corrigió el fixture para representar el contrato del app.js real. No era un fallo de la cadena real de scripts; la suite final conserva las pruebas de descarga.
+
+npm audit --omit=dev --json: **0 vulnerabilidades de producción**, salida 0, después de repetir fuera del entorno restringido la consulta al registro. git diff --check: sin errores; avisos habituales LF/CRLF. No se instalaron dependencias.
+
+Archivos de esta iteración: auth-client.js, inventory-client.js; backend/auth-client.test.cjs, backend/inventory-client.test.cjs, backend/inventory.test.cjs, backend/frontend-integration.test.cjs, backend/report-download.test.cjs; nuevo backend/page-state.test.cjs; FINAL_QA.md y UI_UX.md. index.html, estilos.css, app.js, modelo.js, backend de negocio, SQL, migraciones, rf.txt y dependencias quedan sin cambios. Las pruebas de preservación del diseño y de los 161 controles originales siguen pasando.
+
+### Comprobaciones manuales pendientes
+
+La conexión nativa al navegador devolvió pipe no disponible (os error 2). No se inspeccionó el botón en el navegador del usuario, no se capturó su petición real ni se ejecutaron F5/Ctrl+F5, autocompletado, password manager o bfcache reales. La simulación de eventos no certifica el orden de restauración de campos en cada navegador.
+
+En base de prueba, comprobar: (1) producto con stock distinto de cero muestra la regla y no cambia; (2) producto ficticio de stock cero permite cancelar/confirmar archivo, conserva lote/historial y muestra Reactivar; (3) reactivar restaura el uso operativo; (4) Vendedor no ve ni ejecuta estas acciones; (5) F5 y Ctrl+F5 en cada módulo mantienen la sección autorizada y limpian creación, conservando datos de API; (6) cambiar de módulo no borra una edición; (7) logout, otro usuario y sesión vencida no recuperan una sección ajena; (8) probar storage bloqueado y gestores de autocompletado. No usar productos o usuarios reales para escrituras de prueba.
+
+El bloqueo de botón no da idempotencia durable entre recargas; ante una respuesta PATCH perdida consultar el estado antes de repetir. Las pruebas no revalidan MySQL real ni eliminan los pendientes anteriores de concurrencia, persistencia tras commit/reinicio y R2. No hubo migraciones, operaciones MySQL, respaldos R2, commits, merges ni push.
+
+
+## Traslado de Gestión de clientes a Ventas — 19 de noviembre de 2026
+
+Rama desarrollo-jose confirmada. Se conservan todos los cambios pendientes del bloque Archivar/Reactivar, recarga y sección activa, que el usuario informa verificados manualmente. Línea base ejecutada: 652 pruebas exitosas, 0 fallidas/omitidas (7066.3436 ms). No se modifica la base de datos ni el backend.
+
+### Controles, integración y permisos
+
+El bloque único sale de Inventario y se inserta en Ventas después de terminal/carrito y antes del historial. Campos originales: clientesNombre, clientesIdentificacion, clientesTelefono, clientesDireccion; listado listaClientes. Se mantienen etiquetas, maxlength y onclick MicroCarmitaInventario.contacto('clientes'). El método público delega al registro de Ventas, sin duplicar lógica; el atributo de bloqueo pasa a data-ventas-control. Se añaden solo + Nuevo cliente y el mensaje accesible estadoClientes. Se preservan los 161 controles originales y su huella de IDs/eventos/atributos.
+
+Se revisaron inventory-client.js, sales-client.js, auth-client.js y navegación: Ventas ya consultaba GET /clientes para sus selectores, mientras Inventario consultaba y pintaba el listado. Ahora únicamente sales-client.js carga/pinta ese catálogo. La restauración autenticada y la navegación existentes cargan Ventas; el mismo catálogo alimenta listaClientes, ventaCliente y cuentasCliente. auth-client.js incluye los inputs trasladados en su limpieza de creación tras recarga, sin limpiar por cambio de módulo.
+
+GET/POST /api/clientes se reutilizan sin modificar rutas, servicio o repositorio. crearContacto conserva campos/validaciones y escritura autorizada para clientes de Administrador/Vendedor; proveedores continúa administrativo como antes. No se introduce permiso/rol, endpoint, tabla, migración o dependencia. Se mantienen fiado con cliente y Consumidor final solo contado.
+
+### Matriz del traslado
+
+| Acción / caso | Resultado esperado | Evidencia | Resultado |
+|---|---|---|---|
+| Ubicación | Un único formulario/listado en Ventas y ninguno en Inventario | customer-placement.test.cjs; controles originales | Aislado correcto |
+| + Nuevo cliente | Desplazamiento/foco en Nombre, sin modal y sin cambiar carrito/tipo/cantidad | sales-client.test.cjs | Aislado correcto; navegador pendiente |
+| Alta Administrador/Vendedor | Un POST /clientes; refrescar lista y ambos selectores | sales-client.test.cjs, frontend-integration.test.cjs | Aislado correcto |
+| Selección automática | Usar solo registro.id válido; no inferir por nombre | sales-client.test.cjs | Aislado correcto |
+| Respuesta sin ID | Refrescar catálogo; selección manual | sales-client.test.cjs | Aislado correcto |
+| Error de validación | Conservar los cuatro campos; mensaje junto al formulario | sales-client.test.cjs | Aislado correcto |
+| Doble clic | Un envío mientras está pendiente; liberar botones | sales-client.test.cjs | Aislado correcto |
+| Consulta antigua / logout | No sobrescribir catálogo ni borrador de otra sesión | sales-client.test.cjs | Aislado correcto |
+| Alta confirmada + GET fallido | Conservar cliente identificado y no sugerir repetir POST | sales-client.test.cjs | Aislado correcto |
+| Recarga / sesión restaurada | GET de la misma lista para selector y listado, sin visita previa a Inventario | frontend-integration.test.cjs y page-state.test.cjs | Aislado correcto; F5 real pendiente |
+| Conservación de operación | Carrito/cantidades/fiado intactos y sin escrituras locales | sales-client.test.cjs, frontend-integration.test.cjs | Aislado correcto |
+
+### Resultado final
+
+npm test: **665 pruebas, 665 exitosas, 0 fallidas, 0 omitidas, 0 canceladas y 0 pendientes**, salida 0, duración 6782.6422 ms. Se conservan las 652 previas y se añaden trece (ocho del cliente de ventas, tres de estructura/contrato, dos integradas). npm audit --omit=dev --json: **0 vulnerabilidades de producción**, salida 0, tras repetir autorizada la consulta al registro que falló dentro del entorno restringido. git diff --check: sin errores; avisos habituales LF/CRLF.
+
+Las pruebas de huellas de presentación se delimitan al traslado autorizado; no se reemplaza la huella original de controles para admitir pérdidas. Se protege íntegro el HTML fuera de Ventas/Inventario, incluidos los otros seis módulos, el historial de ventas y el CSS previo; solo se añade al final el estilo del selector/acceso rápido. Los casos de Archivar/Reactivar y navegación/recarga anteriores siguen pasando.
+
+Archivos de esta iteración: index.html, estilos.css, inventory-client.js, sales-client.js, auth-client.js (selector de limpieza); backend/sales-client.test.cjs, backend/frontend-integration.test.cjs, backend/sales-layout.test.cjs, backend/shared-ui.test.cjs, backend/ui-contract.test.cjs, backend/approved-design.test.cjs; nuevo backend/customer-placement.test.cjs; UI_UX.md, SALES.md, INVENTORY.md y FINAL_QA.md. Otros archivos pendientes de la corrección anterior se conservan sin cambios adicionales en esta iteración.
+
+### Pendientes manuales y límites
+
+La conexión nativa al navegador devolvió pipe no disponible (os error 2). No se ejecutó una inspección renderizada nueva ni F5/Ctrl+F5 real; la revisión manual anterior informada por el usuario no se atribuye a este traslado. Revisar 375/768/1024/1440px, nombres largos, selector/botón, foco/teclado, separación carrito-Clientes-historial; ejecutar en base de prueba el alta con ambos roles, selección por ID, conservación de carrito y errores. Confirmar que no quede formulario de clientes en Inventario.
+
+No hay reintento automático del alta de contacto. La exclusión evita envíos simultáneos en la pestaña, pero no añade idempotencia durable a POST /clientes: ante respuesta perdida se debe consultar el catálogo antes de repetir. Si el usuario cambia manualmente la selección mientras espera, esta prevalece sobre la selección automática del registro nuevo. No se guardan clientes en localStorage/sessionStorage ni se crea una segunda fuente de negocio.
+
+Se mantienen los pendientes generales de concurrencia, persistencia tras commit/reinicio y R2 según los cortes anteriores. No se ejecutaron escrituras MySQL reales, migraciones, respaldos, cambios de rama, commits, merges ni push. Se detiene el trabajo para revisión manual de este traslado.
+
+
+## Auditoría de identificadores internos visibles — 19 de noviembre de 2026
+
+Rama desarrollo-jose confirmada; cambios pendientes conservados. Línea base: 665 pruebas exitosas, 0 fallidas/omitidas, 6851.8951 ms. Se revisaron index.html y los adaptadores activos inventory-client, sales-client, orders-client, finance-client, reports-client, auth-client y dashboard-client. Se contrastaron las referencias con rf.txt: no se exige mostrar la clave primaria de clientes/productos/proveedores como etiqueta. Los números de documentos y las referencias de trazabilidad sí tienen utilidad operativa y se conservan. El prototipo local de app.js no se modifica; sus adaptadores son la interfaz operativa activa.
+
+### Clasificación y cambios de presentación
+
+| Módulo | ID técnico innecesario / cambio | Referencias conservadas y motivo |
+|---|---|---|
+| Inicio | No se detectan prefijos técnicos de catálogo; no se modifica. | Números de venta/pedido y códigos de lote en actividad/alertas. |
+| Ventas / Clientes | Se retira id — del listado. Selectores conservan IDs en value y muestran nombre/contexto para homónimos. | Venta N y claves internas de acciones/API; selección automática por registro.id sigue funcionando. |
+| Cuentas | Cabecera Historial del cliente N sustituida por nombre disponible, o título genérico si no se dispone del catálogo. | Venta N, saldos, abonos, fechas e historial. /customers/:id/receivables conserva su identificador. |
+| Inventario / Proveedores | Se retira id — del listado. Proveedores repetidos se contextualizan también en selectores. Productos ya mostraban nombre/categoría/precios; se conservan. | Códigos de lote y todos los value, IDs/relaciones de stock. La edición heredada aún exige ID numérico de proveedor: se muestran sus opciones en ese diálogo, conservando su entrada y funcionamiento. |
+| Pedidos | El borrador mostraba productoId como celda bajo Producto ID: ahora usa nombre del catálogo y cabecera Producto. | Pedido N, Recepción N, códigos de lote, cantidad/precio; detalles[].productoId y los handlers de fila conservan sus valores. |
+| Usuarios | Sin cambio: ya muestra nombre completo, cuenta y rol, sin prefijar ID. | Nombre de usuario, estado y referencias numéricas en handlers/API ocultas al texto visible. |
+| Finanzas | Se oculta m.id compuesto (por ejemplo manual/caja) del metadato de fila. | Responsable, concepto/origen/categoría, fecha e importe; m.id permanece en la respuesta/caché. |
+| Reportes HTML | Se oculta columna id en pendientes, inventario, finanzas y cierre. Se conservan nombres y conceptos; pendientes puede usar contexto del cliente ya cargado. | ID de venta, pedido y abono se conserva como referencia operativa. JSON original no se muta; los cálculos y el PDF generado por backend permanecen íntegros. |
+
+En detalles de ventas, el lote muestra su código si la asignación lo trae o si se encuentra en el catálogo ya cargado, incluso de productos archivados. Si solo existe loteId en la asignación histórica, se conserva ese número como referencia de trazabilidad: no se inventa un código ni se solicita un endpoint nuevo. Los PDF no se alteran y pueden seguir mostrando las columnas de identificación de sus reportes originales; esta corrección es del renderizado HTML, sin cambiar consultas ni estructuras de respuesta.
+
+Clientes/proveedores con el mismo nombre se distinguen con identificación comercial, teléfono o dirección ya disponibles, no con una clave técnica automática. Si también coinciden o faltan todos esos datos, se muestra Sin datos de contacto distintivos. No es posible garantizar una identidad humana distinta con los mismos datos sin añadir información; no se inventan números de documento ni se renombran registros.
+
+### Integridad y regresiones
+
+- Los cambios se hicieron por contexto revisado, sin reemplazos masivos de números o expresiones de ID. El único cambio del HTML estático es el texto de una cabecera. No se cambia estilos.css, ningún value/data-id, ID HTML, callback de fila, parámetro, DTO, endpoint, permiso, tabla, PK/FK, SQL, respuesta o dependencia.
+- La prueba de los 161 controles originales sigue pasando. La normalización de una única cabecera en las huellas de preservación permite Producto ID → Producto y protege todo lo demás, sin aceptar pérdidas de controles.
+- Ocho nuevas pruebas: tres de Clientes/Cuentas/lotes en ventas, dos de Proveedores/edición, una del borrador de pedido, una de Finanzas y una parametrizada en siete tipos de reporte HTML.
+- Se comprueba que seleccionar al cliente de ID 9 envía clienteId=9, que el proveedor de ID 27 envía proveedorId=27 y que el producto de ID 812 sigue en el POST del pedido aunque su celda muestre el nombre. Los valores son ficticios de pruebas, no registros reales del negocio.
+- Se conserva Comercial 2026 como nombre legítimo; no se borran números indiscriminadamente. Venta 41/Pedido 1 y códigos de lote siguen visibles. El estado m.id y el JSON de reportes se conservan sin mutación.
+- Las funciones añadidas de nombre/código solo consultan cachés existentes para presentar etiquetas; no agregan consultas ni una segunda fuente persistida. Continúan las regresiones de selección automática de cliente nuevo, carrito, fiados, recepción, archivo/reactivación, sesión y respuestas antiguas.
+
+Resultado final: **npm test 673 pruebas, 673 exitosas, 0 fallidas, 0 omitidas, 0 canceladas y 0 pendientes**, salida 0, 12266.1706 ms. Se conservan las 665 anteriores. **npm audit --omit=dev --json: 0 vulnerabilidades de producción**, salida 0, tras repetir autorizada la consulta al registro fuera del entorno restringido. **git diff --check: sin errores**, con avisos LF/CRLF habituales. No se instalaron dependencias.
+
+Archivos de esta iteración: index.html (una etiqueta), inventory-client.js, sales-client.js, orders-client.js, finance-client.js, reports-client.js; backend/inventory-client.test.cjs, backend/sales-client.test.cjs, backend/order-client.test.cjs, backend/finance-client.test.cjs, backend/reports-client.test.cjs, backend/approved-design.test.cjs, backend/shared-ui.test.cjs; UI_UX.md y FINAL_QA.md. Los cambios acumulados anteriores, incluido el CSS previo del traslado de Clientes y los documentos SALES/INVENTORY, permanecen conservados sin modificaciones adicionales en este bloque.
+
+### Revisión manual pendiente
+
+La conexión nativa al navegador volvió a fallar (os error 2); no se ejecutó una inspección renderizada ni un ensayo MySQL real. En entorno de prueba revisar nombres únicos/repetidos/largos en listados y selectores, selección correcta con etiquetas de contacto, diálogo de proveedor, borrador de pedidos, cabeceras de Cuentas, códigos de lote disponibles/fallback histórico, movimientos y siete reportes HTML. Comparar con el PDF sin suponer que su presentación cambió. Confirmar nombres/usuarios y números operativos conservados. Los homónimos sin datos distintivos requieren revisión de calidad del catálogo; no resolverlos mostrando automáticamente una PK.
+
+Sin escrituras MySQL reales, migraciones, eliminación definitiva, cambios de rama, commits, merges ni push. Se detiene el trabajo para revisión manual. Continúan los pendientes generales anteriores de concurrencia, persistencia y R2.
+
+## Preparación de la versión para presentación — 19 de noviembre de 2026
+
+Presentación prevista: 20 de noviembre de 2026. Se parte del commit c48d31a en desarrollo-jose, conservando las correcciones acumuladas de archivo/reactivación, formularios, sección activa, Clientes en Ventas y etiquetas sin IDs técnicos innecesarios. El usuario autoriza registrar estos cambios y publicar únicamente desarrollo-jose; esta autorización no incluye main, merges, force push, migraciones, datos MySQL ni respaldos R2.
+
+Verificaciones repetidas antes de registrar: **npm test 673 exitosas, 0 fallidas, 0 omitidas, 0 canceladas y 0 pendientes**, salida 0, 6951.63 ms; **npm audit --omit=dev --json: 0 vulnerabilidades de producción**, salida 0 tras consultar el registro fuera del entorno restringido; **git diff --check sin errores**. No hubo instalaciones ni cambios visuales adicionales. El archivo de bloqueo de dependencias permanece versionado y sin cambios; la reproducción utiliza npm ci y npm test, seguida de la configuración privada y procedimientos de los módulos documentados, sin publicar credenciales.
+
+Se revisaron 27 candidatos de código, pruebas y documentación, incluidos los dos archivos de pruebas nuevos. El escaneo no encontró coincidencias con el secreto local comparado ni patrones de claves privadas, tokens conocidos o URLs con credenciales. Es una revisión acotada, no una garantía de detectar todo secreto arbitrario. No se imprimieron valores sensibles. .env.example mantiene vacíos sus campos sensibles; .env/.env.*, .auth-*, output/ (incluidos PDF de prueba), node_modules, registros y respaldos están excluidos y no versionados. El origen Git apunta al repositorio esperado y no incorpora credenciales en su URL.
+
+Entorno de verificación: Node.js v26.10.0 y npm 11.11.0. El área de preparación estaba vacía; se usará la lista explícita de 27 archivos revisados y se volverá a comprobar el contenido preparado antes del commit. Mensaje autorizado: fix: finalizar mejoras funcionales y UX para presentacion. La publicación se limitará a desarrollo-jose y se comprobará su hash contra la rama remota. No se registra una publicación exitosa hasta obtener la respuesta de Git.
+
+Los resultados anteriores de UI y MySQL se mantienen como evidencias con su alcance original. El usuario ha aprobado el diseño y confirmó manualmente el bloque de archivo/recarga; continúan las verificaciones específicas pendientes que se documentan arriba y no se habilita R2 para la presentación.

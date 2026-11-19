@@ -12,6 +12,12 @@ function preparar(rol='administrador'){
     return {c,campos,registro,filtros,solicitudes,perder(){fallo=true},salir(){actor=null;eventos['microcarmita:sesion']()},pausar(p){espera=p}};
 }
 
+test('Finanzas oculta la clave técnica del movimiento y conserva responsable, importe y dato de API',async()=>{
+    const f=preparar();await f.c.MicroCarmitaFinanzas.cargar();
+    assert.doesNotMatch(f.campos.listaMovimientos.innerHTML,/manual:1/);assert.match(f.campos.listaMovimientos.innerHTML,/QA/);
+    assert.equal(f.c.obtenerDatos('movimientos')[0].id,'manual:1');assert.equal(f.c.obtenerDatos('movimientos')[0].valor,5);
+});
+
 test('consulta muestra carga, libera filtros y presenta vacío con totales reales del servidor',async()=>{
     const f=preparar();let resolver;
     f.c.MicroCarmitaAuth.api=()=>new Promise(r=>{resolver=r});

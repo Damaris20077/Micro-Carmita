@@ -32,6 +32,7 @@ function preparar(rol = 'vendedor', datos = {}) {
             solicitudes.push({ url, options });
             const bodies = {
                 '/api/auth/login': { usuario, csrfToken: 'csrf-simulado' },
+                '/api/auth/me': { usuario, csrfToken: 'csrf-simulado' },
                 '/api/sales': { ventas: [] }, '/api/inventory': { productos: [] },
                 '/api/inventory/alerts': { stockBajo: [], caducidad: [] },
                 '/api/proveedores': { registros: [] }, '/api/clientes': { registros: [] }, '/api/orders': { pedidos: [] },
@@ -41,6 +42,11 @@ function preparar(rol = 'vendedor', datos = {}) {
                 ...datos
             };
             if (url === '/api/auth/logout') return { ok: true, status: 204 };
+            if (url === '/api/clientes' && options.method === 'POST') {
+                const registros=bodies[url].registros;
+                const registro={...JSON.parse(options.body),id:Math.max(0,...registros.map(c=>c.id))+1};
+                registros.push(registro);return {ok:true,status:201,async json(){return {registro}}};
+            }
             assert.ok(bodies[url], `Petición inesperada: ${url}`);
             return { ok: true, status: 200, async json() { return bodies[url]; } };
         }
@@ -48,8 +54,31 @@ function preparar(rol = 'vendedor', datos = {}) {
     for (const [, archivo] of html.matchAll(/<script src="([^"]+)"/g)) {
         vm.runInContext(fs.readFileSync(path.join(raiz, archivo), 'utf8'), contexto, { filename: archivo });
     }
-    return { contexto, nodo, menus, solicitudes, lecturas, escrituras };
+    return { contexto, nodo, menus, solicitudes, lecturas, escrituras,async restaurar(){for(const fn of eventos.get('DOMContentLoaded')||[])await fn()} };
 }
+
+test('evento de registro conservado delega a Ventas para ambos roles y selecciona el cliente sin vaciar carrito',async()=>{
+    for(const rol of ['administrador','vendedor']){
+        const datos={'/api/clientes':{registros:[{id:1,nombre:'Cliente previo'}]}},f=preparar(rol,datos);
+        await f.restaurar();await f.contexto.MicroCarmitaVentas.cargar();
+        f.nodo('clientesNombre').value='Cliente rápido';f.nodo('clientesTelefono').value='000';f.nodo('ventaTipo').value='fiado';
+        vm.runInContext("carrito=[{id:1,nombre:'QA',cantidad:2,precio:3}];",f.contexto);
+        await f.contexto.MicroCarmitaInventario.contacto('clientes');
+        assert.equal(f.solicitudes.filter(s=>s.url==='/api/clientes'&&s.options.method==='POST').length,1);
+        assert.match(f.nodo('listaClientes').textContent,/Cliente rápido/);assert.equal(f.nodo('ventaCliente').value,'2');
+        assert.equal(f.nodo('ventaTipo').value,'fiado');assert.equal(vm.runInContext('carrito[0].cantidad',f.contexto),2);
+        assert.deepEqual(f.escrituras,[]);
+    }
+});
+
+test('restaurar sesión tras recarga carga clientes y selector desde la misma API sin requerir Inventario',async()=>{
+    const datos={'/api/clientes':{registros:[{id:9,nombre:'Cliente persistido',telefono:'000'}]}};
+    for(let recarga=0;recarga<2;recarga++){
+        const f=preparar('vendedor',datos);await f.restaurar();await f.contexto.MicroCarmitaVentas.cargar();
+        assert.match(f.nodo('listaClientes').textContent,/Cliente persistido/);assert.match(f.nodo('ventaCliente').innerHTML,/value="9"/);
+        assert.ok(f.solicitudes.every(s=>!s.options.method||s.options.method==='GET'));assert.deepEqual(f.escrituras,[]);
+    }
+});
 
 test('botones y eventos estáticos de index apuntan a funciones de los scripts reales', () => {
     const f=preparar('administrador');
@@ -87,6 +116,25 @@ test('acciones dinámicas de tablas y carrito apuntan a controladores reales par
         assert.deepEqual(f.escrituras,[]);
         assert.ok(f.solicitudes.every(s=>!s.options.method||s.options.method==='GET'||s.url==='/api/auth/login'));
     }
+});
+
+test('recargar clientes reales de index consulta los registros del servidor sin borrarlos ni importar datos locales',async()=>{
+    const datos={
+        '/api/inventory':{productos:[{id:7,nombre:'Producto guardado',categoria:'Prueba',precio_compra:1,precio_venta:2,proveedor_id:1,stock:0,stockBajo:true,activo:false,lotes:[{id:8,codigo:'L-guardado',cantidad:0,fecha_ingreso:'2026-11-17',caducidad:null,estado:'Vigente'}]}]},
+        '/api/clientes':{registros:[{id:9,nombre:'Cliente guardado'}]},
+        '/api/sales':{ventas:[{id:10,tipo:'contado',estado:'Activa',total:2,saldo:0,abonado:0,efectivo:2}]}
+    };
+    const antes=JSON.stringify(datos);
+    for(let carga=0;carga<2;carga++){
+        const f=preparar('administrador',datos);await f.contexto.iniciarSesion({preventDefault(){}});
+        await Promise.all([f.contexto.MicroCarmitaInventario.cargar(),f.contexto.MicroCarmitaVentas.cargar()]);
+        assert.match(f.nodo('listaInventario').innerHTML,/Producto guardado.*archivado/s);
+        assert.match(f.nodo('listaLotes').innerHTML,/L-guardado/);assert.match(f.nodo('listaClientes').textContent,/Cliente guardado/);
+        assert.match(f.nodo('listaVentas').innerHTML,/Venta 10/);
+        assert.ok(f.solicitudes.every(s=>!s.options.method||s.options.method==='GET'||s.url==='/api/auth/login'));
+        assert.deepEqual(f.escrituras,[]);
+    }
+    assert.equal(JSON.stringify(datos),antes);
 });
 
 test('scripts reales de index: sesión, lecturas y logout sin base de datos local paralela', async () => {

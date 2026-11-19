@@ -205,7 +205,9 @@
 
                         <div class="campo">
                             <label for="ventaCliente">Cliente</label>
-                            <select id="ventaCliente"><option value="">Consumidor final (solo contado)</option></select>
+                            <div class="venta-cliente-selector"><select id="ventaCliente"><option value="">Consumidor final (solo contado)</option></select>
+                                <button type="button" class="btn secundaria" onclick="MicroCarmitaVentas.nuevoCliente()">+ Nuevo cliente</button>
+                            </div>
                         </div>
 
                         <div class="campo">
@@ -281,6 +283,19 @@
 
                 </div>
 
+            </div>
+
+            <div class="formulario gestion-clientes">
+                <h2>Gestión de clientes</h2>
+                <div class="form-grid">
+                    <div class="campo"><label for="clientesNombre">Nombre</label><input id="clientesNombre" maxlength="100"></div>
+                    <div class="campo"><label for="clientesIdentificacion">Identificación (opcional)</label><input id="clientesIdentificacion" maxlength="30"></div>
+                    <div class="campo"><label for="clientesTelefono">Teléfono (opcional)</label><input id="clientesTelefono" maxlength="30"></div>
+                    <div class="campo"><label for="clientesDireccion">Dirección (opcional)</label><input id="clientesDireccion" maxlength="255"></div>
+                </div>
+                <button data-ventas-control class="btn guardar" onclick="MicroCarmitaInventario.contacto('clientes')">Registrar cliente</button>
+                <p id="estadoClientes" role="status" aria-live="polite"></p>
+                <pre id="listaClientes"></pre>
             </div>
 
             <div class="tabla-contenedor ventas-historial">
@@ -461,17 +476,6 @@
             </div>
             <div class="tabla-contenedor"><h2>Historial de inventario</h2><pre id="historialInventario" class="registro-texto">Seleccione Historial en un producto para consultar sus movimientos.</pre></div>
             <div class="formulario">
-                <h2>Clientes</h2>
-                <div class="form-grid">
-                    <div class="campo"><label for="clientesNombre">Nombre</label><input id="clientesNombre" maxlength="100"></div>
-                    <div class="campo"><label for="clientesIdentificacion">Identificación (opcional)</label><input id="clientesIdentificacion" maxlength="30"></div>
-                    <div class="campo"><label for="clientesTelefono">Teléfono (opcional)</label><input id="clientesTelefono" maxlength="30"></div>
-                    <div class="campo"><label for="clientesDireccion">Dirección (opcional)</label><input id="clientesDireccion" maxlength="255"></div>
-                </div>
-                <button data-inventario-control class="btn guardar" onclick="MicroCarmitaInventario.contacto('clientes')">Registrar cliente</button>
-                <pre id="listaClientes"></pre>
-            </div>
-            <div class="formulario">
                 <h2>Proveedores</h2>
                 <div data-inventario-admin hidden>
                     <div class="form-grid">
@@ -624,7 +628,7 @@
                     <div class="campo"><label for="pedidoPrecio">Precio de compra acordado</label><input id="pedidoPrecio" type="number" min="0" step="0.01"></div>
                 </div>
                 <button data-pedido-control class="btn secundaria" onclick="MicroCarmitaPedidos.agregar()">Agregar línea</button>
-                <div class="tabla-scroll" tabindex="0" aria-label="Líneas del nuevo pedido"><table><thead><tr><th>Producto ID</th><th>Cantidad</th><th>Precio de compra</th><th>Acción</th></tr></thead><tbody id="pedidoDetalles"></tbody></table></div>
+                <div class="tabla-scroll" tabindex="0" aria-label="Líneas del nuevo pedido"><table><thead><tr><th>Producto</th><th>Cantidad</th><th>Precio de compra</th><th>Acción</th></tr></thead><tbody id="pedidoDetalles"></tbody></table></div>
                 <button data-pedido-control class="btn guardar" onclick="MicroCarmitaPedidos.crear()">Crear pedido</button>
             </div>
             <div class="tabla-contenedor"><h2>Pedidos registrados</h2><p class="texto-ayuda">Use Ver y recibir para consultar cantidades, preparar una recepción o revisar su historial.</p><div class="tabla-scroll" tabindex="0" aria-label="Pedidos registrados"><table><thead><tr><th>Pedido</th><th>Proveedor</th><th>Estado</th><th>Acción</th></tr></thead><tbody id="listaPedidos"></tbody></table></div></div>

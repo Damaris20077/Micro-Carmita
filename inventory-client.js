@@ -37,21 +37,28 @@
             if (ocupado) boton.setAttribute?.('aria-busy', 'true'); else boton.removeAttribute?.('aria-busy');
         }
     }
-    const opcion = p => `<option value="${Number(p.id)}">${textoSeguro(p.nombre)}</option>`;
-    function opciones(id, items) {
+    function etiquetaProveedor(p, lista = proveedores) {
+        const repetido = lista.filter(c => c.nombre?.trim().toLocaleLowerCase('es-EC') === p.nombre?.trim().toLocaleLowerCase('es-EC')).length > 1;
+        if (!repetido) return p.nombre;
+        const contexto = [p.identificacion && `Identificación: ${p.identificacion}`, p.telefono && `Tel.: ${p.telefono}`, p.direccion && p.direccion].filter(Boolean).join(' · ');
+        return `${p.nombre} — ${contexto || 'Sin datos de contacto distintivos'}`;
+    }
+    const opcion = (p, etiqueta) => `<option value="${Number(p.id)}">${textoSeguro(etiqueta)}</option>`;
+    function opciones(id, items, etiqueta = p => p.nombre) {
         const select = elemento(id);
         const actual = select.value;
-        select.innerHTML = '<option value="">Seleccione</option>' + items.map(opcion).join('');
+        select.innerHTML = '<option value="">Seleccione</option>' + items.map(p => opcion(p, etiqueta(p))).join('');
         if (items.some(item => String(item.id) === actual)) select.value = actual;
     }
     function pintar() {
         elemento('listaInventario').innerHTML = productos.map(p => `<tr>
             <td>${textoSeguro(p.nombre)}${p.activo ? '' : ' (archivado)'}</td><td>${textoSeguro(p.categoria)}</td>
             <td>Compra ${dinero(p.precio_compra)} / Venta ${dinero(p.precio_venta)}</td><td>${p.stock}</td>
-            <td><span class="estado ${p.stockBajo ? 'estado-pendiente' : 'estado-disponible'}">${p.stockBajo ? 'Stock bajo' : 'Disponible'}</span></td>
+            <td><span class="estado ${!p.activo ? 'estado-agotado' : p.stockBajo ? 'estado-pendiente' : 'estado-disponible'}">${!p.activo ? 'Archivado' : p.stockBajo ? 'Stock bajo' : 'Disponible'}</span></td>
             <td><div class="acciones-fila"><button class="btn secundaria" data-inventario-control onclick="MicroCarmitaInventario.historial(${p.id})">Historial</button>
             ${administrador() ? `<button class="btn secundaria" data-inventario-control onclick="editarProducto(${p.id})">Editar</button>
-            <button class="btn peligro" data-inventario-control onclick="eliminarProducto(${p.id})">Archivar</button>` : 'Solo consulta'}</div></td></tr>`).join('') || '<tr><td colspan="6">No hay productos registrados.</td></tr>';
+            ${p.activo ? `<button class="btn peligro" data-inventario-control onclick="eliminarProducto(${p.id})">Archivar</button>`
+                : `<button class="btn secundaria" data-inventario-control onclick="MicroCarmitaInventario.reactivar(${p.id})">Reactivar</button>`}` : 'Solo consulta'}</div></td></tr>`).join('') || '<tr><td colspan="6">No hay productos registrados.</td></tr>';
         elemento('listaLotes').innerHTML = productos.flatMap(p => p.lotes.map(l => `<tr>
             <td>${textoSeguro(p.nombre)}</td><td>${textoSeguro(l.codigo)}</td><td>${l.cantidad}</td>
             <td>${textoSeguro(MicroCarmitaFechas.calendario(l.fecha_ingreso))}</td><td>${textoSeguro(l.caducidad ? MicroCarmitaFechas.calendario(l.caducidad) : 'Sin caducidad')}</td><td><span class="estado ${l.estado === 'Caducado' ? 'estado-agotado' : l.estado === 'Por caducar' ? 'estado-pendiente' : 'estado-disponible'}">${textoSeguro(l.estado)}</span></td></tr>`)).join('') || '<tr><td colspan="6">No hay lotes registrados.</td></tr>';
@@ -62,7 +69,7 @@
         ]);
         elemento('alertasInventario').textContent = alertas.join('\n') || 'Sin alertas de inventario.';
         elemento('alertasInventario').setAttribute?.('data-estado', alertas.length ? 'aviso' : 'neutro');
-        for (const id of ['productoProveedor', 'entradaProveedor']) opciones(id, proveedores);
+        for (const id of ['productoProveedor', 'entradaProveedor']) opciones(id, proveedores, etiquetaProveedor);
         for (const id of ['entradaProducto', 'ajusteProducto']) opciones(id, productos.filter(p => p.activo));
         document.querySelectorAll('[data-inventario-admin]').forEach(nodo => { nodo.hidden = !administrador(); });
         const formulario = elemento('formularioProducto');
@@ -78,14 +85,14 @@
         informar('cargando', 'Consultando inventario y contactos…');
         cargando = (async () => {
             try {
-                const [inventario, prov, cli] = await Promise.all([api('/inventory'), api('/proveedores'), api('/clientes')]);
+                const [inventario, prov] = await Promise.all([api('/inventory'), api('/proveedores')]);
                 if (usuarioActual() !== identidad) return;
                 productos = inventario.productos;
                 proveedores = prov.registros;
-                elemento('listaClientes').textContent = cli.registros.map(c => `${c.id} — ${c.nombre}${c.telefono ? ' — ' + c.telefono : ''}`).join('\n') || 'Sin clientes.';
-                elemento('listaProveedores').textContent = proveedores.map(p => `${p.id} — ${p.nombre}${p.telefono ? ' — ' + p.telefono : ''}`).join('\n') || 'Sin proveedores.';
+                elemento('listaProveedores').textContent = proveedores.map(p => `${etiquetaProveedor(p)}${p.telefono && etiquetaProveedor(p) === p.nombre ? ' — ' + p.telefono : ''}`).join('\n') || 'Sin proveedores.';
                 pintar();
                 informar('exito', 'Inventario y contactos actualizados.');
+                return true;
             } catch (error) {
                 if (usuarioActual() !== identidad) return;
                 productos = [];
@@ -95,6 +102,7 @@
                 cargarProductosVenta();
                 actualizarInicio();
                 informar('error', `${error.message} Compruebe que la migración 002 esté aplicada.`);
+                return false;
             } finally {
                 cargando = null;
                 if (usuarioActual() && usuarioActual() !== identidad) cargar();
@@ -107,7 +115,17 @@
         if (!identidad || operacionActiva?.identidad === identidad) return;
         const token = { identidad }; operacionActiva = token;
         controles(); informar('cargando', 'Procesando…');
-        try { await fn(); if (usuarioActual() === identidad) await cargar(); }
+        try {
+            const mensaje = await fn();
+            if (usuarioActual() === identidad) {
+                // Una consulta iniciada antes de la escritura no confirma su resultado.
+                if (cargando) await cargando;
+                if (usuarioActual() !== identidad) return;
+                const actualizado = await cargar();
+                if (typeof mensaje === 'string' && usuarioActual() === identidad) informar(actualizado === false ? 'error' : 'exito',
+                    mensaje + (actualizado === false ? ' No se pudo actualizar la lista. No repita la operación; vuelva a consultar el inventario.' : ''));
+            }
+        }
         catch (error) { if (usuarioActual() === identidad) informar('error', error.message
             + (!error.status ? ' Si la respuesta se perdió, compruebe el historial antes de repetir una escritura.' : '')); }
         finally { if (operacionActiva === token) operacionActiva = null; controles(); }
@@ -145,17 +163,22 @@
         if (compra === null) return;
         const venta = prompt('Precio de venta:', p.precio_venta);
         if (venta === null) return;
-        const proveedor = prompt('ID del proveedor (consulte el catálogo):', p.proveedor_id);
+        const proveedor = prompt('ID del proveedor para esta edición:\n' + proveedores.map(p => `${p.id}: ${etiquetaProveedor(p)}`).join('\n') + '\nConserve el número actual si no desea cambiarlo.', p.proveedor_id);
         if (proveedor === null) return;
         if ([compra, venta, proveedor].some(v => !v.trim())) throw new Error('Complete precios y proveedor.');
-        await api(`/products/${id}`, 'PATCH', { nombre, categoria, precioCompra: Number(compra), precioVenta: Number(venta), proveedorId: Number(proveedor), activo: true });
+        await api(`/products/${id}`, 'PATCH', { nombre, categoria, precioCompra: Number(compra), precioVenta: Number(venta), proveedorId: Number(proveedor), activo: Boolean(p.activo) });
     });
-    eliminarProducto = id => operar(async () => {
+    function cambiarArchivo(id, activo) { return operar(async () => {
+        if (!administrador()) throw new Error('Solo el Administrador puede archivar o reactivar productos.');
         const p = productos.find(item => item.id === id);
-        if (!p || !confirm(`Archivar ${p.nombre}, conservando sus lotes e historial?`)) return;
+        if (!p || Boolean(p.activo) === activo) return;
+        if (!activo && Number(p.stock) !== 0) throw new Error(`No se puede archivar ${p.nombre}: las existencias deben ser cero (stock actual: ${p.stock}). Revise sus existencias y movimientos. No se modificó el producto.`);
+        if (!confirm(`${activo ? 'Reactivar' : 'Archivar'} ${p.nombre}, conservando sus lotes, historial y registros relacionados?`)) return;
         await api(`/products/${id}`, 'PATCH', { nombre: p.nombre, categoria: p.categoria,
-            precioCompra: p.precio_compra, precioVenta: p.precio_venta, proveedorId: p.proveedor_id, activo: false });
-    });
+            precioCompra: Number(p.precio_compra), precioVenta: Number(p.precio_venta), proveedorId: Number(p.proveedor_id), activo });
+        return `Producto ${activo ? 'reactivado' : 'archivado'} correctamente. Se conservan sus lotes, historial y registros relacionados.`;
+    }); }
+    eliminarProducto = id => cambiarArchivo(id, false); // Compatibilidad del evento; nunca elimina.
     mostrarInventario = cargar;
     // La venta local escribiría un inventario independiente del servidor.
     registrarVenta = () => alert('El registro de ventas requiere la siguiente fase de integración con el inventario remoto. El carrito y el historial se conservan.');
@@ -167,6 +190,9 @@
     }
     globalThis.MicroCarmitaInventario = {
         cargar, lotesAjuste,
+        etiquetaProveedor,
+        codigoLote: id => productos.flatMap(p => p.lotes).find(l => Number(l.id) === Number(id))?.codigo,
+        reactivar: id => cambiarArchivo(id, true),
         exportarAnterior() {
             const contenido = localStorage.getItem('inventario') || '[]';
             const url = URL.createObjectURL(new Blob([contenido], { type: 'application/json' }));
@@ -182,7 +208,7 @@
             if (datos.cantidad > 0) datos.loteId = numero('ajusteLote');
             return api(`/products/${numero('ajusteProducto')}/adjustments`, 'POST', datos);
         }),
-        contacto: tipo => operar(() => api(`/${tipo}`, 'POST', {
+        contacto: tipo => tipo === 'clientes' ? globalThis.MicroCarmitaVentas.registrarCliente() : operar(() => api(`/${tipo}`, 'POST', {
             nombre: valor(`${tipo}Nombre`), identificacion: valor(`${tipo}Identificacion`),
             telefono: valor(`${tipo}Telefono`), direccion: valor(`${tipo}Direccion`)
         })),
@@ -198,7 +224,6 @@
         lotePendiente = null;
         elemento('listaInventario').textContent = '';
         elemento('listaLotes').textContent = '';
-        elemento('listaClientes').textContent = '';
         elemento('listaProveedores').textContent = '';
         elemento('historialInventario').textContent = 'Seleccione Historial en un producto para consultar sus movimientos.';
         elemento('alertasInventario').textContent = '';

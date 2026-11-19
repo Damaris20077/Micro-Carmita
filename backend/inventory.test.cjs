@@ -311,6 +311,17 @@ test('editar conserva lotes y stock; archivar exige cero y conserva historial', 
     assert.equal(f.db.movimientos.length, 2);
 });
 
+test('reactivar conserva producto, lotes e historial y Vendedor no cambia ningún estado',async()=>{
+    const f=preparar();await f.servicio.crearProducto(f.admin,datos({cantidad:0}));
+    const d={nombre:'Leche',categoria:'Bebidas',precioCompra:0.8,precioVenta:1.25,proveedorId:1,activo:false};
+    const lotes=structuredClone(f.db.lotes),historial=structuredClone(f.db.movimientos);
+    await assert.rejects(f.servicio.editarProducto(f.vendedor,1,d),{status:403});
+    await f.servicio.editarProducto(f.admin,1,d);assert.equal(f.db.productos.length,1);
+    await assert.rejects(f.servicio.editarProducto(f.vendedor,1,{...d,activo:true}),{status:403});
+    await f.servicio.editarProducto(f.admin,1,{...d,activo:true});
+    assert.equal(f.db.productos[0].activo,true);assert.deepEqual(f.db.lotes,lotes);assert.deepEqual(f.db.movimientos,historial);
+});
+
 test('repositorio usa parámetros y bloqueos y revierte en errores', async () => {
     const calls = [];
     const c = {
@@ -356,6 +367,16 @@ test('HTTP integrado protege inventario, contactos y alertas por sesión y CSRF'
         assert.equal((await pedir(ruta, 'GET', undefined, tokens[1])).status, 200);
     }
     assert.equal((await pedir('/proveedores', 'POST', { nombre: 'Proveedor API' }, tokens[1])).status, 403);
+    const ficha={nombre:'Leche',categoria:'Bebidas',precioCompra:0.8,precioVenta:1.25,proveedorId:1,activo:false};
+    assert.equal((await pedir('/products/1','PATCH',ficha)).status,409);
     assert.equal((await pedir('/products/1/adjustments', 'POST', { cantidad: -3, motivo: 'Conteo' })).status, 200);
     assert.equal((await pedir('/products/1/history')).body.movimientos.length, 2);
+    assert.equal((await pedir('/products/1','PATCH',ficha)).status,409);
+    assert.equal((await pedir('/products/1/adjustments','POST',{cantidad:1,loteId:1,motivo:'Regularización ficticia'})).status,200);
+    assert.equal((await pedir('/products/1','PATCH',ficha)).status,200);
+    assert.equal((await pedir('/inventory')).body.productos[0].activo,false);
+    assert.equal((await pedir('/products/1','PATCH',{...ficha,activo:true},tokens[1])).status,403);
+    assert.equal((await pedir('/products/1','PATCH',{...ficha,activo:true})).status,200);
+    assert.equal((await pedir('/inventory')).body.productos[0].activo,true);
+    assert.equal((await pedir('/products/1/history')).body.movimientos.length, 3);
 });

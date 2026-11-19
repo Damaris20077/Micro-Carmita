@@ -9,8 +9,8 @@ const hash = v => createHash('sha256').update(v).digest('hex');
 const inicio = html.indexOf('<section id="ventas"'), fin = html.indexOf('<section id="cuentas"');
 const ventas = html.slice(inicio, fin);
 
-test('bloques posteriores conservan Ventas y sus estilos previos', () => {
-    assert.equal(hash(ventas), '6284593694616f1b3f555fba717773337b5b9adff46a402aec83e23d447e107c');
+test('traslado de Clientes conserva íntegro el historial de Ventas y sus estilos previos', () => {
+    assert.equal(hash(ventas.slice(ventas.indexOf('<div class="tabla-contenedor ventas-historial"'))), 'facdc472427a25f3de06644c60e629eb3e197478ab6a428a23b5484af3ff1895');
     const marcador = '/* Ventas: terminal de registro.';
     // El único CSS nuevo se añade al final y todos sus selectores pertenecen a Ventas.
     assert.equal(hash(css.slice(0, css.indexOf(marcador)).replace(/\n+$/, '\n')), '5196c0ddc7225461454c24f82eb1ab4f66768899ae5e6a089ccdf5fcfae35b74');

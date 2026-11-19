@@ -14,7 +14,7 @@
         : '<tr><td colspan="' + titulos.length + '">Sin registros.</td></tr>') + '</tbody></table></div>';
     const admin = () => usuarioActual()?.rol === 'administrador';
     let ventas = [], clientes = [], edicion = null, ocupado = false, pendiente = null;
-    let consulta = 0;
+    let consulta = 0, consultaClientes = 0;
     // Presentación derivada del bloqueo existente; no mantiene otro carrito/operación.
     function controles() {
         for (const boton of document.querySelectorAll?.('#ventas [data-ventas-control]') || []) {
@@ -23,10 +23,10 @@
             else boton.removeAttribute('aria-busy');
         }
     }
-    function informar(tipo, mensaje) {
-        el('estadoVentas').textContent = mensaje;
-        el('estadoVentas').setAttribute?.('data-estado', tipo);
-        if (tipo === 'error') el('estadoVentas').scrollIntoView?.({ block: 'nearest', behavior: 'auto' });
+    function informar(tipo, mensaje, destino = 'estadoVentas') {
+        el(destino).textContent = mensaje;
+        el(destino).setAttribute?.('data-estado', tipo);
+        if (tipo === 'error') el(destino).scrollIntoView?.({ block: 'nearest', behavior: 'auto' });
     }
     const obtenerAnterior = obtenerDatos, guardarAnterior = guardarDatos;
     obtenerDatos = clave => clave === 'ventas' ? ventas.filter(v => v.estado === 'Activa')
@@ -54,47 +54,92 @@
         el('totalCobrar').textContent = dinero(saldo);
         el('totalVentas').textContent = dinero(ventas.filter(v => v.estado === 'Activa').reduce((s,v) => s + Number(v.total), 0));
         el('totalIngresos').textContent = dinero(ventas.reduce((s,v) => s + Number(v.efectivo || 0), 0));
+        pintarClientes();
+    }
+    function pintarClientes() {
+        el('listaClientes').textContent = clientes.map(c => `${etiquetaCliente(c)}${!nombreRepetido(c) && c.telefono ? ' — ' + c.telefono : ''}`).join('\n') || 'Sin clientes.';
         const seleccionado = el('ventaCliente').value;
-        el('ventaCliente').innerHTML = '<option value="">Consumidor final (solo contado)</option>' + clientes.map(c => `<option value="${c.id}">${textoSeguro(c.nombre)}</option>`).join('');
+        el('ventaCliente').innerHTML = '<option value="">Consumidor final (solo contado)</option>' + clientes.map(c => `<option value="${c.id}">${textoSeguro(etiquetaCliente(c))}</option>`).join('');
         if (clientes.some(c => String(c.id) === seleccionado)) el('ventaCliente').value = seleccionado;
         const historialSeleccionado = el('cuentasCliente').value;
-        el('cuentasCliente').innerHTML = '<option value="">Seleccione cliente</option>' + clientes.map(c => `<option value="${c.id}">${textoSeguro(c.nombre)}</option>`).join('');
+        el('cuentasCliente').innerHTML = '<option value="">Seleccione cliente</option>' + clientes.map(c => `<option value="${c.id}">${textoSeguro(etiquetaCliente(c))}</option>`).join('');
         if (clientes.some(c => String(c.id) === historialSeleccionado)) el('cuentasCliente').value = historialSeleccionado;
+    }
+    const nombreRepetido = c => clientes.filter(p => p.nombre?.trim().toLocaleLowerCase('es-EC') === c.nombre?.trim().toLocaleLowerCase('es-EC')).length > 1;
+    function etiquetaCliente(c) {
+        if (!nombreRepetido(c)) return c.nombre;
+        const contexto = [c.identificacion && `Identificación: ${c.identificacion}`, c.telefono && `Tel.: ${c.telefono}`, c.direccion && c.direccion].filter(Boolean).join(' · ');
+        return `${c.nombre} — ${contexto || 'Sin datos de contacto distintivos'}`;
     }
     async function cargar() {
         const identidad = usuarioActual();
         if (!identidad) return;
         const numero = ++consulta;
+        const numeroClientes = ++consultaClientes;
         if (!ocupado) informar('cargando', 'Consultando ventas y clientes…');
         try {
             const [v,c] = await Promise.all([api('/sales'), api('/clientes')]);
             if (usuarioActual() !== identidad || numero !== consulta) return;
-            ventas = v.ventas; clientes = c.registros;
+            ventas = v.ventas;
+            if (numeroClientes === consultaClientes) clientes = c.registros;
             pintar();
             if (!ocupado) informar('neutro', 'Ventas y clientes actualizados.');
             return true;
         } catch (error) {
             if (usuarioActual() !== identidad || numero !== consulta) return;
-            ventas = []; clientes = []; pintar();
+            ventas = []; if (numeroClientes === consultaClientes) clientes = []; pintar();
             informar('error', `${error.message} No se pudieron actualizar las ventas. Reintente con Actualizar ventas y cuentas.`);
             return false;
         }
     }
-    async function operar(fn) {
+    async function operar(fn, destino = 'estadoVentas') {
         if (ocupado || !usuarioActual()) return;
         const identidad = usuarioActual();
         ocupado = true;
-        controles(); informar('cargando', 'Procesando operación…');
+        controles(); informar('cargando', 'Procesando operación…', destino);
         try { await fn(); }
-        catch (error) { if (usuarioActual() === identidad) informar('error', error.message); }
+        catch (error) { if (usuarioActual() === identidad) informar('error', error.message, destino); }
         finally {
             ocupado = false;
             if (usuarioActual() === identidad) {
-                if (el('estadoVentas').textContent === 'Procesando operación…') informar('neutro', '');
+                if (el(destino).textContent === 'Procesando operación…') informar('neutro', '', destino);
             }
             controles();
         }
     }
+    async function cargarClientes() {
+        const identidad = usuarioActual(), numero = ++consultaClientes;
+        try {
+            const r = await api('/clientes');
+            if (usuarioActual() !== identidad || numero !== consultaClientes) return;
+            clientes = r.registros; pintarClientes(); return true;
+        } catch (error) {
+            if (usuarioActual() !== identidad || numero !== consultaClientes) return;
+            informar('error', error.message, 'estadoClientes'); return false;
+        }
+    }
+    function registrarCliente() { return operar(async () => {
+        const identidad = usuarioActual(), seleccion = el('ventaCliente').value;
+        if (!exigirPermiso('ventas')) return;
+        const campos = ['Nombre', 'Identificacion', 'Telefono', 'Direccion'];
+        const valores = campos.map(c => el(`clientes${c}`).value);
+        let respuesta;
+        try { respuesta = await api('/clientes', 'POST', Object.fromEntries(campos.map((c,i) => [c.toLowerCase(), valores[i]]))); }
+        catch (error) {
+            if (!error.status || error.status >= 500) error.message += ' Si la respuesta se perdió, consulte la lista antes de repetir el registro.';
+            throw error;
+        }
+        consultaClientes++; // Invalida lecturas iniciadas antes del registro.
+        const registro = respuesta.registro, identificado = Number.isSafeInteger(registro?.id) && registro.id > 0;
+        for (const [i,c] of campos.entries()) if (el(`clientes${c}`).value === valores[i]) el(`clientes${c}`).value = '';
+        const actualizado = await cargarClientes();
+        if (usuarioActual() !== identidad) return;
+        if (identificado && !clientes.some(c => c.id === registro.id)) { clientes.push(registro); pintarClientes(); }
+        if (identificado && el('ventaCliente').value === seleccion) el('ventaCliente').value = String(registro.id);
+        informar(actualizado === false ? 'error' : 'exito', actualizado === false
+            ? 'Cliente registrado. No vuelva a registrarlo; use Actualizar ventas y cuentas para consultar la lista.'
+            : identificado ? 'Cliente registrado correctamente.' : 'Cliente registrado. Selecciónelo en la lista de clientes.', 'estadoClientes');
+    }, 'estadoClientes'); }
     async function enviar(ruta, metodo, datos) {
         const identidad = usuarioActual();
         const firma = JSON.stringify([ruta,metodo,datos]);
@@ -164,6 +209,13 @@
     });
     globalThis.MicroCarmitaVentas = {
         cargar,
+        nombreCliente: id => { const c = clientes.find(c => Number(c.id) === Number(id)); return c ? etiquetaCliente(c) : undefined; },
+        registrarCliente,
+        nuevoCliente() {
+            if (!exigirPermiso('ventas')) return;
+            el('clientesNombre').scrollIntoView?.({ block:'center', behavior:'auto' });
+            el('clientesNombre').focus?.({ preventScroll:true });
+        },
         cancelarEdicion() {
             if (ocupado || pendiente) return alert('Confirme primero la operación pendiente reintentándola.');
             edicion = null; carrito = []; el('ventaPrecio').readOnly = true; mostrarCarrito();
@@ -173,7 +225,7 @@
             el('historialVentas').innerHTML = '<h3>Venta ' + Number(v.id) + ' · ' + textoSeguro(v.estado) + '</h3>'
                 + '<p>Total de la venta: <strong>' + textoSeguro(dinero(v.total)) + '</strong> · Saldo: <strong>' + textoSeguro(dinero(v.saldo)) + '</strong></p>'
                 + '<h4>Productos y lotes</h4>' + tabla(['Producto', 'Cantidad', 'Precio', 'Lotes descontados', 'Faltante'], v.detalles.map(l => [l.nombre, l.cantidad, dinero(l.precio),
-                    (l.asignaciones || []).map(a => 'Lote ' + a.loteId + ': ' + a.cantidad).join(', ') || 'Sin asignaciones', l.sin_existencia || 0]))
+                    (l.asignaciones || []).map(a => 'Lote ' + (a.codigo || MicroCarmitaInventario.codigoLote?.(a.loteId) || a.loteId) + ': ' + a.cantidad).join(', ') || 'Sin asignaciones', l.sin_existencia || 0]))
                 + '<h4>Historial de cambios</h4>' + tabla(['Fecha', 'Responsable', 'Acción', 'Motivo'], v.historial.map(h => [fechaLegible(h.creado_en), h.responsable, h.accion, h.motivo]))
                 + '<h4>Movimientos de caja</h4>' + tabla(['Fecha', 'Concepto', 'Importe'], v.caja.map(c => [fechaLegible(c.creado_en), c.tipo, dinero(c.importe)]));
             el('historialVentas').hidden = false;
@@ -181,7 +233,8 @@
         }),
         cliente: id => operar(async () => {
             const r = await api(`/customers/${id}/receivables`);
-            el('historialCobros').innerHTML = '<h3>Historial del cliente ' + Number(id) + '</h3>'
+            const cliente = clientes.find(c => Number(c.id) === Number(id));
+            el('historialCobros').innerHTML = '<h3>Historial del cliente' + (cliente ? ': ' + textoSeguro(etiquetaCliente(cliente)) : '') + '</h3>'
                 + '<p>Deuda vigente: <strong>' + textoSeguro(dinero(r.totalAdeudado)) + '</strong> · Abonos: <strong>' + textoSeguro(dinero(r.abonado))
                 + '</strong> · Saldo: <strong>' + textoSeguro(dinero(r.saldo)) + '</strong></p>'
                 + r.ventas.map(v => '<section class="historial-venta"><h4>Venta ' + Number(v.id) + ' · ' + textoSeguro(v.estado) + '</h4>'
@@ -215,6 +268,8 @@
     };
     document.addEventListener('microcarmita:sesion', () => {
         consulta++;
+        consultaClientes++;
+        informar('neutro', '', 'estadoClientes');
         ventas = []; clientes = []; carrito = []; edicion = null; pendiente = null;
         informar('neutro', '');
         el('historialCobros').innerHTML = ''; el('historialVentas').innerHTML = ''; el('historialVentas').hidden = true; pintar(); mostrarCarrito();
