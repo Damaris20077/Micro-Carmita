@@ -1,4 +1,3 @@
-
 /* =========================================
    CONFIGURACIÓN Y DATOS
 ========================================= */
@@ -34,139 +33,246 @@ function fechaActual() {
 }
 
 let carrito = [];
+let usuarioActual = null;
+
+const PERMISOS_SECCIONES = [
+    "ventas",
+    "cuentas",
+    "inventario",
+    "movimientos",
+    "reportes"
+];
+
 
 /* =========================================
-   SESIÓN, USUARIOS Y PERMISOS (prototipo local)
+   SISTEMA DE USUARIOS
 ========================================= */
 
-const CLAVE_USUARIOS = "micro-carmita-usuarios";
-const CLAVE_SESION = "micro-carmita-sesion";
-const permisosPorRol = {
-    vendedor: ["inicio", "ventas", "cuentas", "inventario"],
-    administrador: ["inicio", "ventas", "cuentas", "inventario", "movimientos", "reportes"],
-    superusuario: ["inicio", "ventas", "cuentas", "inventario", "movimientos", "reportes", "usuarios"]
-};
+function inicializarUsuarios() {
+    let usuarios = obtenerDatos("usuarios");
 
-function usuariosIniciales() {
-    return [
-        { id: "super-demo", nombre: "Super usuario", usuario: "superadmin", clave: "super123", rol: "superusuario", activo: true },
-        { id: "admin-demo", nombre: "Administrador", usuario: "admin", clave: "admin123", rol: "administrador", activo: true },
-        { id: "vendedor-demo", nombre: "Vendedor", usuario: "vendedor", clave: "venta123", rol: "vendedor", activo: true }
-    ];
+    if (usuarios.length === 0) {
+        usuarios.push({
+            id: 1,
+            nombre: "Administrador",
+            usuario: "admin",
+            contrasena: "Carmita2026!",
+            rol: "administrador",
+            permisos: PERMISOS_SECCIONES.slice()
+        });
+
+        guardarDatos("usuarios", usuarios);
+    }
 }
 
 function obtenerUsuarios() {
-    const usuarios = obtenerDatos(CLAVE_USUARIOS);
-    if (usuarios.length) return usuarios;
-    const iniciales = usuariosIniciales();
-    guardarDatos(CLAVE_USUARIOS, iniciales);
-    return iniciales;
+    return obtenerDatos("usuarios");
 }
 
-function usuarioActual() {
-    const sesion = obtenerDatos(CLAVE_SESION);
-    return sesion?.id ? obtenerUsuarios().find(usuario => usuario.id === sesion.id && usuario.activo) : null;
+function guardarUsuarios(usuarios) {
+    guardarDatos("usuarios", usuarios);
 }
 
-function tienePermiso(permiso) {
-    const usuario = usuarioActual();
-    return Boolean(usuario && permisosPorRol[usuario.rol]?.includes(permiso));
+function esAdministrador() {
+    return usuarioActual &&
+        usuarioActual.rol === "administrador";
 }
 
-function exigirPermiso(permiso) {
-    if (tienePermiso(permiso)) return true;
-    alert("No tiene permiso para realizar esta acción.");
-    return false;
+function tienePermiso(seccion) {
+    if (!usuarioActual) return false;
+
+    if (seccion === "inicio") return true;
+
+    if (seccion === "usuarios") {
+        return esAdministrador();
+    }
+
+    if (esAdministrador()) return true;
+
+    return Array.isArray(usuarioActual.permisos) &&
+        usuarioActual.permisos.includes(seccion);
 }
 
-function iniciarSesion(evento) {
-    evento.preventDefault();
-    const cuenta = document.getElementById("loginUsuario").value.trim().toLowerCase();
-    const clave = document.getElementById("loginClave").value;
-    const usuario = obtenerUsuarios().find(item => item.activo && item.usuario.toLowerCase() === cuenta && item.clave === clave);
-    const error = document.getElementById("errorLogin");
-    if (!usuario) {
-        error.textContent = "Usuario, contraseña o estado de cuenta inválido.";
+function verificarPermiso(seccion) {
+    if (!usuarioActual) {
+        alert("Debe iniciar sesión.");
+        return false;
+    }
+
+    if (!tienePermiso(seccion)) {
+        alert("No tiene permiso para realizar esta acción.");
+        return false;
+    }
+
+    return true;
+}
+
+
+/* =========================================
+   INICIO DE SESIÓN
+========================================= */
+
+function iniciarSesion(event) {
+    event.preventDefault();
+
+    const usuario = document.getElementById("loginUsuario").value.trim();
+    const contrasena = document.getElementById("loginContrasena").value;
+    const mensaje = document.getElementById("mensajeLogin");
+
+    const usuarios = obtenerUsuarios();
+
+    const encontrado = usuarios.find(u =>
+        u.usuario.toLowerCase() === usuario.toLowerCase() &&
+        u.contrasena === contrasena
+    );
+
+    if (!encontrado) {
+        mensaje.textContent = "Usuario o contraseña incorrectos.";
+        mensaje.style.color = "#dc2626";
         return;
     }
-    guardarDatos(CLAVE_SESION, { id: usuario.id });
-    document.getElementById("loginClave").value = "";
-    error.textContent = "";
-    aplicarSesion();
+
+    usuarioActual = encontrado;
+
+    localStorage.setItem(
+        "sesionMicroCarmita",
+        JSON.stringify({ id: encontrado.id })
+    );
+
+    mostrarAplicacion();
 }
 
-function cerrarSesion() {
-    localStorage.removeItem(CLAVE_SESION);
-    carrito = [];
-    aplicarSesion();
-}
-
-function aplicarSesion() {
-    const usuario = usuarioActual();
+function mostrarAplicacion() {
     const login = document.getElementById("pantallaLogin");
-    login.classList.toggle("oculta", Boolean(usuario));
-    if (!usuario) return;
+    const aplicacion = document.getElementById("aplicacion");
 
-    document.getElementById("nombreSesion").textContent = usuario.nombre;
-    document.getElementById("rolSesion").textContent = usuario.rol === "superusuario" ? "Super usuario" : usuario.rol;
-    document.querySelectorAll(".menu[data-permiso]").forEach(menu => {
-        menu.hidden = !tienePermiso(menu.dataset.permiso);
+    if (!usuarioActual || !login || !aplicacion) return;
+
+    login.style.display = "none";
+    aplicacion.style.display = "flex";
+
+    const nombreActivo = document.getElementById("nombreUsuarioActivo");
+    const rolActivo = document.getElementById("rolUsuarioActivo");
+
+    if (nombreActivo) {
+        nombreActivo.textContent = usuarioActual.nombre;
+    }
+
+    if (rolActivo) {
+        rolActivo.textContent =
+            usuarioActual.rol === "administrador"
+                ? "Administrador"
+                : "Empleado";
+    }
+
+    const aviso = document.getElementById("avisoBienvenida");
+    const texto = document.getElementById("textoBienvenida");
+
+    if (aviso && texto) {
+        texto.textContent = "¡Bienvenido, " + usuarioActual.nombre + "!";
+        aviso.style.display = "block";
+
+        setTimeout(() => {
+            aviso.style.display = "none";
+        }, 5000);
+    }
+
+    const menuUsuarios = document.getElementById("menuUsuarios");
+
+    if (menuUsuarios) {
+        menuUsuarios.style.display =
+            esAdministrador() ? "" : "none";
+    }
+
+    aplicarPermisosMenu();
+
+    document.querySelectorAll(".seccion").forEach(seccion => {
+        seccion.classList.remove("activa-seccion");
     });
-    const formularioProducto = document.getElementById("formularioProducto");
-    if (formularioProducto) formularioProducto.hidden = usuario.rol === "vendedor";
-    const activa = document.querySelector(".seccion.activa-seccion");
-    if (activa && !tienePermiso(activa.id)) mostrarSeccion("inicio", document.querySelector(".menu"));
-    mostrarUsuarios();
+
+    const inicio = document.getElementById("inicio");
+
+    if (inicio) {
+        inicio.classList.add("activa-seccion");
+    }
+
+    document.querySelectorAll(".menu").forEach(btn => {
+        btn.classList.remove("activo");
+    });
+
+    const botones = document.querySelectorAll(".menu");
+
+    if (botones.length > 0) {
+        botones[0].classList.add("activo");
+    }
+
     actualizarTodo();
 }
 
-function crearUsuario() {
-    if (!exigirPermiso("usuarios")) return;
-    const nombre = document.getElementById("usuarioNombre").value.trim();
-    const cuenta = document.getElementById("usuarioCuenta").value.trim().toLowerCase();
-    const clave = document.getElementById("usuarioClave").value;
-    const rol = document.getElementById("usuarioRol").value;
-    if (!nombre || !/^[a-z0-9._-]{3,30}$/i.test(cuenta) || clave.length < 6 || !permisosPorRol[rol]) {
-        alert("Ingrese nombre, un usuario de 3 a 30 caracteres, contraseña de al menos 6 caracteres y un rol válido.");
-        return;
-    }
-    const usuarios = obtenerUsuarios();
-    if (usuarios.some(usuario => usuario.usuario.toLowerCase() === cuenta)) {
-        alert("Ese nombre de usuario ya está en uso.");
-        return;
-    }
-    usuarios.push({ id: `usuario-${Date.now()}`, nombre, usuario: cuenta, clave, rol, activo: true });
-    guardarDatos(CLAVE_USUARIOS, usuarios);
-    ["usuarioNombre", "usuarioCuenta", "usuarioClave"].forEach(id => document.getElementById(id).value = "");
-    mostrarUsuarios();
+function aplicarPermisosMenu() {
+    document.querySelectorAll(".menu").forEach(boton => {
+        const onclick = boton.getAttribute("onclick");
+
+        if (!onclick) return;
+
+        const coincidencia = onclick.match(
+            /mostrarSeccion\('([^']+)'/
+        );
+
+        if (!coincidencia) return;
+
+        const seccion = coincidencia[1];
+
+        boton.style.display =
+            tienePermiso(seccion) ? "" : "none";
+    });
 }
 
-function cambiarEstadoUsuario(id) {
-    if (!exigirPermiso("usuarios")) return;
-    const usuarios = obtenerUsuarios();
-    const objetivo = usuarios.find(usuario => usuario.id === id);
-    const actual = usuarioActual();
-    if (!objetivo || objetivo.id === actual.id) {
-        alert("No puede desactivar su propia cuenta.");
-        return;
+function cerrarSesion() {
+    if (!confirm("¿Desea cerrar sesión?")) return;
+
+    usuarioActual = null;
+    carrito = [];
+
+    localStorage.removeItem("sesionMicroCarmita");
+
+    document.getElementById("aplicacion").style.display = "none";
+    document.getElementById("pantallaLogin").style.display = "flex";
+
+    document.getElementById("loginUsuario").value = "";
+    document.getElementById("loginContrasena").value = "";
+    document.getElementById("mensajeLogin").textContent = "";
+
+    const aviso = document.getElementById("avisoBienvenida");
+
+    if (aviso) {
+        aviso.style.display = "none";
     }
-    if (objetivo.rol === "superusuario" && objetivo.activo && usuarios.filter(usuario => usuario.rol === "superusuario" && usuario.activo).length === 1) {
-        alert("Debe conservar al menos un super usuario activo.");
-        return;
-    }
-    objetivo.activo = !objetivo.activo;
-    guardarDatos(CLAVE_USUARIOS, usuarios);
-    mostrarUsuarios();
 }
 
-function mostrarUsuarios() {
-    const lista = document.getElementById("listaUsuarios");
-    if (!lista || !tienePermiso("usuarios")) return;
-    lista.innerHTML = obtenerUsuarios().map(usuario => `
-        <tr><td>${textoSeguro(usuario.nombre)}</td><td>${textoSeguro(usuario.usuario)}</td>
-        <td>${textoSeguro(usuario.rol === "superusuario" ? "Super usuario" : usuario.rol)}</td>
-        <td>${usuario.activo ? "Activo" : "Inactivo"}</td>
-        <td><button class="btn-pagar" onclick="cambiarEstadoUsuario('${usuario.id}')">${usuario.activo ? "Desactivar" : "Activar"}</button></td></tr>`).join("");
+function recuperarSesion() {
+    const sesion = localStorage.getItem("sesionMicroCarmita");
+
+    if (!sesion) return;
+
+    try {
+        const datosSesion = JSON.parse(sesion);
+        const usuarios = obtenerUsuarios();
+
+        const usuario = usuarios.find(u =>
+            String(u.id) === String(datosSesion.id)
+        );
+
+        if (usuario) {
+            usuarioActual = usuario;
+            mostrarAplicacion();
+        } else {
+            localStorage.removeItem("sesionMicroCarmita");
+        }
+
+    } catch {
+        localStorage.removeItem("sesionMicroCarmita");
+    }
 }
 
 
@@ -175,10 +281,8 @@ function mostrarUsuarios() {
 ========================================= */
 
 function mostrarSeccion(nombreSeccion, boton) {
-    if (!tienePermiso(nombreSeccion)) {
-        alert("No tiene permiso para acceder a este módulo.");
-        return;
-    }
+    if (!verificarPermiso(nombreSeccion)) return;
+
     document.querySelectorAll(".seccion").forEach(seccion => {
         seccion.classList.remove("activa-seccion");
     });
@@ -193,7 +297,13 @@ function mostrarSeccion(nombreSeccion, boton) {
         btn.classList.remove("activo");
     });
 
-    if (boton) boton.classList.add("activo");
+    if (boton) {
+        boton.classList.add("activo");
+    }
+
+    if (nombreSeccion === "usuarios") {
+        mostrarUsuarios();
+    }
 
     actualizarTodo();
 }
@@ -246,16 +356,18 @@ function cargarProductosVenta() {
         }
     });
 
-    if (seleccionado &&
+    if (
+        seleccionado &&
         inventario.some(p =>
-            String(p.id) === seleccionado && Number(p.cantidad) > 0
-        )) {
+            String(p.id) === seleccionado &&
+            Number(p.cantidad) > 0
+        )
+    ) {
         selector.value = seleccionado;
     }
 
     actualizarPrecioVenta();
 }
-
 
 function actualizarPrecioVenta() {
     const selector = document.getElementById("ventaProducto");
@@ -280,7 +392,8 @@ function actualizarPrecioVenta() {
 ========================================= */
 
 function agregarAlCarrito() {
-    if (!exigirPermiso("ventas")) return;
+    if (!verificarPermiso("ventas")) return;
+
     const selector = document.getElementById("ventaProducto");
     const campoCantidad = document.getElementById("ventaCantidad");
 
@@ -320,6 +433,7 @@ function agregarAlCarrito() {
             "No hay suficientes unidades de " + producto.nombre +
             ".\nExistencias disponibles: " + producto.cantidad
         );
+
         return;
     }
 
@@ -330,7 +444,7 @@ function agregarAlCarrito() {
             id: producto.id,
             nombre: producto.nombre,
             precio: Number(producto.precio),
-            cantidad: cantidad
+            cantidad
         });
     }
 
@@ -392,9 +506,9 @@ function mostrarCarrito() {
     totalElemento.textContent = dinero(total);
 }
 
-
 function quitarDelCarrito(id) {
-    if (!exigirPermiso("ventas")) return;
+    if (!verificarPermiso("ventas")) return;
+
     carrito = carrito.filter(item =>
         String(item.id) !== String(id)
     );
@@ -408,7 +522,8 @@ function quitarDelCarrito(id) {
 ========================================= */
 
 function registrarVenta() {
-    if (!exigirPermiso("ventas")) return;
+    if (!verificarPermiso("ventas")) return;
+
     const cliente = document.getElementById("ventaCliente").value.trim();
     const tipo = document.getElementById("ventaTipo").value;
 
@@ -439,6 +554,7 @@ function registrarVenta() {
                 "No hay suficientes unidades de " + producto.nombre +
                 ". Existencias actuales: " + producto.cantidad
             );
+
             return;
         }
     }
@@ -491,6 +607,7 @@ function registrarVenta() {
 
     const ventas = obtenerDatos("ventas");
     ventas.push(venta);
+
     guardarDatos("ventas", ventas);
 
     if (tipo === "fiado") {
@@ -555,6 +672,7 @@ function mostrarVentas() {
                 <td colspan="6">No existen ventas registradas.</td>
             </tr>
         `;
+
         return;
     }
 
@@ -589,7 +707,6 @@ function saldoCuenta(cuenta) {
     return Math.max(0, Number(cuenta.total) - abonado);
 }
 
-
 function mostrarCuentas() {
     const lista = document.getElementById("listaCuentas");
     const cuentas = obtenerDatos("cuentas");
@@ -604,6 +721,7 @@ function mostrarCuentas() {
                 <td colspan="6">No existen cuentas pendientes.</td>
             </tr>
         `;
+
         return;
     }
 
@@ -629,7 +747,8 @@ function mostrarCuentas() {
             </td>
             <td>
                 ${!pagada ? `
-                    <button class="btn-pagar" onclick="abonarCuenta(${Number(cuenta.id)})">
+                    <button class="btn-pagar"
+                        onclick="abonarCuenta(${Number(cuenta.id)})">
                         Registrar abono
                     </button>
                 ` : "—"}
@@ -657,7 +776,8 @@ function mostrarCuentas() {
 ========================================= */
 
 function abonarCuenta(id) {
-    if (!exigirPermiso("cuentas")) return;
+    if (!verificarPermiso("cuentas")) return;
+
     const cuentas = obtenerDatos("cuentas");
 
     const cuenta = cuentas.find(item =>
@@ -718,9 +838,7 @@ function abonarCuenta(id) {
     actualizarTodo();
 }
 
-
 function marcarPagado(id) {
-    if (!exigirPermiso("cuentas")) return;
     abonarCuenta(id);
 }
 
@@ -730,7 +848,8 @@ function marcarPagado(id) {
 ========================================= */
 
 function agregarProducto() {
-    if (!exigirPermiso("inventario") || usuarioActual()?.rol === "vendedor") return alert("Solo administración puede modificar el inventario.");
+    if (!verificarPermiso("inventario")) return;
+
     const nombre = document.getElementById("productoNombre").value.trim();
     const categoria = document.getElementById("productoCategoria").value.trim();
     const precio = Number(document.getElementById("productoPrecio").value);
@@ -759,6 +878,7 @@ function agregarProducto() {
             "Este producto ya existe en el inventario.\n" +
             "No se puede registrar nuevamente."
         );
+
         return;
     }
 
@@ -788,7 +908,8 @@ function agregarProducto() {
 ========================================= */
 
 function editarProducto(id) {
-    if (!exigirPermiso("inventario") || usuarioActual()?.rol === "vendedor") return alert("Solo administración puede modificar el inventario.");
+    if (!verificarPermiso("inventario")) return;
+
     const inventario = obtenerDatos("inventario");
 
     const producto = inventario.find(item =>
@@ -800,7 +921,6 @@ function editarProducto(id) {
         return;
     }
 
-    // Editar nombre
     const nuevoNombre = prompt(
         "Ingrese el nuevo nombre del producto:",
         producto.nombre
@@ -815,7 +935,6 @@ function editarProducto(id) {
         return;
     }
 
-    // Evitar nombres duplicados
     const nombreDuplicado = inventario.some(item =>
         String(item.id) !== String(id) &&
         item.nombre.trim().toLowerCase() === nombreLimpio.toLowerCase()
@@ -826,7 +945,6 @@ function editarProducto(id) {
         return;
     }
 
-    // Editar precio
     const nuevoPrecioTexto = prompt(
         "Ingrese el nuevo precio del producto:",
         producto.precio
@@ -841,7 +959,6 @@ function editarProducto(id) {
         return;
     }
 
-    // Editar cantidad
     const nuevaCantidadTexto = prompt(
         "Ingrese la nueva cantidad disponible:",
         producto.cantidad
@@ -856,31 +973,35 @@ function editarProducto(id) {
         !Number.isInteger(nuevaCantidad) ||
         nuevaCantidad < 0
     ) {
-        alert("Ingrese una cantidad válida. Debe ser un número entero igual o mayor que cero.");
+        alert(
+            "Ingrese una cantidad válida. Debe ser un número entero igual o mayor que cero."
+        );
+
         return;
     }
 
-    // Evitar que el carrito supere las nuevas existencias
     const productoEnCarrito = carrito.find(item =>
         String(item.id) === String(id)
     );
 
-    if (productoEnCarrito && productoEnCarrito.cantidad > nuevaCantidad) {
+    if (
+        productoEnCarrito &&
+        productoEnCarrito.cantidad > nuevaCantidad
+    ) {
         alert(
             "No puede establecer una cantidad menor a la que ya está en el carrito.\n" +
             "Cantidad en el carrito: " + productoEnCarrito.cantidad
         );
+
         return;
     }
 
-    // Guardar los cambios
     producto.nombre = nombreLimpio;
     producto.precio = nuevoPrecio;
     producto.cantidad = nuevaCantidad;
 
     guardarDatos("inventario", inventario);
 
-    // Actualizar el producto si está en el carrito
     carrito.forEach(item => {
         if (String(item.id) === String(id)) {
             item.nombre = nombreLimpio;
@@ -899,7 +1020,8 @@ function editarProducto(id) {
 ========================================= */
 
 function eliminarProducto(id) {
-    if (!exigirPermiso("inventario") || usuarioActual()?.rol === "vendedor") return alert("Solo administración puede modificar el inventario.");
+    if (!verificarPermiso("inventario")) return;
+
     const inventario = obtenerDatos("inventario");
 
     const producto = inventario.find(item =>
@@ -952,12 +1074,12 @@ function mostrarInventario() {
                 <td colspan="6">No existen productos registrados.</td>
             </tr>
         `;
+
         return;
     }
 
     inventario.forEach(producto => {
         const disponible = Number(producto.cantidad) > 0;
-        const puedeModificar = usuarioActual()?.rol !== "vendedor";
 
         const fila = document.createElement("tr");
 
@@ -973,21 +1095,19 @@ function mostrarInventario() {
                     ${disponible ? "Disponible" : "Agotado"}
                 </span>
             </td>
-            <td>${puedeModificar ? `
-                <button
-                    class="btn-editar"
+            <td>
+                <button class="btn-editar"
                     onclick="editarProducto(${Number(producto.id)})">
                     <i class="fa-solid fa-pen"></i>
                     Editar
                 </button>
 
-                <button
-                    class="btn-eliminar"
+                <button class="btn-eliminar"
                     onclick="eliminarProducto(${Number(producto.id)})">
                     <i class="fa-solid fa-trash"></i>
                     Eliminar
                 </button>
-            ` : "Solo consulta"}</td>
+            </td>
         `;
 
         lista.appendChild(fila);
@@ -1000,7 +1120,8 @@ function mostrarInventario() {
 ========================================= */
 
 function registrarMovimiento() {
-    if (!exigirPermiso("movimientos")) return;
+    if (!verificarPermiso("movimientos")) return;
+
     const tipo = document.getElementById("movimientoTipo").value;
     const descripcion = document.getElementById("movimientoDescripcion").value.trim();
     const valor = Number(document.getElementById("movimientoValor").value);
@@ -1020,7 +1141,6 @@ function registrarMovimiento() {
     actualizarTodo();
 }
 
-
 function mostrarMovimientos() {
     const lista = document.getElementById("listaMovimientos");
     const movimientos = obtenerDatos("movimientos");
@@ -1035,6 +1155,7 @@ function mostrarMovimientos() {
                 <td colspan="4">No existen movimientos registrados.</td>
             </tr>
         `;
+
         return;
     }
 
@@ -1140,10 +1261,163 @@ function actualizarReportes() {
 
 
 /* =========================================
+   ADMINISTRACIÓN DE USUARIOS
+========================================= */
+
+function crearUsuario(event) {
+    event.preventDefault();
+
+    if (!esAdministrador()) {
+        alert("Solo el administrador puede crear usuarios.");
+        return;
+    }
+
+    const nombre = document.getElementById("nuevoNombre").value.trim();
+    const usuario = document.getElementById("nuevoUsuario").value.trim();
+    const contrasena = document.getElementById("nuevaContrasena").value;
+    const rol = document.getElementById("nuevoRol").value;
+
+    if (!nombre || !usuario || !contrasena) {
+        alert("Complete todos los campos.");
+        return;
+    }
+
+    const usuarios = obtenerUsuarios();
+
+    const duplicado = usuarios.some(u =>
+        u.usuario.toLowerCase() === usuario.toLowerCase()
+    );
+
+    if (duplicado) {
+        alert("Ese nombre de usuario ya existe.");
+        return;
+    }
+
+    let permisos = [];
+
+    if (rol === "administrador") {
+        permisos = PERMISOS_SECCIONES.slice();
+    } else {
+        PERMISOS_SECCIONES.forEach(seccion => {
+            const checkbox = document.getElementById(
+                "permiso" +
+                seccion.charAt(0).toUpperCase() +
+                seccion.slice(1)
+            );
+
+            if (checkbox && checkbox.checked) {
+                permisos.push(seccion);
+            }
+        });
+    }
+
+    const nuevo = {
+        id: Date.now(),
+        nombre,
+        usuario,
+        contrasena,
+        rol,
+        permisos
+    };
+
+    usuarios.push(nuevo);
+
+    guardarUsuarios(usuarios);
+
+    alert("Usuario creado correctamente.");
+
+    document.getElementById("formularioUsuario").reset();
+
+    mostrarUsuarios();
+}
+
+function mostrarUsuarios() {
+    const lista = document.getElementById("listaUsuarios");
+
+    if (!lista) return;
+
+    if (!esAdministrador()) {
+        lista.innerHTML = "";
+        return;
+    }
+
+    const usuarios = obtenerUsuarios();
+
+    lista.innerHTML = "";
+
+    usuarios.forEach(usuario => {
+        const fila = document.createElement("tr");
+
+        const permisosTexto = usuario.rol === "administrador"
+            ? "Todos los permisos"
+            : (usuario.permisos || []).join(", ") || "Sin permisos";
+
+        fila.innerHTML = `
+            <td>${textoSeguro(usuario.nombre)}</td>
+            <td>${textoSeguro(usuario.usuario)}</td>
+            <td>${textoSeguro(usuario.rol)}</td>
+            <td>${textoSeguro(permisosTexto)}</td>
+            <td>
+                ${
+                    String(usuario.id) !== String(usuarioActual.id)
+                    ? `
+                        <button class="btn-eliminar"
+                            onclick="eliminarUsuario(${Number(usuario.id)})">
+                            <i class="fa-solid fa-trash"></i>
+                            Eliminar
+                        </button>
+                    `
+                    : "Cuenta actual"
+                }
+            </td>
+        `;
+
+        lista.appendChild(fila);
+    });
+}
+
+function eliminarUsuario(id) {
+    if (!esAdministrador()) {
+        alert("Solo el administrador puede eliminar usuarios.");
+        return;
+    }
+
+    if (String(id) === String(usuarioActual.id)) {
+        alert("No puede eliminar su propia cuenta.");
+        return;
+    }
+
+    const usuarios = obtenerUsuarios();
+
+    const usuario = usuarios.find(u =>
+        String(u.id) === String(id)
+    );
+
+    if (!usuario) return;
+
+    if (!confirm("¿Desea eliminar al usuario " + usuario.nombre + "?")) {
+        return;
+    }
+
+    const nuevosUsuarios = usuarios.filter(u =>
+        String(u.id) !== String(id)
+    );
+
+    guardarUsuarios(nuevosUsuarios);
+
+    alert("Usuario eliminado correctamente.");
+
+    mostrarUsuarios();
+}
+
+
+/* =========================================
    ACTUALIZAR TODO EL SISTEMA
 ========================================= */
 
 function actualizarTodo() {
+    if (!usuarioActual) return;
+
     mostrarVentas();
     mostrarCuentas();
     mostrarInventario();
@@ -1154,6 +1428,10 @@ function actualizarTodo() {
 
     actualizarInicio();
     actualizarReportes();
+
+    if (esAdministrador()) {
+        mostrarUsuarios();
+    }
 }
 
 
@@ -1162,6 +1440,25 @@ function actualizarTodo() {
 ========================================= */
 
 document.addEventListener("DOMContentLoaded", () => {
-    obtenerUsuarios();
-    aplicarSesion();
+
+    inicializarUsuarios();
+
+    const formularioLogin = document.getElementById("formularioLogin");
+    const botonCerrarSesion = document.getElementById("btnCerrarSesion");
+    const formularioUsuario = document.getElementById("formularioUsuario");
+
+    if (formularioLogin) {
+        formularioLogin.addEventListener("submit", iniciarSesion);
+    }
+
+    if (botonCerrarSesion) {
+        botonCerrarSesion.addEventListener("click", cerrarSesion);
+    }
+
+    if (formularioUsuario) {
+        formularioUsuario.addEventListener("submit", crearUsuario);
+    }
+
+    recuperarSesion();
+
 });
