@@ -1,0 +1,324 @@
+-- ARCHIVO HISTORICO INERTE: LIMPIEZA YA EJECUTADA. NO REUTILIZAR.
+-- Conservado solo como documentación; todas las líneas están comentadas.
+-- La intervención autorizada eliminó 101 filas mediante otra transacción verificada.
+-- No contiene instrucciones SQL activas ni permite ejecutar un nuevo borrado.
+-- -- PLAN REVISABLE: NO AUTORIZADO / NO EJECUTADO.
+-- -- Inspección 2026-11-19: MySQL 8.0.46, micro_carmita, 22 tablas InnoDB.
+-- -- NO es una migración ni un comando de mantenimiento automático.
+-- -- Todos los indicadores se restablecen a 0: por defecto no elimina filas.
+-- -- Nunca cambiar estos valores ni el ROLLBACK sin autorización posterior expresa.
+-- -- Detener aplicación, pestañas, trabajos y cualquier escritor antes de un ensayo autorizado.
+-- -- Cuenta administrativa para certificar metadatos completos; no confiar en visibilidad DML.
+-- -- Ejecutar solo en conexión NUEVA. Ante cualquier error: ROLLBACK y cerrar la conexión.
+-- -- El archivo termina siempre en ROLLBACK: aun armado, es solo un ensayo reversible.
+--
+-- SET @autorizacion_explicita = 0;
+-- SET @respaldo_restaurado_y_verificado = 0;
+-- SET @mantenimiento_sin_escritores = 0;
+-- SET @revision_administrativa_completa = 0;
+-- SET @todo_operativo_es_demostracion = 0;
+-- -- Invalidar también cualquier valor residual de una conexión reutilizada.
+-- SET @habilitado = 0;
+--
+-- SET TRANSACTION ISOLATION LEVEL SERIALIZABLE;
+-- START TRANSACTION;
+--
+-- SET @esquema_ok = COALESCE(DATABASE() = 'micro_carmita', 0)
+--   AND VERSION() = '8.0.46'
+--   AND @@SESSION.foreign_key_checks = 1
+--   AND @@SESSION.sql_safe_updates = 0
+--   AND (SELECT COUNT(*) FROM information_schema.TABLES
+--        WHERE TABLE_SCHEMA='micro_carmita' AND TABLE_TYPE='BASE TABLE') = 22
+--   AND (SELECT COUNT(*) FROM information_schema.TABLES
+--        WHERE TABLE_SCHEMA='micro_carmita'
+--          AND (TABLE_TYPE <> 'BASE TABLE' OR ENGINE <> 'InnoDB'
+--               OR TABLE_NAME NOT IN ('auditoria_usuarios','clientes','lotes','movimientos_financieros','movimientos_inventario','pedido_detalles','pedidos','productos','proveedores','recepcion_detalles','recepciones','roles','schema_migrations','sesiones','usuarios','venta_abonos','venta_caja','venta_detalles','venta_historial','venta_lotes','venta_operaciones','ventas'))) = 0;
+--
+-- SET @migraciones_ok =
+--   (SELECT COUNT(*) FROM micro_carmita.schema_migrations) = 5
+--   AND (SELECT COUNT(*) FROM micro_carmita.schema_migrations
+--        WHERE version NOT IN ('001_auth','002_catalogo_inventario','003_pedidos_recepciones','004_ventas_cobros','005_finanzas')) = 0;
+--
+-- -- Verifica cada columna FK observada, incluidas las dos claves compuestas.
+-- WITH esperadas(hija, columna, padre, referencia) AS (
+-- SELECT 'auditoria_usuarios', 'actor_id', 'usuarios', 'id'
+-- UNION ALL SELECT 'auditoria_usuarios', 'usuario_afectado_id', 'usuarios', 'id'
+-- UNION ALL SELECT 'lotes', 'producto_id', 'productos', 'id'
+-- UNION ALL SELECT 'lotes', 'proveedor_id', 'proveedores', 'id'
+-- UNION ALL SELECT 'movimientos_financieros', 'usuario_id', 'usuarios', 'id'
+-- UNION ALL SELECT 'movimientos_inventario', 'producto_id', 'productos', 'id'
+-- UNION ALL SELECT 'movimientos_inventario', 'usuario_id', 'usuarios', 'id'
+-- UNION ALL SELECT 'pedido_detalles', 'pedido_id', 'pedidos', 'id'
+-- UNION ALL SELECT 'pedido_detalles', 'producto_id', 'productos', 'id'
+-- UNION ALL SELECT 'pedidos', 'cancelado_por', 'usuarios', 'id'
+-- UNION ALL SELECT 'pedidos', 'creado_por', 'usuarios', 'id'
+-- UNION ALL SELECT 'pedidos', 'proveedor_id', 'proveedores', 'id'
+-- UNION ALL SELECT 'productos', 'proveedor_id', 'proveedores', 'id'
+-- UNION ALL SELECT 'recepcion_detalles', 'pedido_id', 'recepciones', 'pedido_id'
+-- UNION ALL SELECT 'recepcion_detalles', 'recepcion_id', 'recepciones', 'id'
+-- UNION ALL SELECT 'recepcion_detalles', 'lote_id', 'lotes', 'id'
+-- UNION ALL SELECT 'recepcion_detalles', 'pedido_id', 'pedido_detalles', 'pedido_id'
+-- UNION ALL SELECT 'recepcion_detalles', 'pedido_detalle_id', 'pedido_detalles', 'id'
+-- UNION ALL SELECT 'recepciones', 'pedido_id', 'pedidos', 'id'
+-- UNION ALL SELECT 'recepciones', 'usuario_id', 'usuarios', 'id'
+-- UNION ALL SELECT 'sesiones', 'usuario_id', 'usuarios', 'id'
+-- UNION ALL SELECT 'usuarios', 'rol', 'roles', 'codigo'
+-- UNION ALL SELECT 'venta_abonos', 'venta_id', 'ventas', 'id'
+-- UNION ALL SELECT 'venta_abonos', 'usuario_id', 'usuarios', 'id'
+-- UNION ALL SELECT 'venta_caja', 'venta_id', 'ventas', 'id'
+-- UNION ALL SELECT 'venta_caja', 'usuario_id', 'usuarios', 'id'
+-- UNION ALL SELECT 'venta_detalles', 'venta_id', 'ventas', 'id'
+-- UNION ALL SELECT 'venta_detalles', 'producto_id', 'productos', 'id'
+-- UNION ALL SELECT 'venta_historial', 'venta_id', 'ventas', 'id'
+-- UNION ALL SELECT 'venta_historial', 'usuario_id', 'usuarios', 'id'
+-- UNION ALL SELECT 'venta_lotes', 'detalle_id', 'venta_detalles', 'id'
+-- UNION ALL SELECT 'venta_lotes', 'lote_id', 'lotes', 'id'
+-- UNION ALL SELECT 'venta_operaciones', 'usuario_id', 'usuarios', 'id'
+-- UNION ALL SELECT 'ventas', 'cliente_id', 'clientes', 'id'
+-- UNION ALL SELECT 'ventas', 'usuario_id', 'usuarios', 'id'
+-- )
+-- SELECT NOT EXISTS (
+--   SELECT 1 FROM esperadas e WHERE NOT EXISTS (
+--     SELECT 1 FROM information_schema.KEY_COLUMN_USAGE k
+--     JOIN information_schema.REFERENTIAL_CONSTRAINTS r
+--       ON r.CONSTRAINT_SCHEMA=k.CONSTRAINT_SCHEMA
+--      AND r.TABLE_NAME=k.TABLE_NAME AND r.CONSTRAINT_NAME=k.CONSTRAINT_NAME
+--     WHERE k.TABLE_SCHEMA='micro_carmita' AND k.REFERENCED_TABLE_SCHEMA='micro_carmita'
+--       AND k.TABLE_NAME=e.hija AND k.COLUMN_NAME=e.columna
+--       AND k.REFERENCED_TABLE_NAME=e.padre AND k.REFERENCED_COLUMN_NAME=e.referencia
+--       AND r.DELETE_RULE='NO ACTION' AND r.UPDATE_RULE='NO ACTION'
+--   )
+-- ) AND (SELECT COUNT(*) FROM information_schema.KEY_COLUMN_USAGE
+--        WHERE REFERENCED_TABLE_SCHEMA='micro_carmita'
+--           OR (TABLE_SCHEMA='micro_carmita' AND REFERENCED_TABLE_NAME IS NOT NULL)) = 35
+-- INTO @relaciones_ok;
+--
+-- -- Perfiles de restricciones: detectar deriva; no sustituye revisar SHOW CREATE TABLE.
+-- SET @restricciones_ok =
+--   (SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA='micro_carmita' AND CONSTRAINT_TYPE='PRIMARY KEY') = 22
+--   AND (SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA='micro_carmita' AND CONSTRAINT_TYPE='FOREIGN KEY') = 33
+--   AND (SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA='micro_carmita' AND CONSTRAINT_TYPE='UNIQUE') = 12
+--   AND (SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA='micro_carmita' AND CONSTRAINT_TYPE='CHECK') = 40
+--   AND (SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA='micro_carmita' AND ENFORCED <> 'YES') = 0;
+--
+-- -- Cero filas SOLO es prueba de ausencia con privilegios administrativos completos.
+-- -- Si existe algún objeto, detener y adaptar el plan tras revisar sus efectos.
+-- SET @objetos_ok =
+--   (SELECT COUNT(*) FROM information_schema.TRIGGERS WHERE EVENT_OBJECT_SCHEMA='micro_carmita') = 0
+--   AND (SELECT COUNT(*) FROM information_schema.ROUTINES WHERE ROUTINE_SCHEMA='micro_carmita') = 0
+--   AND (SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='micro_carmita') = 0;
+--
+-- SET @habilitado = COALESCE(@autorizacion_explicita=1
+--  AND @respaldo_restaurado_y_verificado=1 AND @mantenimiento_sin_escritores=1
+--  AND @revision_administrativa_completa=1 AND @todo_operativo_es_demostracion=1
+--  AND @esquema_ok=1 AND @migraciones_ok=1 AND @relaciones_ok=1
+--  AND @restricciones_ok=1 AND @objetos_ok=1, 0);
+--
+-- SELECT @habilitado AS habilitado, @esquema_ok AS esquema_ok,
+--        @migraciones_ok AS migraciones_ok, @relaciones_ok AS relaciones_ok,
+--        @restricciones_ok AS restricciones_ok, @objetos_ok AS objetos_visibles_ok,
+--        'Debe ser 0 en el archivo entregado; no es autorización para ejecutar' AS advertencia;
+--
+-- -- Conteos de todas las tablas antes de cualquier DELETE.
+-- SELECT 'ANTES' AS etapa, 'auditoria_usuarios' AS tabla, COUNT(*) AS filas FROM `micro_carmita`.`auditoria_usuarios`
+-- UNION ALL
+-- SELECT 'ANTES' AS etapa, 'clientes' AS tabla, COUNT(*) AS filas FROM `micro_carmita`.`clientes`
+-- UNION ALL
+-- SELECT 'ANTES' AS etapa, 'lotes' AS tabla, COUNT(*) AS filas FROM `micro_carmita`.`lotes`
+-- UNION ALL
+-- SELECT 'ANTES' AS etapa, 'movimientos_financieros' AS tabla, COUNT(*) AS filas FROM `micro_carmita`.`movimientos_financieros`
+-- UNION ALL
+-- SELECT 'ANTES' AS etapa, 'movimientos_inventario' AS tabla, COUNT(*) AS filas FROM `micro_carmita`.`movimientos_inventario`
+-- UNION ALL
+-- SELECT 'ANTES' AS etapa, 'pedido_detalles' AS tabla, COUNT(*) AS filas FROM `micro_carmita`.`pedido_detalles`
+-- UNION ALL
+-- SELECT 'ANTES' AS etapa, 'pedidos' AS tabla, COUNT(*) AS filas FROM `micro_carmita`.`pedidos`
+-- UNION ALL
+-- SELECT 'ANTES' AS etapa, 'productos' AS tabla, COUNT(*) AS filas FROM `micro_carmita`.`productos`
+-- UNION ALL
+-- SELECT 'ANTES' AS etapa, 'proveedores' AS tabla, COUNT(*) AS filas FROM `micro_carmita`.`proveedores`
+-- UNION ALL
+-- SELECT 'ANTES' AS etapa, 'recepcion_detalles' AS tabla, COUNT(*) AS filas FROM `micro_carmita`.`recepcion_detalles`
+-- UNION ALL
+-- SELECT 'ANTES' AS etapa, 'recepciones' AS tabla, COUNT(*) AS filas FROM `micro_carmita`.`recepciones`
+-- UNION ALL
+-- SELECT 'ANTES' AS etapa, 'roles' AS tabla, COUNT(*) AS filas FROM `micro_carmita`.`roles`
+-- UNION ALL
+-- SELECT 'ANTES' AS etapa, 'schema_migrations' AS tabla, COUNT(*) AS filas FROM `micro_carmita`.`schema_migrations`
+-- UNION ALL
+-- SELECT 'ANTES' AS etapa, 'sesiones' AS tabla, COUNT(*) AS filas FROM `micro_carmita`.`sesiones`
+-- UNION ALL
+-- SELECT 'ANTES' AS etapa, 'usuarios' AS tabla, COUNT(*) AS filas FROM `micro_carmita`.`usuarios`
+-- UNION ALL
+-- SELECT 'ANTES' AS etapa, 'venta_abonos' AS tabla, COUNT(*) AS filas FROM `micro_carmita`.`venta_abonos`
+-- UNION ALL
+-- SELECT 'ANTES' AS etapa, 'venta_caja' AS tabla, COUNT(*) AS filas FROM `micro_carmita`.`venta_caja`
+-- UNION ALL
+-- SELECT 'ANTES' AS etapa, 'venta_detalles' AS tabla, COUNT(*) AS filas FROM `micro_carmita`.`venta_detalles`
+-- UNION ALL
+-- SELECT 'ANTES' AS etapa, 'venta_historial' AS tabla, COUNT(*) AS filas FROM `micro_carmita`.`venta_historial`
+-- UNION ALL
+-- SELECT 'ANTES' AS etapa, 'venta_lotes' AS tabla, COUNT(*) AS filas FROM `micro_carmita`.`venta_lotes`
+-- UNION ALL
+-- SELECT 'ANTES' AS etapa, 'venta_operaciones' AS tabla, COUNT(*) AS filas FROM `micro_carmita`.`venta_operaciones`
+-- UNION ALL
+-- SELECT 'ANTES' AS etapa, 'ventas' AS tabla, COUNT(*) AS filas FROM `micro_carmita`.`ventas`;
+--
+-- SELECT COUNT(*) INTO @antes_usuarios FROM `micro_carmita`.`usuarios`;
+-- SELECT COUNT(*) INTO @antes_roles FROM `micro_carmita`.`roles`;
+-- SELECT COUNT(*) INTO @antes_sesiones FROM `micro_carmita`.`sesiones`;
+-- SELECT COUNT(*) INTO @antes_auditoria_usuarios FROM `micro_carmita`.`auditoria_usuarios`;
+-- SELECT COUNT(*) INTO @antes_schema_migrations FROM `micro_carmita`.`schema_migrations`;
+--
+-- -- Orden hijo -> padre comprobado contra las FK reales. Sin cascadas forzadas.
+-- -- 01. venta_lotes
+-- DELETE FROM `micro_carmita`.`venta_lotes` WHERE @habilitado = 1;
+-- -- 02. venta_abonos
+-- DELETE FROM `micro_carmita`.`venta_abonos` WHERE @habilitado = 1;
+-- -- 03. venta_caja
+-- DELETE FROM `micro_carmita`.`venta_caja` WHERE @habilitado = 1;
+-- -- 04. venta_historial
+-- DELETE FROM `micro_carmita`.`venta_historial` WHERE @habilitado = 1;
+-- -- 05. venta_operaciones
+-- DELETE FROM `micro_carmita`.`venta_operaciones` WHERE @habilitado = 1;
+-- -- 06. venta_detalles
+-- DELETE FROM `micro_carmita`.`venta_detalles` WHERE @habilitado = 1;
+-- -- 07. ventas
+-- DELETE FROM `micro_carmita`.`ventas` WHERE @habilitado = 1;
+-- -- 08. recepcion_detalles
+-- DELETE FROM `micro_carmita`.`recepcion_detalles` WHERE @habilitado = 1;
+-- -- 09. recepciones
+-- DELETE FROM `micro_carmita`.`recepciones` WHERE @habilitado = 1;
+-- -- 10. pedido_detalles
+-- DELETE FROM `micro_carmita`.`pedido_detalles` WHERE @habilitado = 1;
+-- -- 11. pedidos
+-- DELETE FROM `micro_carmita`.`pedidos` WHERE @habilitado = 1;
+-- -- 12. movimientos_inventario
+-- DELETE FROM `micro_carmita`.`movimientos_inventario` WHERE @habilitado = 1;
+-- -- 13. movimientos_financieros
+-- DELETE FROM `micro_carmita`.`movimientos_financieros` WHERE @habilitado = 1;
+-- -- 14. lotes
+-- DELETE FROM `micro_carmita`.`lotes` WHERE @habilitado = 1;
+-- -- 15. productos
+-- DELETE FROM `micro_carmita`.`productos` WHERE @habilitado = 1;
+-- -- 16. clientes
+-- DELETE FROM `micro_carmita`.`clientes` WHERE @habilitado = 1;
+-- -- 17. proveedores
+-- DELETE FROM `micro_carmita`.`proveedores` WHERE @habilitado = 1;
+--
+-- -- Conteos dentro de la transacción: no constituyen un commit.
+-- SELECT 'DESPUES_DENTRO_TRANSACCION' AS etapa, 'auditoria_usuarios' AS tabla, COUNT(*) AS filas FROM `micro_carmita`.`auditoria_usuarios`
+-- UNION ALL
+-- SELECT 'DESPUES_DENTRO_TRANSACCION' AS etapa, 'clientes' AS tabla, COUNT(*) AS filas FROM `micro_carmita`.`clientes`
+-- UNION ALL
+-- SELECT 'DESPUES_DENTRO_TRANSACCION' AS etapa, 'lotes' AS tabla, COUNT(*) AS filas FROM `micro_carmita`.`lotes`
+-- UNION ALL
+-- SELECT 'DESPUES_DENTRO_TRANSACCION' AS etapa, 'movimientos_financieros' AS tabla, COUNT(*) AS filas FROM `micro_carmita`.`movimientos_financieros`
+-- UNION ALL
+-- SELECT 'DESPUES_DENTRO_TRANSACCION' AS etapa, 'movimientos_inventario' AS tabla, COUNT(*) AS filas FROM `micro_carmita`.`movimientos_inventario`
+-- UNION ALL
+-- SELECT 'DESPUES_DENTRO_TRANSACCION' AS etapa, 'pedido_detalles' AS tabla, COUNT(*) AS filas FROM `micro_carmita`.`pedido_detalles`
+-- UNION ALL
+-- SELECT 'DESPUES_DENTRO_TRANSACCION' AS etapa, 'pedidos' AS tabla, COUNT(*) AS filas FROM `micro_carmita`.`pedidos`
+-- UNION ALL
+-- SELECT 'DESPUES_DENTRO_TRANSACCION' AS etapa, 'productos' AS tabla, COUNT(*) AS filas FROM `micro_carmita`.`productos`
+-- UNION ALL
+-- SELECT 'DESPUES_DENTRO_TRANSACCION' AS etapa, 'proveedores' AS tabla, COUNT(*) AS filas FROM `micro_carmita`.`proveedores`
+-- UNION ALL
+-- SELECT 'DESPUES_DENTRO_TRANSACCION' AS etapa, 'recepcion_detalles' AS tabla, COUNT(*) AS filas FROM `micro_carmita`.`recepcion_detalles`
+-- UNION ALL
+-- SELECT 'DESPUES_DENTRO_TRANSACCION' AS etapa, 'recepciones' AS tabla, COUNT(*) AS filas FROM `micro_carmita`.`recepciones`
+-- UNION ALL
+-- SELECT 'DESPUES_DENTRO_TRANSACCION' AS etapa, 'roles' AS tabla, COUNT(*) AS filas FROM `micro_carmita`.`roles`
+-- UNION ALL
+-- SELECT 'DESPUES_DENTRO_TRANSACCION' AS etapa, 'schema_migrations' AS tabla, COUNT(*) AS filas FROM `micro_carmita`.`schema_migrations`
+-- UNION ALL
+-- SELECT 'DESPUES_DENTRO_TRANSACCION' AS etapa, 'sesiones' AS tabla, COUNT(*) AS filas FROM `micro_carmita`.`sesiones`
+-- UNION ALL
+-- SELECT 'DESPUES_DENTRO_TRANSACCION' AS etapa, 'usuarios' AS tabla, COUNT(*) AS filas FROM `micro_carmita`.`usuarios`
+-- UNION ALL
+-- SELECT 'DESPUES_DENTRO_TRANSACCION' AS etapa, 'venta_abonos' AS tabla, COUNT(*) AS filas FROM `micro_carmita`.`venta_abonos`
+-- UNION ALL
+-- SELECT 'DESPUES_DENTRO_TRANSACCION' AS etapa, 'venta_caja' AS tabla, COUNT(*) AS filas FROM `micro_carmita`.`venta_caja`
+-- UNION ALL
+-- SELECT 'DESPUES_DENTRO_TRANSACCION' AS etapa, 'venta_detalles' AS tabla, COUNT(*) AS filas FROM `micro_carmita`.`venta_detalles`
+-- UNION ALL
+-- SELECT 'DESPUES_DENTRO_TRANSACCION' AS etapa, 'venta_historial' AS tabla, COUNT(*) AS filas FROM `micro_carmita`.`venta_historial`
+-- UNION ALL
+-- SELECT 'DESPUES_DENTRO_TRANSACCION' AS etapa, 'venta_lotes' AS tabla, COUNT(*) AS filas FROM `micro_carmita`.`venta_lotes`
+-- UNION ALL
+-- SELECT 'DESPUES_DENTRO_TRANSACCION' AS etapa, 'venta_operaciones' AS tabla, COUNT(*) AS filas FROM `micro_carmita`.`venta_operaciones`
+-- UNION ALL
+-- SELECT 'DESPUES_DENTRO_TRANSACCION' AS etapa, 'ventas' AS tabla, COUNT(*) AS filas FROM `micro_carmita`.`ventas`;
+--
+-- SELECT (SELECT COUNT(*) FROM `micro_carmita`.`venta_lotes`) +
+--        (SELECT COUNT(*) FROM `micro_carmita`.`venta_abonos`) +
+--        (SELECT COUNT(*) FROM `micro_carmita`.`venta_caja`) +
+--        (SELECT COUNT(*) FROM `micro_carmita`.`venta_historial`) +
+--        (SELECT COUNT(*) FROM `micro_carmita`.`venta_operaciones`) +
+--        (SELECT COUNT(*) FROM `micro_carmita`.`venta_detalles`) +
+--        (SELECT COUNT(*) FROM `micro_carmita`.`ventas`) +
+--        (SELECT COUNT(*) FROM `micro_carmita`.`recepcion_detalles`) +
+--        (SELECT COUNT(*) FROM `micro_carmita`.`recepciones`) +
+--        (SELECT COUNT(*) FROM `micro_carmita`.`pedido_detalles`) +
+--        (SELECT COUNT(*) FROM `micro_carmita`.`pedidos`) +
+--        (SELECT COUNT(*) FROM `micro_carmita`.`movimientos_inventario`) +
+--        (SELECT COUNT(*) FROM `micro_carmita`.`movimientos_financieros`) +
+--        (SELECT COUNT(*) FROM `micro_carmita`.`lotes`) +
+--        (SELECT COUNT(*) FROM `micro_carmita`.`productos`) +
+--        (SELECT COUNT(*) FROM `micro_carmita`.`clientes`) +
+--        (SELECT COUNT(*) FROM `micro_carmita`.`proveedores`) AS filas_operativas_restantes;
+--
+-- SELECT @antes_usuarios = (SELECT COUNT(*) FROM `micro_carmita`.`usuarios`)
+--    AND @antes_roles = (SELECT COUNT(*) FROM `micro_carmita`.`roles`)
+--    AND @antes_sesiones = (SELECT COUNT(*) FROM `micro_carmita`.`sesiones`)
+--    AND @antes_auditoria_usuarios = (SELECT COUNT(*) FROM `micro_carmita`.`auditoria_usuarios`)
+--    AND @antes_schema_migrations = (SELECT COUNT(*) FROM `micro_carmita`.`schema_migrations`) AS conteos_conservados_intactos;
+--
+-- -- El ensayo ENTREGADO se revierte siempre. No contiene COMMIT.
+-- ROLLBACK;
+--
+-- SELECT 'ROLLBACK: comprobar conteos iguales a ANTES; ninguna limpieza persistida' AS resultado;
+-- SELECT 'TRAS_ROLLBACK' AS etapa, 'auditoria_usuarios' AS tabla, COUNT(*) AS filas FROM `micro_carmita`.`auditoria_usuarios`
+-- UNION ALL
+-- SELECT 'TRAS_ROLLBACK' AS etapa, 'clientes' AS tabla, COUNT(*) AS filas FROM `micro_carmita`.`clientes`
+-- UNION ALL
+-- SELECT 'TRAS_ROLLBACK' AS etapa, 'lotes' AS tabla, COUNT(*) AS filas FROM `micro_carmita`.`lotes`
+-- UNION ALL
+-- SELECT 'TRAS_ROLLBACK' AS etapa, 'movimientos_financieros' AS tabla, COUNT(*) AS filas FROM `micro_carmita`.`movimientos_financieros`
+-- UNION ALL
+-- SELECT 'TRAS_ROLLBACK' AS etapa, 'movimientos_inventario' AS tabla, COUNT(*) AS filas FROM `micro_carmita`.`movimientos_inventario`
+-- UNION ALL
+-- SELECT 'TRAS_ROLLBACK' AS etapa, 'pedido_detalles' AS tabla, COUNT(*) AS filas FROM `micro_carmita`.`pedido_detalles`
+-- UNION ALL
+-- SELECT 'TRAS_ROLLBACK' AS etapa, 'pedidos' AS tabla, COUNT(*) AS filas FROM `micro_carmita`.`pedidos`
+-- UNION ALL
+-- SELECT 'TRAS_ROLLBACK' AS etapa, 'productos' AS tabla, COUNT(*) AS filas FROM `micro_carmita`.`productos`
+-- UNION ALL
+-- SELECT 'TRAS_ROLLBACK' AS etapa, 'proveedores' AS tabla, COUNT(*) AS filas FROM `micro_carmita`.`proveedores`
+-- UNION ALL
+-- SELECT 'TRAS_ROLLBACK' AS etapa, 'recepcion_detalles' AS tabla, COUNT(*) AS filas FROM `micro_carmita`.`recepcion_detalles`
+-- UNION ALL
+-- SELECT 'TRAS_ROLLBACK' AS etapa, 'recepciones' AS tabla, COUNT(*) AS filas FROM `micro_carmita`.`recepciones`
+-- UNION ALL
+-- SELECT 'TRAS_ROLLBACK' AS etapa, 'roles' AS tabla, COUNT(*) AS filas FROM `micro_carmita`.`roles`
+-- UNION ALL
+-- SELECT 'TRAS_ROLLBACK' AS etapa, 'schema_migrations' AS tabla, COUNT(*) AS filas FROM `micro_carmita`.`schema_migrations`
+-- UNION ALL
+-- SELECT 'TRAS_ROLLBACK' AS etapa, 'sesiones' AS tabla, COUNT(*) AS filas FROM `micro_carmita`.`sesiones`
+-- UNION ALL
+-- SELECT 'TRAS_ROLLBACK' AS etapa, 'usuarios' AS tabla, COUNT(*) AS filas FROM `micro_carmita`.`usuarios`
+-- UNION ALL
+-- SELECT 'TRAS_ROLLBACK' AS etapa, 'venta_abonos' AS tabla, COUNT(*) AS filas FROM `micro_carmita`.`venta_abonos`
+-- UNION ALL
+-- SELECT 'TRAS_ROLLBACK' AS etapa, 'venta_caja' AS tabla, COUNT(*) AS filas FROM `micro_carmita`.`venta_caja`
+-- UNION ALL
+-- SELECT 'TRAS_ROLLBACK' AS etapa, 'venta_detalles' AS tabla, COUNT(*) AS filas FROM `micro_carmita`.`venta_detalles`
+-- UNION ALL
+-- SELECT 'TRAS_ROLLBACK' AS etapa, 'venta_historial' AS tabla, COUNT(*) AS filas FROM `micro_carmita`.`venta_historial`
+-- UNION ALL
+-- SELECT 'TRAS_ROLLBACK' AS etapa, 'venta_lotes' AS tabla, COUNT(*) AS filas FROM `micro_carmita`.`venta_lotes`
+-- UNION ALL
+-- SELECT 'TRAS_ROLLBACK' AS etapa, 'venta_operaciones' AS tabla, COUNT(*) AS filas FROM `micro_carmita`.`venta_operaciones`
+-- UNION ALL
+-- SELECT 'TRAS_ROLLBACK' AS etapa, 'ventas' AS tabla, COUNT(*) AS filas FROM `micro_carmita`.`ventas`;

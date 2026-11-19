@@ -630,3 +630,70 @@ Se revisaron 27 candidatos de código, pruebas y documentación, incluidos los d
 Entorno de verificación: Node.js v26.10.0 y npm 11.11.0. El área de preparación estaba vacía; se usará la lista explícita de 27 archivos revisados y se volverá a comprobar el contenido preparado antes del commit. Mensaje autorizado: fix: finalizar mejoras funcionales y UX para presentacion. La publicación se limitará a desarrollo-jose y se comprobará su hash contra la rama remota. No se registra una publicación exitosa hasta obtener la respuesta de Git.
 
 Los resultados anteriores de UI y MySQL se mantienen como evidencias con su alcance original. El usuario ha aprobado el diseño y confirmó manualmente el bloque de archivo/recarga; continúan las verificaciones específicas pendientes que se documentan arriba y no se habilita R2 para la presentación.
+
+## Cierre con base operativa limpia — 19 de noviembre de 2026
+
+Rama desarrollo-jose confirmada y sincronizada con origin/desarrollo-jose al comenzar, HEAD 3171d5e. Las mejoras funcionales y UX anteriores ya estaban guardadas en ese commit; los nuevos candidatos son esta actualización y los tres artefactos de mantenimiento. No se modifica main ni el diseño aprobado.
+
+### Limpieza previamente autorizada y ejecutada
+
+El usuario confirmó que todos los datos operativos carecían de valor y autorizó su eliminación permanente sin respaldo. También confirmó una inspección administrativa con root: cero triggers, rutinas y eventos en micro_carmita y cero FK externas. Las consultas de la cuenta DML coincidieron con los metadatos visibles, sin asumir visibilidad administrativa completa.
+
+La intervención anterior eliminó **101 filas de las 17 tablas operativas** mediante una única transacción InnoDB con COMMIT confirmado. Se bloquearon las filas, se comparó el contenido íntegro de las cinco tablas protegidas en memoria antes y después, y se comprobaron las definiciones de las 22 tablas. No hubo cambios de estructuras, secuencias, usuarios, contraseñas, roles, sesiones, auditoría de usuarios ni migraciones. No se desactivaron claves foráneas.
+
+| Tabla operativa | Filas eliminadas | Filas actuales (SELECT) |
+|---|---:|---:|
+| venta_lotes | 10 | 0 |
+| venta_abonos | 3 | 0 |
+| venta_caja | 6 | 0 |
+| venta_historial | 10 | 0 |
+| venta_operaciones | 10 | 0 |
+| venta_detalles | 6 | 0 |
+| ventas | 6 | 0 |
+| recepcion_detalles | 5 | 0 |
+| recepciones | 5 | 0 |
+| pedido_detalles | 4 | 0 |
+| pedidos | 4 | 0 |
+| movimientos_inventario | 15 | 0 |
+| movimientos_financieros | 1 | 0 |
+| lotes | 8 | 0 |
+| productos | 3 | 0 |
+| clientes | 4 | 0 |
+| proveedores | 1 | 0 |
+| **Total** | **101** | **0** |
+
+### Verificación de cierre actual: solo lectura
+
+Destino verificado: micro_carmita, MySQL 8.0.46, puerto 3306, 22 tablas InnoDB, claves foráneas activas y versiones 001 a 005. No se volvió a ejecutar la limpieza ni se generaron registros de demostración.
+
+| Tabla protegida | Al finalizar la limpieza | Conteo actual | Resultado |
+|---|---:|---:|---|
+| usuarios | 2 | 2 | Coincide |
+| roles | 2 | 2 | Coincide |
+| sesiones | 15 | 16 | Conteo dinámico; revisión no sensible detallada abajo |
+| auditoria_usuarios | 3 | 3 | Coincide |
+| schema_migrations | 5 | 5 | Coincide |
+
+El aumento de sesiones no prueba corrupción ni permite atribuir una causa sin más evidencia. No se consultaron ni imprimieron tokens, hashes o credenciales para explicarlo, ni se eliminó la fila adicional. No debe corregirse el conteo borrando sesiones. El cierre se detuvo inicialmente para revisarlo; el usuario autorizó continuarlo mediante inspección de metadatos no sensibles y documentación de la incertidumbre, sin exigir un conteo fijo de sesiones.
+
+Pruebas actuales: **npm test: 673 exitosas, 0 fallidas, 0 omitidas, 0 canceladas y 0 pendientes**, salida 0, duración 6922.9916 ms. **npm audit --omit=dev --json: 0 vulnerabilidades**, salida 0 tras repetir con acceso autorizado al registro el intento que falló por restricciones de red. Estas pruebas usan sus entornos aislados; no se ejecutaron ensayos de escritura MySQL ni migraciones.
+
+En la intervención de limpieza se comprobaron Express y el frontend con HTTP 200, inventario sin sesión con HTTP 401, consultas reales vacías de clientes/proveedores/inventario/pedidos/ventas, finanzas en cero y siete reportes sin filas. No se atribuye una prueba visual ni un login real nuevo: crear o tocar sesiones contradiría la conservación solicitada.
+
+### Artefactos y alcance de Git
+
+Se conserva CLEANUP_PLAN.md como historial y resultado; inspeccion_limpieza.sql contiene solo SELECT/SHOW. limpieza_operativa.preview.sql queda como referencia histórica completamente comentada y sin sentencias ejecutables, para impedir otro borrado al abrirlo o ejecutarlo por accidente. No es una migración ni un mecanismo de limpieza reutilizable.
+
+**MySQL no forma parte del commit Git:** el código no incorpora la base, filas, contraseñas, sesiones ni un volcado. Un clon no reproduce el estado de datos del servidor; requiere configuración local y aplicación administrativa de migraciones conforme a la documentación existente. Se conservan rf.txt, UI_UX.md y los resultados previos. Los respaldos R2 permanecen sin habilitar.
+
+### Reanudación del cierre y revisión no sensible de sesiones
+
+El 19 de noviembre de 2026 a las 23:24 UTC se consultaron únicamente metadatos de columnas y las columnas usuario_id, creada_en, ultima_actividad_en y el estado calculado con expiración/revocación. No existe un identificador primario de sesión no sensible: la clave primaria es un hash de token y no se seleccionó. No se consultaron ni imprimieron tokens, hashes de sesión, cookies o credenciales. No se versionan filas ni identificadores de los usuarios inspeccionados.
+
+Resultado: 16 sesiones, 15 revocadas y 1 vigente al consultar. No se detectaron fechas futuras de creación/actividad con tolerancia de un minuto, actividad anterior a creación, expiraciones/revocaciones incoherentes, referencias a usuarios inexistentes ni sesiones vigentes de cuentas inactivas. No surgieron indicios relevantes de acceso no autorizado en estas comprobaciones. Este resultado es acotado: no hay IP, dispositivo o auditoría de login en los metadatos revisados para demostrar autoría o causa. **La causa concreta de la sesión adicional sigue sin determinarse.** La existencia en el código de creación de sesiones durante login no demuestra el origen de esa fila.
+
+El conteo de sesiones es dinámico y no forma parte de la limpieza operativa. La preservación exacta se comprobó durante aquella transacción; la autenticación posterior puede cambiar legítimamente el conteo y el estado. No se exige volver a 15 ni se alteran las sesiones para igualar una instantánea histórica. Los SELECT actuales confirman cero filas en las 17 tablas operativas, usuarios 2, roles 2, auditoria_usuarios 3 y schema_migrations 5.
+
+Calidad repetida en esta reanudación: **673 pruebas exitosas, 0 fallidas, 0 omitidas, 0 canceladas y 0 pendientes**, salida 0, duración 7574.3084 ms. **npm audit --omit=dev --json: 0 vulnerabilidades de producción**, salida 0 tras repetir con acceso autorizado al registro el intento restringido. No se ejecutaron operaciones de escritura en MySQL, migraciones ni R2. No se realizaron nuevas pruebas visuales ni login.
+
+**Estado del cierre: habilitado para commit y publicación exclusivamente en desarrollo-jose**, sujeto a revisión final de secretos, archivos preparados y formato. Se conservan solo cuatro candidatos: FINAL_QA.md, CLEANUP_PLAN.md, backend/maintenance/inspeccion_limpieza.sql y backend/maintenance/limpieza_operativa.preview.sql. Este último es completamente inerte (todas sus líneas comentadas); el otro SQL permite únicamente lectura. La comprobación de publicación y hash se realiza con Git después del commit; no se atribuye éxito de push antes de obtenerlo.
