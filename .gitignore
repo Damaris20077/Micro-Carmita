@@ -30,6 +30,7 @@ coverage/
 output/
 .auth-provision.ps1
 .auth-real-check.cjs
+.auth-*
 
 # Respaldos y material de recuperación: nunca publicar.
 *.mcbackup

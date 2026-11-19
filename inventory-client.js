@@ -25,6 +25,18 @@
     const valor = id => elemento(id).value;
     const numero = id => valor(id).trim() === '' ? NaN : Number(valor(id));
     const administrador = () => usuarioActual()?.rol === 'administrador';
+    function informar(tipo, mensaje) {
+        const estado = elemento('estadoInventario');
+        estado.textContent = mensaje; estado.setAttribute?.('data-estado', tipo);
+        if (tipo === 'error') { estado.focus?.({ preventScroll: true }); estado.scrollIntoView?.({ block: 'nearest' }); }
+    }
+    function controles() {
+        const ocupado = !!operacionActiva && operacionActiva.identidad === usuarioActual();
+        for (const boton of document.querySelectorAll('[data-inventario-control]')) {
+            boton.disabled = ocupado || !usuarioActual();
+            if (ocupado) boton.setAttribute?.('aria-busy', 'true'); else boton.removeAttribute?.('aria-busy');
+        }
+    }
     const opcion = p => `<option value="${Number(p.id)}">${textoSeguro(p.nombre)}</option>`;
     function opciones(id, items) {
         const select = elemento(id);
@@ -36,24 +48,26 @@
         elemento('listaInventario').innerHTML = productos.map(p => `<tr>
             <td>${textoSeguro(p.nombre)}${p.activo ? '' : ' (archivado)'}</td><td>${textoSeguro(p.categoria)}</td>
             <td>Compra ${dinero(p.precio_compra)} / Venta ${dinero(p.precio_venta)}</td><td>${p.stock}</td>
-            <td>${p.stockBajo ? 'Stock bajo' : 'Disponible'}</td>
-            <td><button onclick="MicroCarmitaInventario.historial(${p.id})">Historial</button>
-            ${administrador() ? `<button onclick="editarProducto(${p.id})">Editar</button>
-            <button onclick="eliminarProducto(${p.id})">Archivar</button>` : 'Solo consulta'}</td></tr>`).join('');
+            <td><span class="estado ${p.stockBajo ? 'estado-pendiente' : 'estado-disponible'}">${p.stockBajo ? 'Stock bajo' : 'Disponible'}</span></td>
+            <td><div class="acciones-fila"><button class="btn secundaria" data-inventario-control onclick="MicroCarmitaInventario.historial(${p.id})">Historial</button>
+            ${administrador() ? `<button class="btn secundaria" data-inventario-control onclick="editarProducto(${p.id})">Editar</button>
+            <button class="btn peligro" data-inventario-control onclick="eliminarProducto(${p.id})">Archivar</button>` : 'Solo consulta'}</div></td></tr>`).join('') || '<tr><td colspan="6">No hay productos registrados.</td></tr>';
         elemento('listaLotes').innerHTML = productos.flatMap(p => p.lotes.map(l => `<tr>
             <td>${textoSeguro(p.nombre)}</td><td>${textoSeguro(l.codigo)}</td><td>${l.cantidad}</td>
-            <td>${textoSeguro(MicroCarmitaFechas.calendario(l.fecha_ingreso))}</td><td>${textoSeguro(l.caducidad ? MicroCarmitaFechas.calendario(l.caducidad) : 'Sin caducidad')}</td><td>${textoSeguro(l.estado)}</td></tr>`)).join('');
+            <td>${textoSeguro(MicroCarmitaFechas.calendario(l.fecha_ingreso))}</td><td>${textoSeguro(l.caducidad ? MicroCarmitaFechas.calendario(l.caducidad) : 'Sin caducidad')}</td><td><span class="estado ${l.estado === 'Caducado' ? 'estado-agotado' : l.estado === 'Por caducar' ? 'estado-pendiente' : 'estado-disponible'}">${textoSeguro(l.estado)}</span></td></tr>`)).join('') || '<tr><td colspan="6">No hay lotes registrados.</td></tr>';
         const alertas = productos.flatMap(p => [
             ...(p.stockBajo ? [`${p.nombre}: stock bajo (${p.stock})`] : []),
             ...p.lotes.filter(l => l.cantidad > 0 && ['Por caducar', 'Caducado'].includes(l.estado))
                 .map(l => `${p.nombre}, lote ${l.codigo}: ${l.estado} (${MicroCarmitaFechas.calendario(l.caducidad)})`)
         ]);
-        elemento('alertasInventario').textContent = alertas.join(' · ') || 'Sin alertas de inventario.';
+        elemento('alertasInventario').textContent = alertas.join('\n') || 'Sin alertas de inventario.';
+        elemento('alertasInventario').setAttribute?.('data-estado', alertas.length ? 'aviso' : 'neutro');
         for (const id of ['productoProveedor', 'entradaProveedor']) opciones(id, proveedores);
         for (const id of ['entradaProducto', 'ajusteProducto']) opciones(id, productos.filter(p => p.activo));
         document.querySelectorAll('[data-inventario-admin]').forEach(nodo => { nodo.hidden = !administrador(); });
         const formulario = elemento('formularioProducto');
         formulario.hidden = !administrador();
+        controles();
         cargarProductosVenta();
         actualizarInicio();
     }
@@ -61,6 +75,7 @@
         if (!usuarioActual()) return;
         if (cargando) return cargando;
         const identidad = usuarioActual();
+        informar('cargando', 'Consultando inventario y contactos…');
         cargando = (async () => {
             try {
                 const [inventario, prov, cli] = await Promise.all([api('/inventory'), api('/proveedores'), api('/clientes')]);
@@ -70,7 +85,7 @@
                 elemento('listaClientes').textContent = cli.registros.map(c => `${c.id} — ${c.nombre}${c.telefono ? ' — ' + c.telefono : ''}`).join('\n') || 'Sin clientes.';
                 elemento('listaProveedores').textContent = proveedores.map(p => `${p.id} — ${p.nombre}${p.telefono ? ' — ' + p.telefono : ''}`).join('\n') || 'Sin proveedores.';
                 pintar();
-                elemento('estadoInventario').textContent = '';
+                informar('exito', 'Inventario y contactos actualizados.');
             } catch (error) {
                 if (usuarioActual() !== identidad) return;
                 productos = [];
@@ -79,7 +94,7 @@
                 elemento('alertasInventario').textContent = '';
                 cargarProductosVenta();
                 actualizarInicio();
-                elemento('estadoInventario').textContent = `${error.message} Compruebe que la migración 002 esté aplicada.`;
+                informar('error', `${error.message} Compruebe que la migración 002 esté aplicada.`);
             } finally {
                 cargando = null;
                 if (usuarioActual() && usuarioActual() !== identidad) cargar();
@@ -91,11 +106,11 @@
         const identidad = usuarioActual();
         if (!identidad || operacionActiva?.identidad === identidad) return;
         const token = { identidad }; operacionActiva = token;
-        elemento('estadoInventario').textContent = 'Procesando…';
+        controles(); informar('cargando', 'Procesando…');
         try { await fn(); if (usuarioActual() === identidad) await cargar(); }
-        catch (error) { if (usuarioActual() === identidad) elemento('estadoInventario').textContent = error.message
-            + (!error.status ? ' Si la respuesta se perdió, compruebe el historial antes de repetir una escritura.' : ''); }
-        finally { if (operacionActiva === token) operacionActiva = null; }
+        catch (error) { if (usuarioActual() === identidad) informar('error', error.message
+            + (!error.status ? ' Si la respuesta se perdió, compruebe el historial antes de repetir una escritura.' : '')); }
+        finally { if (operacionActiva === token) operacionActiva = null; controles(); }
     }
     function loteFormulario(prefijo) {
         return { codigo: valor(`${prefijo}Codigo`), cantidad: numero(`${prefijo}Cantidad`),
@@ -185,8 +200,9 @@
         elemento('listaLotes').textContent = '';
         elemento('listaClientes').textContent = '';
         elemento('listaProveedores').textContent = '';
-        elemento('historialInventario').textContent = '';
+        elemento('historialInventario').textContent = 'Seleccione Historial en un producto para consultar sus movimientos.';
         elemento('alertasInventario').textContent = '';
+        informar('neutro', ''); controles();
         if (usuarioActual()) cargar();
     });
 })();

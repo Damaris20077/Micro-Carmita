@@ -5,6 +5,7 @@
     let csrfToken = '';
     let usuarios = [];
     let entrando = false;
+    let revisionSesion = 0, consultaUsuarios = 0, operacionUsuarios = null;
     const renderizarSesion = aplicarSesion;
     aplicarSesion = () => {
         const panel = document.querySelector?.('.contenedor');
@@ -15,16 +16,19 @@
     permisosPorRol.administrador = [...permisosPorRol.administrador, 'usuarios'];
 
     function limpiarSesion() {
+        revisionSesion++; consultaUsuarios++;
         sesion = null;
         csrfToken = '';
         usuarios = [];
         carrito = [];
         aplicarSesion();
+        controlesUsuarios();
         document.dispatchEvent?.(new Event('microcarmita:sesion'));
     }
 
     async function api(ruta, metodo = 'GET', datos) {
         const identidad = sesion;
+        const revision = revisionSesion;
         const headers = {};
         if (metodo !== 'GET') {
             headers['Content-Type'] = 'application/json';
@@ -34,9 +38,13 @@
             method: metodo, credentials: 'same-origin', headers,
             body: datos === undefined ? undefined : JSON.stringify(datos)
         });
-        const contenido = respuesta.status === 204 ? {} : await respuesta.json();
+        if (respuesta.status === 401 && sesion === identidad && revisionSesion === revision) limpiarSesion();
+        let contenido = {};
+        if (respuesta.status !== 204) {
+            try { contenido = await respuesta.json(); }
+            catch { throw Object.assign(new Error('El servidor devolvió una respuesta no válida. Reintente la consulta; si estaba guardando, compruebe el resultado antes de repetir.'), { status: respuesta.status }); }
+        }
         if (!respuesta.ok) {
-            if (respuesta.status === 401 && sesion === identidad) limpiarSesion();
             throw Object.assign(new Error(contenido.error || 'No se pudo completar la operación.'), { status: respuesta.status });
         }
         return contenido;
@@ -46,14 +54,18 @@
     obtenerUsuarios = () => usuarios;
 
     async function restaurarSesion() {
+        const revision = ++revisionSesion;
         try {
             const datos = await api('/auth/me');
+            if (revision !== revisionSesion) return false;
             sesion = datos.usuario;
             csrfToken = datos.csrfToken;
             aplicarSesion();
             document.dispatchEvent?.(new Event('microcarmita:sesion'));
+            return true;
         } catch {
-            limpiarSesion();
+            if (revision === revisionSesion) limpiarSesion();
+            return false;
         }
     }
 
@@ -61,6 +73,7 @@
         evento.preventDefault();
         if (entrando) return;
         entrando = true;
+        const revision = ++revisionSesion;
         const boton = document.getElementById('loginBoton');
         if (boton) { boton.disabled = true; boton.setAttribute?.('aria-busy', 'true'); }
         const error = document.getElementById('errorLogin');
@@ -69,6 +82,7 @@
                 usuario: document.getElementById('loginUsuario').value,
                 clave: document.getElementById('loginClave').value
             });
+            if (revision !== revisionSesion) return;
             sesion = datos.usuario;
             csrfToken = datos.csrfToken;
             document.getElementById('loginClave').value = '';
@@ -84,15 +98,17 @@
     };
 
     cerrarSesion = async () => {
+        const revision = ++revisionSesion;
         try {
             await api('/auth/logout', 'POST', {});
-            limpiarSesion();
+            if (revision === revisionSesion) limpiarSesion();
         } catch (error) {
             alert(error.message);
         }
     };
 
     mostrarUsuarios = async () => {
+        const identidad = sesion, numero = ++consultaUsuarios;
         const lista = document.getElementById('listaUsuarios');
         if (!lista) return;
         if (!tienePermiso('usuarios')) {
@@ -100,9 +116,8 @@
             return;
         }
         try {
-            const identidad = sesion;
             const datos = await api('/users');
-            if (sesion !== identidad) return;
+            if (sesion !== identidad || numero !== consultaUsuarios) return;
             usuarios = datos.usuarios;
             lista.innerHTML = usuarios.map(user => `
                 <tr><td>${textoSeguro(user.nombre)}</td><td>${textoSeguro(user.usuario)}</td>
@@ -110,60 +125,73 @@
                 <td><button class="btn-editar" onclick="MicroCarmitaAuth.editarUsuario(${Number(user.id)})">Editar</button>
                 <button class="btn-pagar" onclick="cambiarEstadoUsuario(${Number(user.id)})">${user.activo ? 'Desactivar' : 'Activar'}</button></td></tr>
             `).join('');
+            controlesUsuarios();
         } catch (error) {
+            if (sesion !== identidad || numero !== consultaUsuarios) return;
             lista.textContent = error.message;
         }
     };
 
-    crearUsuario = async () => {
-        if (!exigirPermiso('usuarios')) return;
-        try {
-            await api('/users', 'POST', {
-                nombre: document.getElementById('usuarioNombre').value,
-                usuario: document.getElementById('usuarioCuenta').value,
-                clave: document.getElementById('usuarioClave').value,
-                rol: document.getElementById('usuarioRol').value
-            });
-            for (const campo of ['usuarioNombre', 'usuarioCuenta', 'usuarioClave']) document.getElementById(campo).value = '';
-            await mostrarUsuarios();
-        } catch (error) {
-            alert(error.message);
+    function controlesUsuarios() {
+        const ocupado = !!sesion && operacionUsuarios?.identidad === sesion;
+        for (const boton of document.querySelectorAll?.('#usuarios button') || []) {
+            boton.disabled = ocupado || !tienePermiso('usuarios');
+            if (ocupado) boton.setAttribute?.('aria-busy', 'true'); else boton.removeAttribute?.('aria-busy');
         }
-    };
+    }
+    async function operarUsuarios(fn) {
+        if (!sesion || operacionUsuarios?.identidad === sesion) return;
+        const token = { identidad: sesion }; operacionUsuarios = token; controlesUsuarios();
+        try { await fn(token.identidad); }
+        catch (error) { if (sesion === token.identidad) alert(error.message); }
+        finally { if (operacionUsuarios === token) operacionUsuarios = null; controlesUsuarios(); }
+    }
+    crearUsuario = () => operarUsuarios(async identidad => {
+        if (!exigirPermiso('usuarios')) return;
+        await api('/users', 'POST', {
+            nombre: document.getElementById('usuarioNombre').value,
+            usuario: document.getElementById('usuarioCuenta').value,
+            clave: document.getElementById('usuarioClave').value,
+            rol: document.getElementById('usuarioRol').value
+        });
+        if (sesion !== identidad) return;
+        for (const campo of ['usuarioNombre', 'usuarioCuenta', 'usuarioClave']) document.getElementById(campo).value = '';
+        await mostrarUsuarios();
+    });
 
     async function guardarUsuario(id, datos) {
+        const identidad = sesion;
         await api(`/users/${id}`, 'PATCH', datos);
-        if (sesion?.id === id) await restaurarSesion();
+        if (sesion !== identidad) return false;
+        if (sesion?.id === id) return restaurarSesion();
         else await mostrarUsuarios();
+        return sesion === identidad;
     }
 
-    cambiarEstadoUsuario = async id => {
+    cambiarEstadoUsuario = id => operarUsuarios(async () => {
         if (!exigirPermiso('usuarios')) return;
         const user = usuarios.find(item => item.id === id);
         if (!user) return;
-        try {
-            await guardarUsuario(id, { activo: !user.activo });
-        } catch (error) { alert(error.message); }
-    };
+        await guardarUsuario(id, { activo: !user.activo });
+    });
 
     async function editarUsuario(id) {
-        if (!exigirPermiso('usuarios')) return;
-        const user = usuarios.find(item => item.id === id);
-        if (!user) return;
-        const nombre = prompt('Nombre completo:', user.nombre);
-        if (nombre === null) return;
-        const usuario = prompt('Nombre de usuario:', user.usuario);
-        if (usuario === null) return;
-        const rol = prompt('Rol (administrador o vendedor):', user.rol);
-        if (rol === null) return;
-        // La contraseña se introduce en un campo password del formulario existente.
-        const clave = document.getElementById('usuarioClave').value;
-        const datos = { nombre, usuario, rol };
-        if (clave) datos.clave = clave;
-        try {
-            await guardarUsuario(id, datos);
-            document.getElementById('usuarioClave').value = '';
-        } catch (error) { alert(error.message); }
+        return operarUsuarios(async () => {
+            if (!exigirPermiso('usuarios')) return;
+            const user = usuarios.find(item => item.id === id);
+            if (!user) return;
+            const nombre = prompt('Nombre completo:', user.nombre);
+            if (nombre === null) return;
+            const usuario = prompt('Nombre de usuario:', user.usuario);
+            if (usuario === null) return;
+            const rol = prompt('Rol (administrador o vendedor):', user.rol);
+            if (rol === null) return;
+            // La contraseña se introduce en un campo password del formulario existente.
+            const clave = document.getElementById('usuarioClave').value;
+            const datos = { nombre, usuario, rol };
+            if (clave) datos.clave = clave;
+            if (await guardarUsuario(id, datos)) document.getElementById('usuarioClave').value = '';
+        });
     }
 
     async function archivo(ruta) {

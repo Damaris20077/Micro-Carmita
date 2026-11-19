@@ -379,7 +379,7 @@ test('Express sirve la interfaz integrada y bloquea archivos privados del proyec
     const pagina = await fetch(base);
     assert.equal(pagina.status, 200);
     assert.match(await pagina.text(), /src="auth-client.js"/);
-    for (const ruta of ['/app.js', '/auth-client.js', '/estilos.css']) {
+    for (const ruta of ['/app.js', '/auth-client.js', '/dashboard-client.js', '/estilos.css']) {
         assert.equal((await fetch(base + ruta)).status, 200);
     }
     for (const ruta of ['/.env', '/backend/database.js', '/backend/migrations/001_auth.sql', '/package.json']) {

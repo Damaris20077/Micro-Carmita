@@ -15,6 +15,19 @@
     const admin = () => usuarioActual()?.rol === 'administrador';
     let ventas = [], clientes = [], edicion = null, ocupado = false, pendiente = null;
     let consulta = 0;
+    // Presentación derivada del bloqueo existente; no mantiene otro carrito/operación.
+    function controles() {
+        for (const boton of document.querySelectorAll?.('#ventas [data-ventas-control]') || []) {
+            boton.disabled = ocupado || !usuarioActual();
+            if (ocupado) boton.setAttribute('aria-busy', 'true');
+            else boton.removeAttribute('aria-busy');
+        }
+    }
+    function informar(tipo, mensaje) {
+        el('estadoVentas').textContent = mensaje;
+        el('estadoVentas').setAttribute?.('data-estado', tipo);
+        if (tipo === 'error') el('estadoVentas').scrollIntoView?.({ block: 'nearest', behavior: 'auto' });
+    }
     const obtenerAnterior = obtenerDatos, guardarAnterior = guardarDatos;
     obtenerDatos = clave => clave === 'ventas' ? ventas.filter(v => v.estado === 'Activa')
         : clave === 'cuentas' ? ventas.filter(v => v.tipo === 'fiado' && v.estado === 'Activa') : obtenerAnterior(clave);
@@ -24,11 +37,12 @@
     };
     function pintar() {
         el('listaVentas').innerHTML = ventas.map(v => `<tr><td>${textoSeguro(v.cliente || 'Consumidor final')}</td>
-            <td>Venta ${v.id} · ${textoSeguro(v.estado)}</td><td>${textoSeguro(v.estado)}</td><td>${dinero(v.total)}</td>
-            <td>${textoSeguro(v.tipo)}</td><td>${textoSeguro(fechaLegible(v.creado_en))}
-            <button onclick="MicroCarmitaVentas.detalle(${v.id})">Detalle</button>
-            ${admin() && v.estado === 'Activa' ? `<button onclick="MicroCarmitaVentas.editar(${v.id})">Modificar</button>
-            <button onclick="MicroCarmitaVentas.anular(${v.id})">Anular</button>` : ''}</td></tr>`).join('');
+            <td>Venta ${v.id}</td><td><span class="estado ${v.estado === 'Anulada' ? 'estado-agotado' : 'estado-disponible'}">${textoSeguro(v.estado)}</span></td><td class="venta-importe">${dinero(v.total)}</td>
+            <td><span class="venta-tipo ${v.tipo === 'fiado' ? 'venta-tipo--fiado' : 'venta-tipo--contado'}">${textoSeguro(v.tipo)}</span></td><td><span class="venta-fecha">${textoSeguro(fechaLegible(v.creado_en))}</span>
+            <div class="venta-acciones"><button data-ventas-control onclick="MicroCarmitaVentas.detalle(${v.id})">Detalle</button>
+            ${admin() && v.estado === 'Activa' ? `<button data-ventas-control onclick="MicroCarmitaVentas.editar(${v.id})">Modificar</button>
+            <button class="venta-anular" data-ventas-control onclick="MicroCarmitaVentas.anular(${v.id})">Anular</button>` : ''}</div></td></tr>`).join('') || '<tr><td colspan="6">No hay ventas registradas.</td></tr>';
+        controles();
         const fiados = ventas.filter(v => v.tipo === 'fiado' && v.estado === 'Activa' && Number(v.saldo) > 0);
         el('listaCuentas').innerHTML = fiados.map(v => `<tr><td>${textoSeguro(v.cliente)}</td><td>Venta ${v.id}</td>
             <td>Total ${dinero(v.total)} · Abonos ${dinero(v.abonado)} · Saldo ${dinero(v.saldo)}</td>
@@ -51,24 +65,35 @@
         const identidad = usuarioActual();
         if (!identidad) return;
         const numero = ++consulta;
+        if (!ocupado) informar('cargando', 'Consultando ventas y clientes…');
         try {
             const [v,c] = await Promise.all([api('/sales'), api('/clientes')]);
             if (usuarioActual() !== identidad || numero !== consulta) return;
             ventas = v.ventas; clientes = c.registros;
-            pintar(); el('estadoVentas').textContent = '';
+            pintar();
+            if (!ocupado) informar('neutro', 'Ventas y clientes actualizados.');
+            return true;
         } catch (error) {
             if (usuarioActual() !== identidad || numero !== consulta) return;
             ventas = []; clientes = []; pintar();
-            el('estadoVentas').textContent = `${error.message} Compruebe la activación de ventas.`;
+            informar('error', `${error.message} No se pudieron actualizar las ventas. Reintente con Actualizar ventas y cuentas.`);
+            return false;
         }
     }
     async function operar(fn) {
         if (ocupado || !usuarioActual()) return;
         const identidad = usuarioActual();
         ocupado = true;
+        controles(); informar('cargando', 'Procesando operación…');
         try { await fn(); }
-        catch (error) { if (usuarioActual() === identidad) el('estadoVentas').textContent = error.message; }
-        finally { ocupado = false; }
+        catch (error) { if (usuarioActual() === identidad) informar('error', error.message); }
+        finally {
+            ocupado = false;
+            if (usuarioActual() === identidad) {
+                if (el('estadoVentas').textContent === 'Procesando operación…') informar('neutro', '');
+            }
+            controles();
+        }
     }
     async function enviar(ruta, metodo, datos) {
         const identidad = usuarioActual();
@@ -115,6 +140,7 @@
         mostrarCarrito();
     };
     registrarVenta = () => operar(async () => {
+        const identidad = usuarioActual(), modificando = Boolean(edicion);
         if (!exigirPermiso('ventas') || !carrito.length) throw new Error('Agregue productos al carrito.');
         const datos = { tipo: el('ventaTipo').value, clienteId: el('ventaCliente').value ? Number(el('ventaCliente').value) : null,
             detalles: carrito.map(l => ({ productoId: Number(l.id), cantidad: l.cantidad, precio: l.precio, confirmarExistencia: !!l.confirmarExistencia,
@@ -122,7 +148,10 @@
         if (edicion) Object.assign(datos, { version: edicion.version, motivo: edicion.motivo, confirmarReembolso: edicion.confirmarReembolso });
         await enviar(edicion ? `/sales/${edicion.id}` : '/sales', edicion ? 'PATCH' : 'POST', datos);
         carrito = []; edicion = null; el('ventaPrecio').readOnly = true; mostrarCarrito();
-        await MicroCarmitaInventario.cargar(); await cargar();
+        await MicroCarmitaInventario.cargar();
+        const actualizado = await cargar();
+        if (usuarioActual() === identidad && actualizado === true) informar('exito', modificando ? 'Venta modificada correctamente.' : 'Venta registrada correctamente.');
+        else if (usuarioActual() === identidad && actualizado === false) informar('error', 'La venta fue guardada, pero no se pudo actualizar la consulta. No vuelva a registrarla; use Actualizar ventas y cuentas.');
     });
     abonarCuenta = id => operar(async () => {
         const v = ventas.find(v => v.id === id);
@@ -172,7 +201,7 @@
             el('ventaCliente').value = v.cliente_id === null ? '' : String(v.cliente_id); el('ventaTipo').value = v.tipo;
             el('ventaPrecio').readOnly = false;
             mostrarCarrito(); mostrarSeccion('ventas');
-            el('estadoVentas').textContent = `Modificando venta ${id}: quite o agregue líneas y registre para guardar.`;
+            informar('neutro', `Modificando venta ${id}: quite o agregue líneas y registre para guardar.`);
         }),
         anular: id => operar(async () => {
             if (!admin()) return;
@@ -187,6 +216,7 @@
     document.addEventListener('microcarmita:sesion', () => {
         consulta++;
         ventas = []; clientes = []; carrito = []; edicion = null; pendiente = null;
+        informar('neutro', '');
         el('historialCobros').innerHTML = ''; el('historialVentas').innerHTML = ''; el('historialVentas').hidden = true; pintar(); mostrarCarrito();
         if (usuarioActual()) cargar();
     });

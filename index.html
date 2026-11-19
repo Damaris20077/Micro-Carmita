@@ -21,14 +21,16 @@
 
 <div class="contenedor" inert>
 
-    <aside class="sidebar">
+    <a class="saltar-contenido" href="#contenido-principal">Saltar al contenido</a>
+
+    <aside class="sidebar" aria-label="Micro Carmita">
 
         <div class="logo">
             <i class="fa-solid fa-store"></i>
             <h2>Micro Carmita</h2>
         </div>
 
-        <nav>
+        <nav aria-label="Navegación principal">
             <button class="menu activo" data-permiso="inicio" onclick="mostrarSeccion('inicio', this)">
                 <i class="fa-solid fa-house"></i>
                 <span>Inicio</span>
@@ -73,21 +75,25 @@
 
     </aside>
 
-    <main class="contenido">
-
-        <section id="inicio" class="seccion activa-seccion">
-
-            <div class="encabezado">
-                <div>
-                    <h1>Panel principal</h1>
-                    <p>Bienvenido al sistema de gestión financiera de Micro Carmita</p>
-                </div>
+    <main class="contenido" id="contenido-principal" tabindex="-1">
+        <header class="barra-sesion">
+            <p>Gestión del negocio</p>
                 <div class="sesion-actual">
                     <i class="fa-solid fa-circle-user"></i>
                     <span id="nombreSesion"></span>
                     <small id="rolSesion"></small>
                     <button type="button" onclick="MicroCarmitaAuth.cerrarSesion()">Salir</button>
                 </div>
+        </header>
+
+        <section id="inicio" class="seccion activa-seccion">
+
+            <div class="encabezado">
+                <div>
+                    <h1>Resumen del negocio</h1>
+                    <p>Consulta las ventas, los saldos y las existencias registradas.</p>
+                </div>
+
             </div>
 
             <div class="tarjetas">
@@ -99,7 +105,7 @@
                     <div>
                         <h3>Ventas</h3>
                         <strong id="totalVentas">$0.00</strong>
-                        <p>Total registrado</p>
+                        <p>Ventas vigentes</p>
                     </div>
                 </div>
 
@@ -121,7 +127,7 @@
                     <div>
                         <h3>Inventario</h3>
                         <strong id="totalProductos">0</strong>
-                        <p>Productos registrados</p>
+                        <p>Unidades registradas</p>
                     </div>
                 </div>
 
@@ -138,121 +144,150 @@
 
             </div>
 
-            <div class="bienvenida">
-                <i class="fa-solid fa-store"></i>
-                <h2>Micro Carmita</h2>
-                <p>
-                    Desde este sistema podrás administrar las ventas,
-                    cuentas por cobrar, inventario, ingresos, egresos
-                    y consultar reportes del negocio.
-                </p>
+            <p class="nota-resumen">Las ventas fiadas forman parte de las ventas registradas; los cobros se muestran por separado.</p>
+
+            <div class="panel-operaciones">
+                <div class="panel-operaciones-cabecera">
+                    <div><h2>Para revisar</h2><p>Alertas y operaciones registradas en el negocio.</p></div>
+                    <button type="button" id="inicioPanelActualizar" class="btn secundaria" onclick="mostrarSeccion('inicio', document.querySelector('.menu'))"><i class="fa-solid fa-rotate-right" aria-hidden="true"></i> Actualizar panel</button>
+                </div>
+                <p id="inicioPanelEstado" class="panel-consulta-estado" role="status" aria-live="polite"></p>
+                <div class="panel-operaciones-grid">
+                    <article id="inicioPanelStock" class="panel-operativo" aria-label="Stock bajo">
+                        <h3><i class="fa-solid fa-box-open" aria-hidden="true"></i> Stock bajo</h3>
+                        <p id="inicioPanelStockEstado" class="panel-vacio" role="status"></p>
+                        <ul id="inicioPanelStockLista" class="panel-lista" tabindex="0"></ul>
+                    </article>
+                    <article id="inicioPanelCaducidad" class="panel-operativo" aria-label="Caducidad de lotes">
+                        <h3><i class="fa-solid fa-calendar-day" aria-hidden="true"></i> Caducidad de lotes</h3>
+                        <p id="inicioPanelCaducidadEstado" class="panel-vacio" role="status"></p>
+                        <ul id="inicioPanelCaducidadLista" class="panel-lista" tabindex="0"></ul>
+                    </article>
+                    <article id="inicioPanelPedidos" class="panel-operativo" aria-label="Pedidos por recibir">
+                        <h3><i class="fa-solid fa-truck-ramp-box" aria-hidden="true"></i> Pedidos por recibir</h3>
+                        <p id="inicioPanelPedidosEstado" class="panel-vacio" role="status"></p>
+                        <ul id="inicioPanelPedidosLista" class="panel-lista" tabindex="0"></ul>
+                    </article>
+                    <article id="inicioPanelVentas" class="panel-operativo" aria-label="Últimas ventas registradas">
+                        <h3><i class="fa-solid fa-receipt" aria-hidden="true"></i> Últimas ventas registradas</h3>
+                        <p class="panel-ayuda">Hasta cinco ventas recientes, incluidas anuladas para conservar su historial. Los totales vigentes se muestran arriba.</p>
+                        <p id="inicioPanelVentasEstado" class="panel-vacio" role="status"></p>
+                        <ol id="inicioPanelVentasLista" class="panel-lista" tabindex="0"></ol>
+                    </article>
+                </div>
             </div>
 
         </section>
 
         <section id="ventas" class="seccion">
 
-            <div class="encabezado">
+            <div class="encabezado ventas-cabecera">
                 <div>
                     <h1>Gestión de Ventas</h1>
                     <p>Registre las ventas realizadas en Micro Carmita.</p>
+
+                </div>
+                <div class="ventas-herramientas">
+                    <button data-ventas-control type="button" onclick="MicroCarmitaVentas.cargar()">Actualizar ventas y cuentas</button>
+                    <button data-ventas-control type="button" onclick="MicroCarmitaVentas.cancelarEdicion()">Limpiar carrito / cancelar edición</button>
+                </div>
+            </div>
+
+            <div class="ventas-terminal">
+                <div class="formulario ventas-seleccion">
+
+                    <h2>
+                        <i class="fa-solid fa-cart-shopping"></i>
+                        Preparar venta
+                    </h2>
+
+                    <div class="form-grid">
+
+                        <div class="campo">
+                            <label for="ventaCliente">Cliente</label>
+                            <select id="ventaCliente"><option value="">Consumidor final (solo contado)</option></select>
+                        </div>
+
+                        <div class="campo">
+                            <label for="ventaTipo">Tipo de venta</label>
+                            <select id="ventaTipo">
+                                <option value="contado">Contado</option>
+                                <option value="fiado">Fiado</option>
+                            </select>
+                        </div>
+
+                        <div class="campo">
+                            <label for="ventaProducto">Producto</label>
+                            <select id="ventaProducto" onchange="actualizarPrecioVenta()">
+                                <option value="">Seleccione un producto</option>
+                            </select>
+                        </div>
+
+                        <div class="campo">
+                            <label for="ventaPrecio">Precio unitario</label>
+                            <input type="number" id="ventaPrecio" readonly placeholder="0.00">
+                        </div>
+
+                        <div class="campo">
+                            <label for="ventaCantidad">Cantidad</label>
+                            <input type="number" id="ventaCantidad" min="1" value="1">
+                        </div>
+
+                    </div>
+
+                    <button class="btn guardar ventas-agregar" data-ventas-control onclick="agregarAlCarrito()">
+                        <i class="fa-solid fa-plus"></i>
+                        Agregar al carrito
+                    </button>
+
+                </div>
+
+                <div class="tabla-contenedor ventas-carrito">
+
+                    <h2>
+                        <i class="fa-solid fa-cart-shopping"></i>
+                        Carrito de la venta
+                    </h2>
+
+                    <div class="tabla-scroll" tabindex="0" aria-label="Productos del carrito">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Producto</th>
+                                    <th>Precio unitario</th>
+                                    <th>Cantidad</th>
+                                    <th>Subtotal</th>
+                                    <th>Acción</th>
+                                </tr>
+                            </thead>
+
+                            <tbody id="listaCarrito"></tbody>
+                        </table>
+                    </div>
+
+                    <div class="resumen-cuenta">
+                        <div>
+                            <span>Total de la venta</span>
+                            <strong id="totalCarrito">$0.00</strong>
+                        </div>
+                    </div>
+
                     <p id="estadoVentas" role="status" aria-live="polite"></p>
-                    <button type="button" onclick="MicroCarmitaVentas.cargar()">Actualizar ventas y cuentas</button>
-                    <button type="button" onclick="MicroCarmitaVentas.cancelarEdicion()">Limpiar carrito / cancelar edición</button>
-                </div>
-            </div>
-
-            <div class="formulario">
-
-                <h2>
-                    <i class="fa-solid fa-cart-shopping"></i>
-                    Registrar venta
-                </h2>
-
-                <div class="form-grid">
-
-                    <div class="campo">
-                        <label for="ventaCliente">Cliente</label>
-                        <select id="ventaCliente"><option value="">Consumidor final (solo contado)</option></select>
-                    </div>
-
-                    <div class="campo">
-                        <label for="ventaTipo">Tipo de venta</label>
-                        <select id="ventaTipo">
-                            <option value="contado">Contado</option>
-                            <option value="fiado">Fiado</option>
-                        </select>
-                    </div>
-
-                    <div class="campo">
-                        <label for="ventaProducto">Producto</label>
-                        <select id="ventaProducto" onchange="actualizarPrecioVenta()">
-                            <option value="">Seleccione un producto</option>
-                        </select>
-                    </div>
-
-                    <div class="campo">
-                        <label for="ventaPrecio">Precio unitario</label>
-                        <input type="number" id="ventaPrecio" readonly placeholder="0.00">
-                    </div>
-
-                    <div class="campo">
-                        <label for="ventaCantidad">Cantidad</label>
-                        <input type="number" id="ventaCantidad" min="1" value="1">
-                    </div>
+                    <button class="btn guardar ventas-registrar" data-ventas-control onclick="registrarVenta()">
+                        <i class="fa-solid fa-save"></i>
+                        Registrar venta
+                    </button>
+                    <p>Al registrar la venta se actualiza el inventario. Las ventas fiadas generan un saldo pendiente para el cliente.</p>
 
                 </div>
-
-                <button class="btn guardar" onclick="agregarAlCarrito()">
-                    <i class="fa-solid fa-plus"></i>
-                    Agregar al carrito
-                </button>
 
             </div>
 
-            <div class="tabla-contenedor">
-
-                <h2>
-                    <i class="fa-solid fa-cart-shopping"></i>
-                    Productos de la venta
-                </h2>
-
-                <div class="tabla-scroll">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Producto</th>
-                                <th>Precio unitario</th>
-                                <th>Cantidad</th>
-                                <th>Subtotal</th>
-                                <th>Acción</th>
-                            </tr>
-                        </thead>
-
-                        <tbody id="listaCarrito"></tbody>
-                    </table>
-                </div>
-
-                <div class="resumen-cuenta">
-                    <div>
-                        <span>Total de la venta</span>
-                        <strong id="totalCarrito">$0.00</strong>
-                    </div>
-                </div>
-
-                <button class="btn guardar" onclick="registrarVenta()">
-                    <i class="fa-solid fa-save"></i>
-                    Registrar venta
-                </button>
-                <p>Al registrar la venta se actualiza el inventario. Las ventas fiadas generan un saldo pendiente para el cliente.</p>
-
-            </div>
-
-            <div class="tabla-contenedor">
+            <div class="tabla-contenedor ventas-historial">
 
                 <h2>Ventas registradas</h2>
 
-                <div class="tabla-scroll">
+                <div class="tabla-scroll" tabindex="0" aria-label="Historial de ventas">
                     <table>
                         <thead>
                             <tr>
@@ -326,7 +361,7 @@
                 </div>
             </div>
 
-            <div id="formularioProducto" class="formulario">
+            <div id="formularioProducto" class="formulario inventario-alta">
 
                 <h2>
                     <i class="fa-solid fa-box"></i>
@@ -363,7 +398,7 @@
 
                 </div>
 
-                <button class="btn guardar" onclick="agregarProducto()">
+                <button data-inventario-control class="btn guardar" onclick="agregarProducto()">
                     <i class="fa-solid fa-plus"></i>
                     Agregar producto
                 </button>
@@ -373,11 +408,12 @@
             <div class="tabla-contenedor">
 
                 <h2>Productos registrados</h2>
-                <p id="estadoInventario" role="status"></p>
-                <p id="alertasInventario" role="status"></p>
-                <button data-inventario-admin hidden onclick="MicroCarmitaInventario.exportarAnterior()">Descargar inventario local anterior</button>
+                <p class="texto-ayuda">Consulte existencias y precios. El historial conserva entradas, ajustes y movimientos por producto.</p>
+                <p id="estadoInventario" role="status" aria-live="polite" tabindex="-1"></p>
+                <p id="alertasInventario" class="alerta-resumen" role="status" aria-live="polite"></p>
+                <button data-inventario-control data-inventario-admin hidden onclick="MicroCarmitaInventario.exportarAnterior()">Descargar inventario local anterior</button>
 
-                <div class="tabla-scroll">
+                <div class="tabla-scroll" tabindex="0" aria-label="Productos registrados">
                     <table>
                         <thead>
                             <tr>
@@ -397,11 +433,11 @@
             </div>
 
             <div class="tabla-contenedor">
-                <h2>Lotes y caducidad</h2>
-                <div class="tabla-scroll"><table><thead><tr><th>Producto</th><th>Lote</th><th>Cantidad</th><th>Ingreso</th><th>Caducidad</th><th>Estado</th></tr></thead><tbody id="listaLotes"></tbody></table></div>
+                <h2>Lotes y caducidad</h2><p class="texto-ayuda">Cada lote conserva su cantidad, fecha de ingreso y caducidad. Las alertas distinguen los lotes próximos a caducar de los ya vencidos.</p>
+                <div class="tabla-scroll" tabindex="0" aria-label="Lotes y caducidad"><table><thead><tr><th>Producto</th><th>Lote</th><th>Cantidad</th><th>Ingreso</th><th>Caducidad</th><th>Estado</th></tr></thead><tbody id="listaLotes"></tbody></table></div>
             </div>
             <div class="formulario" data-inventario-admin hidden>
-                <h2>Entrada de lote</h2>
+                <h2>Entrada de lote</h2><p class="texto-ayuda">Registre mercadería recibida fuera de un pedido. Para un pedido existente, utilice Pedidos y recepciones.</p>
                 <div class="form-grid">
                     <div class="campo"><label for="entradaProducto">Producto</label><select id="entradaProducto"></select></div>
                     <div class="campo"><label for="entradaProveedor">Proveedor</label><select id="entradaProveedor"></select></div>
@@ -411,19 +447,19 @@
                     <div class="campo"><label for="entradaFecha">Fecha de ingreso</label><input id="entradaFecha" type="date"></div>
                     <div class="campo"><label for="entradaCaducidad">Caducidad (opcional)</label><input id="entradaCaducidad" type="date"></div>
                 </div>
-                <button class="btn guardar" onclick="MicroCarmitaInventario.entrada()">Registrar entrada</button>
+                <button data-inventario-control class="btn guardar" onclick="MicroCarmitaInventario.entrada()">Registrar entrada</button>
             </div>
             <div class="formulario" data-inventario-admin hidden>
-                <h2>Ajuste manual de inventario</h2>
+                <h2>Ajuste manual de inventario</h2><p class="texto-ayuda">Indique la variación y el motivo para conservar la trazabilidad del ajuste.</p>
                 <div class="form-grid">
                     <div class="campo"><label for="ajusteProducto">Producto</label><select id="ajusteProducto" onchange="MicroCarmitaInventario.lotesAjuste()"></select></div>
                     <div class="campo"><label for="ajusteCantidad">Variación (positiva o negativa)</label><input id="ajusteCantidad" type="number" step="1"></div>
                     <div class="campo"><label for="ajusteLote">Lote para aumento</label><select id="ajusteLote"></select></div>
                     <div class="campo"><label for="ajusteMotivo">Motivo obligatorio</label><input id="ajusteMotivo" maxlength="255"></div>
                 </div>
-                <button class="btn guardar" onclick="MicroCarmitaInventario.ajustar()">Registrar ajuste</button>
+                <button data-inventario-control class="btn guardar" onclick="MicroCarmitaInventario.ajustar()">Registrar ajuste</button>
             </div>
-            <div class="tabla-contenedor"><h2>Historial de inventario</h2><pre id="historialInventario"></pre></div>
+            <div class="tabla-contenedor"><h2>Historial de inventario</h2><pre id="historialInventario" class="registro-texto">Seleccione Historial en un producto para consultar sus movimientos.</pre></div>
             <div class="formulario">
                 <h2>Clientes</h2>
                 <div class="form-grid">
@@ -432,7 +468,7 @@
                     <div class="campo"><label for="clientesTelefono">Teléfono (opcional)</label><input id="clientesTelefono" maxlength="30"></div>
                     <div class="campo"><label for="clientesDireccion">Dirección (opcional)</label><input id="clientesDireccion" maxlength="255"></div>
                 </div>
-                <button class="btn guardar" onclick="MicroCarmitaInventario.contacto('clientes')">Registrar cliente</button>
+                <button data-inventario-control class="btn guardar" onclick="MicroCarmitaInventario.contacto('clientes')">Registrar cliente</button>
                 <pre id="listaClientes"></pre>
             </div>
             <div class="formulario">
@@ -444,7 +480,7 @@
                         <div class="campo"><label for="proveedoresTelefono">Teléfono (opcional)</label><input id="proveedoresTelefono" maxlength="30"></div>
                         <div class="campo"><label for="proveedoresDireccion">Dirección (opcional)</label><input id="proveedoresDireccion" maxlength="255"></div>
                     </div>
-                    <button class="btn guardar" onclick="MicroCarmitaInventario.contacto('proveedores')">Registrar proveedor</button>
+                    <button data-inventario-control class="btn guardar" onclick="MicroCarmitaInventario.contacto('proveedores')">Registrar proveedor</button>
                 </div>
                 <pre id="listaProveedores"></pre>
             </div>
@@ -460,71 +496,66 @@
                 </div>
             </div>
 
-            <div class="formulario">
-
-                <h2>
-                    <i class="fa-solid fa-money-bill-transfer"></i>
-                    Registrar movimiento
-                </h2>
-
+            <div class="formulario finanzas-registro">
+                <h2><i class="fa-solid fa-money-bill-transfer" aria-hidden="true"></i> Registrar movimiento</h2>
                 <div class="form-grid">
-
                     <div class="campo">
-                        <label for="movimientoTipo">Tipo</label>
+                        <label for="movimientoTipo">Tipo de movimiento</label>
                         <select id="movimientoTipo">
                             <option value="ingreso">Ingreso</option>
                             <option value="egreso">Egreso</option>
                         </select>
                     </div>
-
-                    <div class="campo">
-                        <label for="movimientoDescripcion">Descripción</label>
-                        <input type="text" id="movimientoDescripcion" placeholder="Descripción">
-                        <label>Categoría / origen<input id="finanzaCategoria" maxlength="80" placeholder="Operación, luz, agua, internet…"></label>
-                        <label>Fecha<input id="finanzaFecha" type="date" required></label>
-                        <label><input id="finanzaAdministrativo" type="checkbox"> Gasto administrativo (egreso)</label>
-                    </div>
-
                     <div class="campo">
                         <label for="movimientoValor">Valor</label>
                         <input type="number" id="movimientoValor" min="0" step="0.01" placeholder="0.00">
                     </div>
-
+                    <div class="campo finanzas-descripcion">
+                        <label for="movimientoDescripcion">Descripción</label>
+                        <input type="text" id="movimientoDescripcion" placeholder="Descripción">
+                    </div>
+                    <div class="campo">
+                        <label>Categoría / origen<input id="finanzaCategoria" maxlength="80" placeholder="Operación, luz, agua, internet…"></label>
+                    </div>
+                    <div class="campo">
+                        <label>Fecha<input id="finanzaFecha" type="date" required></label>
+                    </div>
+                    <div class="finanzas-administrativo">
+                        <label><input id="finanzaAdministrativo" type="checkbox"> Gasto administrativo (egreso)</label>
+                    </div>
                 </div>
-
-                <button class="btn guardar" onclick="registrarMovimiento()">
-                    <i class="fa-solid fa-save"></i>
-                    Registrar movimiento
-                </button>
-
+                <div class="finanzas-confirmacion">
+                    <p id="finanzaRegistroEstado" role="status" aria-live="polite"></p>
+                    <button class="btn guardar" data-finanza-registro onclick="registrarMovimiento()">
+                        <i class="fa-solid fa-save" aria-hidden="true"></i> Registrar movimiento
+                    </button>
+                </div>
             </div>
 
-            <div class="tabla-contenedor">
-
+            <div class="tabla-contenedor finanzas-historial">
                 <h2>Movimientos registrados</h2>
-                <p>Ventas, abonos y devoluciones aparecen automáticamente. Registre aquí únicamente operaciones manuales adicionales.</p>
-                <label>Desde <input id="finanzaDesde" type="date"></label>
-                <label>Hasta <input id="finanzaHasta" type="date"></label>
-                <button type="button" onclick="MicroCarmitaFinanzas.cargar()">Consultar</button>
-                <button type="button" onclick="MicroCarmitaFinanzas.todos()">Todas las fechas</button>
+                <p class="finanzas-ayuda">Ventas, abonos y devoluciones aparecen automáticamente. Registre aquí únicamente operaciones manuales adicionales.</p>
+                <div class="finanzas-filtros" role="group" aria-label="Filtrar movimientos por fecha">
+                    <label>Desde <input id="finanzaDesde" type="date"></label>
+                    <label>Hasta <input id="finanzaHasta" type="date"></label>
+                    <button type="button" data-finanza-consulta onclick="MicroCarmitaFinanzas.cargar()">Consultar</button>
+                    <button type="button" data-finanza-consulta onclick="MicroCarmitaFinanzas.todos()">Todas las fechas</button>
+                </div>
                 <p id="estadoFinanzas" role="status" aria-live="polite"></p>
-                <p id="resumenFinanzas"></p>
-
-                <div class="tabla-scroll">
+                <p id="resumenFinanzas" aria-label="Resumen del período consultado"></p>
+                <div class="tabla-scroll" tabindex="0" aria-label="Historial de ingresos y egresos">
                     <table>
                         <thead>
                             <tr>
-                                <th>Tipo</th>
-                                <th>Descripción</th>
+                                <th>Tipo y origen</th>
+                                <th>Descripción y responsable</th>
                                 <th>Valor</th>
                                 <th>Fecha</th>
                             </tr>
                         </thead>
-
                         <tbody id="listaMovimientos"></tbody>
                     </table>
                 </div>
-
             </div>
 
         </section>
@@ -582,9 +613,9 @@
 
         <section id="pedidos" class="seccion">
             <div class="encabezado"><h1>Pedidos y recepciones</h1></div>
-            <p id="estadoPedidos" role="status"></p>
+            <p id="estadoPedidos" role="status" aria-live="polite"></p>
             <div id="crearPedidoFormulario" class="formulario" hidden>
-                <h2>Nuevo pedido</h2>
+                <h2>Nuevo pedido</h2><p class="texto-ayuda">Seleccione proveedor y productos, agregue las líneas y cree el pedido para iniciar su seguimiento.</p>
                 <div class="form-grid">
                     <div class="campo"><label for="pedidoProveedor">Proveedor</label><select id="pedidoProveedor"></select></div>
                     <div class="campo"><label for="pedidoObservaciones">Observaciones</label><input id="pedidoObservaciones" maxlength="255"></div>
@@ -592,18 +623,18 @@
                     <div class="campo"><label for="pedidoCantidad">Cantidad solicitada</label><input id="pedidoCantidad" type="number" min="1" step="1"></div>
                     <div class="campo"><label for="pedidoPrecio">Precio de compra acordado</label><input id="pedidoPrecio" type="number" min="0" step="0.01"></div>
                 </div>
-                <button class="btn guardar" onclick="MicroCarmitaPedidos.agregar()">Agregar línea</button>
-                <div class="tabla-scroll"><table><thead><tr><th>Producto ID</th><th>Cantidad</th><th>Precio de compra</th><th>Acción</th></tr></thead><tbody id="pedidoDetalles"></tbody></table></div>
-                <button class="btn guardar" onclick="MicroCarmitaPedidos.crear()">Crear pedido</button>
+                <button data-pedido-control class="btn secundaria" onclick="MicroCarmitaPedidos.agregar()">Agregar línea</button>
+                <div class="tabla-scroll" tabindex="0" aria-label="Líneas del nuevo pedido"><table><thead><tr><th>Producto ID</th><th>Cantidad</th><th>Precio de compra</th><th>Acción</th></tr></thead><tbody id="pedidoDetalles"></tbody></table></div>
+                <button data-pedido-control class="btn guardar" onclick="MicroCarmitaPedidos.crear()">Crear pedido</button>
             </div>
-            <div class="tabla-contenedor"><h2>Pedidos registrados</h2><div class="tabla-scroll"><table><thead><tr><th>Pedido</th><th>Proveedor</th><th>Estado</th><th>Acción</th></tr></thead><tbody id="listaPedidos"></tbody></table></div></div>
+            <div class="tabla-contenedor"><h2>Pedidos registrados</h2><p class="texto-ayuda">Use Ver y recibir para consultar cantidades, preparar una recepción o revisar su historial.</p><div class="tabla-scroll" tabindex="0" aria-label="Pedidos registrados"><table><thead><tr><th>Pedido</th><th>Proveedor</th><th>Estado</th><th>Acción</th></tr></thead><tbody id="listaPedidos"></tbody></table></div></div>
             <div class="formulario" id="detallePedido" tabindex="-1" role="region" aria-labelledby="detallePedidoTitulo">
-                <h2 id="detallePedidoTitulo">Seleccione un pedido</h2><p id="detallePedidoObservaciones"></p>
-                <div class="tabla-scroll"><table><thead><tr><th>Producto</th><th>Solicitado</th><th>Recibido</th><th>Pendiente</th><th>A recibir</th><th>Lote (opcional)</th><th>Ingreso</th><th>Caducidad</th><th>Precio compra</th></tr></thead><tbody id="recepcionDetalles"></tbody></table></div>
+                <h2 id="detallePedidoTitulo">Seleccione un pedido</h2><p class="pedido-seleccion-ayuda texto-ayuda">Seleccione Ver y recibir en la lista de pedidos para cargar los productos y las cantidades pendientes. No se registrará una recepción hasta que la confirme.</p><p id="detallePedidoObservaciones"></p>
+                <div class="tabla-scroll" tabindex="0" aria-label="Productos de la recepción"><table><thead><tr><th>Producto</th><th>Solicitado</th><th>Recibido</th><th>Pendiente</th><th>A recibir</th><th>Lote (opcional)</th><th>Ingreso</th><th>Caducidad</th><th>Precio compra</th></tr></thead><tbody id="recepcionDetalles"></tbody></table></div>
                 <p>Indique la cantidad en «A recibir» y complete fecha de ingreso y precio de compra. Puede omitir el código de lote: se generará uno interno. Deje cero en los productos que no recibe; la caducidad es opcional cuando no corresponde.</p>
                 <button id="recibirPedidoBoton" type="button" class="btn guardar" onclick="MicroCarmitaPedidos.recibir()" aria-describedby="estadoRecepcion" disabled>Registrar recepción</button>
                 <p id="estadoRecepcion" role="status" aria-live="polite" tabindex="-1"></p>
-                <h2>Historial de recepciones</h2><pre id="historialRecepciones"></pre>
+                <h2>Historial de recepciones</h2><pre id="historialRecepciones" class="registro-texto">Seleccione un pedido para consultar sus recepciones.</pre>
             </div>
         </section>
         <section id="usuarios" class="seccion">
@@ -655,6 +686,7 @@
 <script src="sales-client.js"></script>
 <script src="finance-client.js"></script>
 <script src="reports-client.js"></script>
+<script src="dashboard-client.js"></script>
 
 </body>
 </html>

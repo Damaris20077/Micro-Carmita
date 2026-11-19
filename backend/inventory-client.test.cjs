@@ -9,6 +9,7 @@ function preparar(rol = 'administrador') {
     const llamadas = [];
     const avisos = [];
     const adminControls = [{ hidden: false }];
+    const controles = [{ disabled:false, attrs:{}, setAttribute(k,v){this.attrs[k]=v}, removeAttribute(k){delete this.attrs[k]} }];
     let fallo = false;
     const productos = [{ id: 1, nombre: 'Leche', categoria: 'Lácteos', precio_compra: 0.8, precio_venta: 1.25,
         proveedor_id: 1, activo: true, stock: 2, stockBajo: true,
@@ -17,11 +18,11 @@ function preparar(rol = 'administrador') {
         crypto: { randomUUID: require('node:crypto').randomUUID },
         document: {
             getElementById(id) {
-                if (!campos[id]) campos[id] = { value: '', textContent: '', innerHTML: '', hidden: false, appendChild() {} };
+                if (!campos[id]) campos[id] = { value: '', textContent: '', innerHTML: '', hidden: false, attrs:{}, setAttribute(k,v){this.attrs[k]=v}, appendChild() {} };
                 return campos[id];
             },
             createElement() { return { value: '', textContent: '' }; },
-            querySelectorAll() { return adminControls; },
+            querySelectorAll(selector) { return selector==='[data-inventario-control]'?controles:adminControls; },
             addEventListener() {}
         },
         localStorage: {
@@ -49,8 +50,41 @@ function preparar(rol = 'administrador') {
     // Mantener la identidad estable como lo hace el adaptador de autenticación.
     vm.runInContext('const identidadEnsayo = usuarioActual(); usuarioActual = () => identidadEnsayo;', contexto);
     vm.runInContext(fs.readFileSync(path.join(__dirname, '..', 'inventory-client.js'), 'utf8'), contexto);
-    return { contexto, campos, llamadas, avisos, adminControls, fallar() { fallo = true; } };
+    return { contexto, campos, llamadas, avisos, adminControls, controles, fallar() { fallo = true; } };
 }
+
+test('inventario distingue stock y caducidad remotos y separa alertas sin recalcular sus reglas', async () => {
+    const f=preparar(); await f.contexto.MicroCarmitaInventario.cargar();
+    assert.match(f.campos.listaInventario.innerHTML,/estado-pendiente">Stock bajo/);
+    assert.match(f.campos.listaLotes.innerHTML,/estado-pendiente">Por caducar/);
+    assert.match(f.campos.listaInventario.innerHTML,/class="btn peligro"[^>]*onclick="eliminarProducto\(1\)"/);
+    assert.match(f.campos.alertasInventario.textContent,/stock bajo.*\n.*Por caducar/);
+    assert.equal(f.campos.alertasInventario.attrs['data-estado'],'aviso');
+    assert.equal(f.campos.estadoInventario.attrs['data-estado'],'exito');
+});
+
+test('catálogo vacío informa ausencia de productos y lotes tras una consulta exitosa', async () => {
+    const f=preparar();
+    f.contexto.MicroCarmitaAuth.api=async r=>r==='/inventory'?{productos:[]}:{registros:[]};
+    await f.contexto.MicroCarmitaInventario.cargar();
+    assert.match(f.campos.listaInventario.innerHTML,/No hay productos registrados/);
+    assert.match(f.campos.listaLotes.innerHTML,/No hay lotes registrados/);
+    assert.equal(f.campos.alertasInventario.textContent,'Sin alertas de inventario.');
+    assert.equal(f.campos.alertasInventario.attrs['data-estado'],'neutro');
+});
+
+test('inventario refleja bloqueo de escritura y hace visible un error liberando los botones', async () => {
+    const f=preparar();let rechazar,posts=0,visible=false;
+    const estado=f.contexto.document.getElementById('estadoInventario');estado.focus=()=>{visible=true};
+    f.contexto.MicroCarmitaAuth.api=async()=>{posts++;return new Promise((r,j)=>{rechazar=j})};
+    const ajuste=f.contexto.MicroCarmitaInventario.ajustar();
+    assert.ok(f.controles[0].disabled);assert.equal(f.controles[0].attrs['aria-busy'],'true');
+    await f.contexto.MicroCarmitaInventario.ajustar();assert.equal(posts,1);
+    rechazar(Object.assign(new Error('Motivo obligatorio'),{status:400}));await ajuste;
+    assert.equal(estado.attrs['data-estado'],'error');assert.ok(visible);
+    assert.match(estado.textContent,/Motivo obligatorio/);
+    assert.equal(f.controles[0].disabled,false);assert.equal(f.controles[0].attrs['aria-busy'],undefined);
+});
 
 test('inventario impide ajustes simultáneos y permite operar después de terminar', async () => {
     const f = preparar();

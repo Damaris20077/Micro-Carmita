@@ -12,11 +12,13 @@ function preparar(rol = 'administrador') {
     let intentos = 0;
     const actor = { id: 1, rol };
     const callbacks = {};
+    const controles=[{disabled:false,attrs:{},setAttribute(k,v){this.attrs[k]=v},removeAttribute(k){delete this.attrs[k]}}];
     const pedido = { id: 1, estado: 'Pendiente', proveedor: 'Proveedor',
         detalles: [{ id: 10, producto: 'Leche', cantidad: 5, recibida: 0, precio_compra: 0.8 }], recepciones: [] };
     const contexto = vm.createContext({
         document: {
-            getElementById(id) { return campos[id] ??= { value: '', textContent: '', innerHTML: '', hidden: false, disabled: false }; },
+            getElementById(id) { return campos[id] ??= { value: '', textContent: '', innerHTML: '', hidden: false, disabled: false, attrs:{},setAttribute(k,v){this.attrs[k]=v} }; },
+            querySelectorAll() { return controles; },
             addEventListener(nombre, fn) { callbacks[nombre] = fn; }
         },
         crypto: { randomUUID }, Intl, Date,
@@ -42,8 +44,72 @@ function preparar(rol = 'administrador') {
     });
     vm.runInContext(fs.readFileSync(path.join(__dirname, '..', 'date-formatter.js'), 'utf8'), contexto);
     vm.runInContext(fs.readFileSync(path.join(__dirname, '..', 'orders-client.js'), 'utf8'), contexto);
-    return { contexto, campos, peticiones, callbacks, perderRespuesta() { falloRecepcion = true; } };
+    return { contexto, campos, peticiones, callbacks, controles, perderRespuesta() { falloRecepcion = true; } };
 }
+
+test('lista de pedidos descarta una consulta anterior de la misma sesión',async()=>{
+    const f=preparar(),resolver=[],api=f.contexto.MicroCarmitaAuth.api;
+    f.contexto.MicroCarmitaAuth.api=(r,...a)=>r==='/orders'?new Promise(res=>resolver.push(res)):api(r,...a);
+    const vieja=f.contexto.MicroCarmitaPedidos.cargar(),nueva=f.contexto.MicroCarmitaPedidos.cargar();
+    resolver[1]({pedidos:[{id:2,proveedor:'Actual',estado:'Pendiente'}]});await nueva;
+    resolver[0]({pedidos:[{id:1,proveedor:'Antiguo',estado:'Pendiente'}]});await vieja;
+    assert.match(f.campos.listaPedidos.innerHTML,/Actual/);assert.doesNotMatch(f.campos.listaPedidos.innerHTML,/Antiguo/);
+});
+
+test('seleccionar otro pedido retira el detalle anterior incluso si falla su lectura', async () => {
+    const f=preparar();await f.contexto.MicroCarmitaPedidos.consultar(1);
+    assert.equal(f.campos.detallePedido.attrs['data-seleccionado'],'true');
+    assert.match(f.campos.recepcionDetalles.innerHTML,/Leche/);
+    f.contexto.MicroCarmitaAuth.api=async()=>{throw new Error('Sin conexión')};
+    await f.contexto.MicroCarmitaPedidos.consultar(3);
+    assert.equal(f.campos.detallePedido.attrs['data-seleccionado'],'false');
+    assert.equal(f.campos.recepcionDetalles.innerHTML,'');assert.equal(f.campos.historialRecepciones.textContent,'');
+    assert.equal(f.campos.detallePedidoTitulo.textContent,'Seleccione un pedido');
+    assert.equal(f.campos.recibirPedidoBoton.disabled,true);
+    assert.equal(f.campos.estadoPedidos.attrs['data-estado'],'error');
+});
+
+test('lista de pedidos y borrador vacíos ofrecen orientación sin filas ficticias', async () => {
+    const f=preparar();const api=f.contexto.MicroCarmitaAuth.api;
+    f.contexto.MicroCarmitaAuth.api=(r,...args)=>r==='/orders'?Promise.resolve({pedidos:[]}):api(r,...args);
+    await f.contexto.MicroCarmitaPedidos.cargar();
+    assert.match(f.campos.listaPedidos.innerHTML,/No hay pedidos registrados/);
+    f.contexto.usuarioActual=()=>null;f.callbacks['microcarmita:sesion']();
+    assert.match(f.campos.pedidoDetalles.innerHTML,/Agregue los productos/);
+    assert.equal(f.campos.detallePedido.attrs['data-seleccionado'],'false');
+});
+
+test('creación pendiente deshabilita acciones y evita un segundo pedido simultáneo', async () => {
+    const f=preparar();let resolver,posts=0;const api=f.contexto.MicroCarmitaAuth.api;
+    f.contexto.MicroCarmitaAuth.api=async(r,m,d)=>{
+        if(r==='/orders'&&m==='POST'){posts++;await new Promise(res=>{resolver=res})}return api(r,m,d);
+    };
+    const creacion=f.contexto.MicroCarmitaPedidos.crear();
+    assert.ok(f.controles[0].disabled);assert.equal(f.controles[0].attrs['aria-busy'],'true');
+    await f.contexto.MicroCarmitaPedidos.crear();assert.equal(posts,1);
+    resolver();await creacion;
+    assert.equal(f.controles[0].disabled,false);assert.equal(f.controles[0].attrs['aria-busy'],undefined);
+});
+
+test('estados de pedidos conservan texto y cancelar permanece exclusivo del Administrador', async () => {
+    for(const rol of ['administrador','vendedor']){
+        const f=preparar(rol),api=f.contexto.MicroCarmitaAuth.api;
+        f.contexto.MicroCarmitaAuth.api=(r,...a)=>r==='/orders'?Promise.resolve({pedidos:['Pendiente','Recibido parcialmente','Recibido completo','Cancelado'].map((estado,i)=>({id:i+1,proveedor:'<QA>',estado}))}):api(r,...a);
+        await f.contexto.MicroCarmitaPedidos.cargar();const h=f.campos.listaPedidos.innerHTML;
+        assert.match(h,/estado-pendiente">Pendiente/);assert.match(h,/estado-disponible">Recibido completo/);
+        assert.match(h,/estado-agotado">Cancelado/);assert.match(h,/&lt;QA>/);assert.doesNotMatch(h,/<QA>/);
+        assert.equal((h.match(/MicroCarmitaPedidos.cancelar/g)||[]).length,rol==='administrador'?2:0);
+    }
+});
+
+test('error de lista recibido después de logout no recupera un mensaje de la sesión anterior', async () => {
+    const f=preparar();let rechazar;
+    f.contexto.MicroCarmitaAuth.api=()=>new Promise((r,j)=>{rechazar=j});
+    const carga=f.contexto.MicroCarmitaPedidos.cargar();
+    f.contexto.usuarioActual=()=>null;f.callbacks['microcarmita:sesion']();
+    rechazar(new Error('Error anterior'));await carga;
+    assert.equal(f.campos.estadoPedidos.textContent,'');
+});
 
 test('pantalla pedidos consulta la API y oculta la creación al Vendedor', async () => {
     const f = preparar('vendedor');
@@ -151,7 +217,7 @@ test('cerrar sesión descarta detalle pendiente sin volver a habilitar recepció
     f.callbacks['microcarmita:sesion']();
     resolver({ id: 3, estado: 'Pendiente', detalles: [], recepciones: [] });
     await consulta;
-    assert.equal(f.campos.detallePedidoTitulo.textContent, '');
+    assert.equal(f.campos.detallePedidoTitulo.textContent, 'Seleccione un pedido');
     assert.equal(f.campos.recibirPedidoBoton.disabled, true);
 });
 

@@ -67,6 +67,96 @@ function prepararCliente({ real = false } = {}) {
     return { contexto, campos, peticiones, respuestas, eventos, avisos, clasesLogin };
 }
 
+test('401 sin JSON invalida la sesión aunque el proxy devuelva una página HTML', async () => {
+    const f=prepararCliente();
+    f.respuestas.push({status:200,body:{usuario:{id:1,rol:'administrador'},csrfToken:'simulado'}});
+    await f.contexto.iniciarSesion({preventDefault(){}});
+    f.contexto.fetch=async()=>({ok:false,status:401,async json(){throw new SyntaxError('HTML')}});
+    await assert.rejects(()=>f.contexto.MicroCarmitaAuth.api('/users'));
+    assert.equal(f.contexto.usuarioActual(),null);
+});
+
+test('401 de restauración antigua no invalida un login nuevo todavía pendiente',async()=>{
+    const f=prepararCliente();const resolver={};
+    f.contexto.fetch=ruta=>new Promise(r=>{resolver[ruta]=r});
+    const vieja=f.eventos.get('DOMContentLoaded')(),login=f.contexto.iniciarSesion({preventDefault(){}});
+    resolver['/api/auth/me']({ok:false,status:401,async json(){return {error:'Sesión anterior'}}});await vieja;
+    resolver['/api/auth/login']({ok:true,status:200,async json(){return {usuario:{id:2,rol:'administrador'},csrfToken:'simulado'}}});await login;
+    assert.equal(f.contexto.usuarioActual()?.id,2);
+});
+
+test('restauración anterior al logout no vuelve a abrir la sesión cerrada',async()=>{
+    const f=prepararCliente();let resolver;const fetch=f.contexto.fetch;
+    f.contexto.fetch=(r,o)=>r==='/api/auth/me'?new Promise(res=>{resolver=res}):fetch(r,o);
+    const restaurar=f.eventos.get('DOMContentLoaded')();
+    f.respuestas.push({status:204});await f.contexto.cerrarSesion();
+    resolver({ok:true,status:200,async json(){return {usuario:{id:1,rol:'administrador'},csrfToken:'simulado'}}});await restaurar;
+    assert.equal(f.contexto.usuarioActual(),null);
+});
+
+test('alta de usuario tardía tras logout no borra un borrador ni muestra errores de otra sesión',async()=>{
+    const f=prepararCliente();f.respuestas.push({status:200,body:{usuario:{id:1,rol:'administrador'},csrfToken:'simulado'}});
+    await f.contexto.iniciarSesion({preventDefault(){}});
+    let resolver;const fetch=f.contexto.fetch;
+    f.contexto.fetch=(r,o)=>r==='/api/users'?new Promise(res=>{resolver=res}):fetch(r,o);
+    const alta=f.contexto.crearUsuario();f.respuestas.push({status:204});await f.contexto.cerrarSesion();
+    f.campos.usuarioNombre.value='Borrador nuevo';
+    resolver({ok:true,status:201,async json(){return {id:2}}});await alta;
+    assert.equal(f.campos.usuarioNombre.value,'Borrador nuevo');assert.equal(f.avisos.length,0);
+});
+
+test('bloqueo de usuarios se muestra en el botón y se libera después de un rechazo',async()=>{
+    const f=prepararCliente();f.respuestas.push({status:200,body:{usuario:{id:1,rol:'administrador'},csrfToken:'simulado'}});
+    await f.contexto.iniciarSesion({preventDefault(){}});
+    const boton={attrs:{},setAttribute(k,v){this.attrs[k]=v},removeAttribute(k){delete this.attrs[k]}};
+    f.contexto.document.querySelectorAll=s=>s==='#usuarios button'?[boton]:[];
+    let resolver;f.contexto.fetch=()=>new Promise(r=>{resolver=r});
+    f.campos.usuarioNombre.value='QA';const alta=f.contexto.crearUsuario();
+    assert.ok(boton.disabled);assert.equal(boton.attrs['aria-busy'],'true');
+    resolver({ok:false,status:400,async json(){return {error:'Usuario inválido'}}});await alta;
+    assert.equal(boton.disabled,false);assert.equal(boton.attrs['aria-busy'],undefined);
+    assert.equal(f.campos.usuarioNombre.value,'QA');assert.match(f.avisos[0],/Usuario inválido/);
+});
+
+test('restauración tardía no sustituye un login nuevo ni lo elimina si falla',async()=>{
+    for(const fallo of [false,true]){
+        const f=prepararCliente();let resolver;
+        const fetch=f.contexto.fetch;
+        f.contexto.fetch=(ruta,opciones)=>ruta==='/api/auth/me'?new Promise(r=>{resolver=r}):fetch(ruta,opciones);
+        const antigua=f.eventos.get('DOMContentLoaded')();
+        f.respuestas.push({status:200,body:{usuario:{id:2,rol:'administrador'},csrfToken:'simulado'}});
+        await f.contexto.iniciarSesion({preventDefault(){}});
+        resolver({ok:!fallo,status:fallo?500:200,async json(){return fallo?{error:'Error previo'}:{usuario:{id:1,rol:'vendedor'},csrfToken:'antiguo-simulado'}}});
+        await antigua;
+        assert.equal(f.contexto.usuarioActual()?.id,2);
+    }
+});
+
+test('lista de usuarios conserva la consulta más reciente de la misma sesión',async()=>{
+    const f=prepararCliente();
+    f.respuestas.push({status:200,body:{usuario:{id:1,rol:'administrador'},csrfToken:'simulado'}});
+    await f.contexto.iniciarSesion({preventDefault(){}});
+    const resolver=[];
+    f.contexto.fetch=()=>new Promise(r=>resolver.push(r));
+    const vieja=f.contexto.mostrarUsuarios(),nueva=f.contexto.mostrarUsuarios();
+    const respuesta=nombre=>({ok:true,status:200,async json(){return {usuarios:[{id:2,nombre,usuario:'qa',rol:'vendedor',activo:true}]}}});
+    resolver[1](respuesta('Actual'));await nueva;resolver[0](respuesta('Antiguo'));await vieja;
+    assert.match(f.campos.listaUsuarios.innerHTML,/Actual/);assert.doesNotMatch(f.campos.listaUsuarios.innerHTML,/Antiguo/);
+});
+
+test('dos clics en Crear usuario producen un solo POST mientras la petición está pendiente',async()=>{
+    const f=prepararCliente();
+    f.respuestas.push({status:200,body:{usuario:{id:1,rol:'administrador'},csrfToken:'simulado'}});
+    await f.contexto.iniciarSesion({preventDefault(){}});
+    const resolver=[];let posts=0;
+    f.contexto.fetch=async(ruta,opciones)=>{
+        if(opciones.method==='POST'){posts++;await new Promise(r=>{resolver.push(r)});return {ok:true,status:201,async json(){return {id:2}}}}
+        return {ok:true,status:200,async json(){return {usuarios:[]}}};
+    };
+    const primera=f.contexto.crearUsuario(),segunda=f.contexto.crearUsuario();
+    for(const r of resolver)r();await Promise.all([primera,segunda]);assert.equal(posts,1);
+});
+
 test('login concurrente envía una sola petición y libera el botón al terminar', async () => {
     const f = prepararCliente();
     f.campos.loginBoton = { disabled: false };

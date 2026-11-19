@@ -4,7 +4,7 @@ Fecha: 17 de noviembre de 2026. Rama comprobada: desarrollo-jose. Entrega previs
 
 ## Dictamen y alcance
 
-La base automatizada actual queda en 573 pruebas exitosas (442 conservadas y 131 entradas nuevas de prueba en la auditoría de permisos, incluidos sus subtests/contenedores). El corte anterior de auditoría y sus resultados históricos se conservan abajo; la actualización de presentación figura al final. El sistema tiene implementación de los 38 RF, pero no se declara aceptación integral de producción: RF-37/38 continúan desactivados y sin ensayo real; faltan navegación visual, concurrencia con conexiones independientes y persistencia tras commit/reinicio. No se ejecutaron escrituras sobre MySQL real, migraciones, respaldos, restauraciones ni transferencias a R2.
+El corte vigente del 18 de noviembre de 2026 queda en 634 pruebas exitosas; véase la auditoría funcional y de usabilidad al final. Las 573 de la auditoría de permisos y los demás resultados anteriores se conservan como evidencia histórica. El sistema tiene implementación de los 38 RF, pero no se declara aceptación integral de producción: RF-37/38 continúan desactivados y sin ensayo real; faltan navegación visual, concurrencia con conexiones independientes y persistencia tras commit/reinicio. No se ejecutaron escrituras sobre MySQL real, migraciones, respaldos, restauraciones ni transferencias a R2.
 
 Las integraciones reales satisfactorias de RF-01 a RF-36 proceden del contexto confirmado por el usuario. Esta revisión ejecutó pruebas aisladas, inspección de código y consultas MySQL exclusivamente SELECT; no volvió a autenticar usuarios reales ni a tocar sesiones. Un ensayo con rollback comprueba operaciones dentro de una transacción, pero no demuestra persistencia tras commit ni carreras entre dos conexiones independientes.
 
@@ -287,3 +287,200 @@ rf.txt ya estaba versionado y su blob de trabajo coincide con HEAD; mantiene los
 El escaneo de candidatos no detectó coincidencias con secretos locales ni patrones de claves privadas, tokens o URLs con credenciales; no se imprimieron valores sensibles. .env, .env.backup, .auth-provision.ps1 y .auth-real-check.cjs están ignorados y no versionados. El área de preparación se verificará con una lista explícita antes de registrar el commit local. El escaneo es una comprobación acotada, no una garantía absoluta de detección de cualquier secreto arbitrario.
 
 Verificación repetida: npm test, 573 exitosas, 0 fallidas, 0 omitidas, 0 canceladas, salida 0 (6708.0595 ms); npm audit --omit=dev --json, 0 vulnerabilidades de producción, salida 0; git diff --check sin errores, con avisos LF/CRLF habituales. No se ejecutaron operaciones en MySQL ni migraciones. No se cambia de rama, no se hace merge ni push. Los riesgos funcionales y validaciones reales pendientes de las secciones anteriores no se consideran resueltos por este commit.
+
+## Revisión coordinada de interfaz — 18 de noviembre de 2026
+
+Rama desarrollo-jose y cambios pendientes conservados. Línea base ejecutada: 607/607. El alcance autorizado de implementación se detiene en componentes compartidos e Inventario/Pedidos. La matriz global se presentó antes de editar y queda detallada en UI_UX.md. No se encontraron las ocho capturas ni archivos identificables de Stitch; esta revisión es de código y pruebas aisladas. No se juzga la longitud de una captura como defecto.
+
+| ID / criticidad | Clasificación y evidencia | Estado |
+|---|---|---|
+| UI-01 Media | Diseño: Archivar/Cancelar se confundían con consultas; acciones por fila sin agrupación consistente. | Estilos reutilizables secundario/peligro y acciones con separación, aplicados en Inventario/Pedidos. |
+| UI-02 Media | Diseño: catálogos/lotes/pedidos sin filas vacías informativas y alertas en texto continuo. | Vacíos tras consultas exitosas, alertas por línea, etiquetas según estados remotos. Error se distingue de vacío mediante mensaje. |
+| UI-03 Media | Retroalimentación: los bloqueos internos de escritura no deshabilitaban los botones de alta/ajuste/creación. | disabled y aria-busy derivados del bloqueo existente; regresiones de doble envío y liberación. No equivale a idempotencia entre recargas. |
+| UI-04 Media | Diseño: recepción sin pedido con escasa orientación. | Ayuda condicional Ver y recibir y título accesible al restaurar/limpiar sesión. Campos, botón y validaciones conservados. |
+| UI-05 Media | Defecto demostrado: cargar un pedido y fallar al seleccionar otro dejaba filas e historial de la selección previa. | Limpieza previa al GET, selección invalidada y recepción deshabilitada; prueba con datos ficticios. |
+| UI-06 Baja | Defecto demostrado: catch de lista de pedidos sin guarda de identidad podía publicar un error después del logout. | Guarda de identidad y regresión de respuesta tardía. No modifica autenticación del servidor. |
+| UI-07 Media, pendiente | Diseño: Cuentas requiere separar selector/historial y jerarquía de deuda; Reportes necesita estado inicial/carga y fecha legible; Usuarios conserva estilo de pago para Desactivar. | Siguiente bloque, después de revisión visual. No se modifican sus clientes ni HTML aquí. |
+| UI-08 Alta para aceptación, pendiente | No hay inspección renderizada; la conexión nativa al navegador falló (os error 2). | No se certifican responsividad, ausencia de desbordamientos/solapamientos, foco real ni legibilidad visual. |
+
+### Evidencia del bloque
+
+- npm test: **619 pruebas, 619 exitosas, 0 fallidas, 0 omitidas, 0 canceladas y 0 pendientes**, salida 0, 6780.8045 ms. Doce nuevas sobre las 607 conservadas: tres de Inventario, cinco de Pedidos, una de enlace de eventos y tres de preservación/estructura visual.
+- npm audit --omit=dev --json: **0 vulnerabilidades de producción**, salida 0. Primera consulta bloqueada en entorno restringido; repetición autorizada al registro exitosa. Sin instalaciones.
+- git diff --check: sin errores, con avisos LF/CRLF habituales.
+- Los scripts reales resuelven todos los eventos estáticos de index a funciones existentes. Esto verifica conexión de handlers, no sustituye ejecutar manualmente cada flujo ni prueba todos los controles dinámicos. Las acciones dinámicas de inventario/pedidos tienen comprobaciones del HTML renderizado y pruebas operativas previas.
+- Los 161 controles originales mantienen su huella de IDs, tipos, eventos y atributos funcionales. La comparación de presentación de Inventario se sustituye por sus secciones y controles porque ahora está autorizado rediseñarlo. Huellas anteriores nuevas protegen todo el HTML ajeno a Inventario/Pedidos y todo el CSS previo; Ventas/Finanzas conservan su HTML completo. El menú y los tokens quedan intactos.
+- Se mantienen los validadores existentes de cantidades, precios, fechas, lote opcional y recepción vacía, así como permisos de Administrador/Vendedor, claves de lotes/recepciones, descarte de respuestas obsoletas y fechas ecuatorianas. No se añade obligatoriedad indiscriminada a campos opcionales ni se reinterpretan los RF.
+- Backend, API, consultas SQL, datos y reglas financieras/inventario no se modifican. Pruebas con Node/VM y persistencia simulada; no hubo escrituras MySQL, migraciones, respaldos/R2, cambio de rama, commits, merges ni push.
+
+Archivos de esta iteración: index.html, estilos.css, inventory-client.js, orders-client.js; backend/inventory-client.test.cjs, backend/order-client.test.cjs, backend/frontend-integration.test.cjs, backend/ui-contract.test.cjs, backend/sales-layout.test.cjs, backend/finance-layout.test.cjs; nuevo backend/shared-ui.test.cjs; UI_UX.md y FINAL_QA.md. Los demás cambios pendientes pertenecen a iteraciones anteriores y se conservan.
+
+### Validación manual antes de continuar
+
+Detener el rediseño aquí para revisión de este bloque. Usar un entorno de prueba, no los datos del negocio. Comprobar 375/768/1024/1440px y zoom 200%, teclado y lectura de mensajes; tablas con scroll local; alertas/nombres/códigos largos; todas las secciones de Inventario en flujo vertical; ayuda sin pedido seleccionado; selección exitosa/fallida y recepción parcial/completa con estados correctos. Verificar límites de formularios y ausencia de solapamientos sin considerar la longitud de la página un defecto.
+
+Con Administrador y Vendedor revisar los mismos permisos; con API simulada/base aislada probar errores HTTP/red, doble clic, respuesta perdida y logout con consultas pendientes. Reconciliar historial antes de repetir ajustes o pedidos cuya respuesta se perdió. No se afirma un nuevo ensayo MySQL real ni aceptación visual de las ocho pantallas. Continúan pendientes P-01 a P-08 según su alcance: especialmente R2, idempotencia persistente de ajustes/creación de pedidos, concurrencia y persistencia tras commit/reinicio. Cuentas/Reportes/Usuarios quedan para el bloque posterior y no se declara concluida la revisión visual global.
+
+
+## Auditoría funcional y de usabilidad — 18 de noviembre de 2026
+
+Rama desarrollo-jose. Línea base ejecutada: 619 exitosas, 0 fallidas/omitidas (7079.4744 ms). Cambios pendientes conservados. Se aplicaron senior-qa, ui-ux-pro-max y senior-backend mediante inspección y Node/VM/HTTP aislado. Se leyeron rf.txt, UI_UX.md y esta evidencia histórica. El diseño aprobado se conserva: no se editan index.html ni estilos.css. No se realizaron escrituras MySQL, migraciones, respaldos R2, cambios de rama, commits, merges ni push.
+
+### Inventario de controles y eventos de los ocho módulos
+
+Inventario extraído del HTML actual. Los controles sin ID se identifican por su evento, sin renombrarlos. La matriz siguiente añade las acciones dinámicas y sus validaciones. Los valores del formulario y las credenciales no forman parte del inventario.
+
+| Módulo | IDs de campos de entrada/selección/botones | Eventos estáticos existentes |
+|---|---|---|
+| inicio | `inicioPanelActualizar` | `mostrarSeccion('inicio', document.querySelector('.menu'))` |
+| ventas | `ventaCliente`, `ventaTipo`, `ventaProducto`, `ventaPrecio`, `ventaCantidad` | `MicroCarmitaVentas.cargar()`<br>`MicroCarmitaVentas.cancelarEdicion()`<br>`actualizarPrecioVenta()`<br>`agregarAlCarrito()`<br>`registrarVenta()` |
+| cuentas | `cuentasCliente` | `MicroCarmitaVentas.cliente(Number(document.getElementById('cuentasCliente').value))` |
+| inventario | `productoNombre`, `productoCategoria`, `productoPrecio`, `productoCantidad`, `productoCompra`, `productoProveedor`, `productoCodigo`, `productoFecha`, `productoCaducidad`, `entradaProducto`, `entradaProveedor`, `entradaCodigo`, `entradaCantidad`, `entradaCompra`, `entradaFecha`, `entradaCaducidad`, `ajusteProducto`, `ajusteCantidad`, `ajusteLote`, `ajusteMotivo`, `clientesNombre`, `clientesIdentificacion`, `clientesTelefono`, `clientesDireccion`, `proveedoresNombre`, `proveedoresIdentificacion`, `proveedoresTelefono`, `proveedoresDireccion` | `agregarProducto()`<br>`MicroCarmitaInventario.exportarAnterior()`<br>`MicroCarmitaInventario.entrada()`<br>`MicroCarmitaInventario.lotesAjuste()`<br>`MicroCarmitaInventario.ajustar()`<br>`MicroCarmitaInventario.contacto('clientes')`<br>`MicroCarmitaInventario.contacto('proveedores')` |
+| movimientos | `movimientoTipo`, `movimientoValor`, `movimientoDescripcion`, `finanzaCategoria`, `finanzaFecha`, `finanzaAdministrativo`, `finanzaDesde`, `finanzaHasta` | `registrarMovimiento()`<br>`MicroCarmitaFinanzas.cargar()`<br>`MicroCarmitaFinanzas.todos()` |
+| reportes | `reporteTipo`, `reporteFecha`, `reporteDesde`, `reporteHasta` | `MicroCarmitaReportes.seleccionar()`<br>`MicroCarmitaReportes.cargar()`<br>`MicroCarmitaReportes.descargar()` |
+| pedidos | `pedidoProveedor`, `pedidoObservaciones`, `pedidoProducto`, `pedidoCantidad`, `pedidoPrecio`, `recibirPedidoBoton` | `MicroCarmitaPedidos.agregar()`<br>`MicroCarmitaPedidos.crear()`<br>`MicroCarmitaPedidos.recibir()` |
+| usuarios | `usuarioNombre`, `usuarioCuenta`, `usuarioClave`, `usuarioRol` | `MicroCarmitaAuth.crearUsuario()` |
+
+Comunes: ocho botones de navegación con mostrarSeccion, salto al contenido, Salir; loginUsuario/loginClave y envío del formulario mediante iniciarSesion(event). La sesión subyacente conserva inert, y el menú conserva data-permiso. Los mensajes e indicadores mantienen sus IDs (estado*, total*, lista*, resumen*) y no se convierten en nuevos estados de negocio.
+
+Controles dinámicos: recCantidadN, recCodigoN, recFechaN, recCaducidadN y recPrecioN de cada detalle de recepción; Quitar en líneas/carrito; Historial/Editar/Archivar en productos; Ver y recibir/Cancelar en pedidos; Detalle/Modificar/Anular en ventas; Registrar abono/Historial del cliente en cuentas; Editar/Activar/Desactivar en usuarios. Sus datos proceden de API o del borrador en memoria, sin almacenamiento paralelo. Los prompts de edición/motivo y confirmaciones existentes permanecen intactos.
+
+### Matriz de pruebas funcionales
+
+A = probado de forma aislada en esta suite (Node/VM o Express con repositorios simulados); P = parcial/pendiente. Una fila A no afirma ensayo MySQL nuevo ni aceptación visual. Los archivos citados están en backend/ salvo app.test.cjs y modelo.test.cjs.
+
+| Módulo | Acción / controles | Resultado esperado | Cobertura automatizada | Resultado | Evidencia |
+|---|---|---|---|---|---|
+| Sesión | Login válido, incorrecto e inactivo | Autenticar o rechazar sin sesión operativa; limpiar clave al éxito | auth.test.cjs, auth-client.test.cjs, password-policy.test.cjs | A | API/VM; perfiles ficticios, scrypt y límites por rol |
+| Sesión | Doble login y restauración /auth/me | Un login en vuelo; restauración antigua no sustituye login/logout posterior | auth-client.test.cjs | A, corregido | Promesas controladas; restauración 200/401/500 y logout |
+| Sesión | Logout, 401, descarga protegida | Revocar sesión en servicio; limpiar estado local incluso si 401 no contiene JSON | auth.test.cjs, auth-client.test.cjs, report-download.test.cjs | A, corregido | Repositorio simulado; proxy HTML ficticio |
+| Comunes | Navegación ocho menús, handlers estáticos y dinámicos | Cada evento apunta a función real; permisos de menús conservados | frontend-integration.test.cjs, ui-contract.test.cjs | A para enlaces; P para recorrido real | Scripts de index cargados juntos; controles originales y roles |
+| Inicio | Actualizar panel / volver a Inicio | GET existentes, sin escrituras; indicadores y alertas con reglas remotas | dashboard-client.test.cjs, frontend-integration.test.cjs | A | Permisos, vacíos, errores parciales, deduplicación y logout |
+| Inicio | Stock, caducidad, pedidos abiertos y últimas ventas | No inventar cifras; no sumar fiados como efectivo | dashboard-client.test.cjs, sales-client.test.cjs | A | Respuestas ficticias, estados y cálculo original conservado |
+| Ventas | Selección de producto/precio/cantidad, Agregar/Quitar carrito | Líneas y total del borrador; exigir producto/cantidad válida | sales-client.test.cjs, app.test.cjs | A | Carrito en memoria y enlace de Quitar; no localStorage operativo |
+| Ventas | Registrar contado/fiado | Cliente obligatorio para fiado; stock y caja/saldo coherentes | sales.test.cjs, sales-client.test.cjs | A | Contado, fiado, precio, FEFO, caducados y faltante físico |
+| Ventas | Reintentar registro / respuesta perdida | Misma clave; POST simultáneo bloqueado; no duplicar inventario/caja | sales.test.cjs, sales-client.test.cjs | A | Idempotencia y fallo tras confirmación con refresco fallido |
+| Ventas | Limpiar/cancelar edición | Limpiar borrador solo cuando no hay operación pendiente | sales-client.test.cjs y revisión de cancelarEdicion | P | Registros y bloqueo probados; recorrido de cancelación visual pendiente |
+| Ventas | Detalle / Modificar / Anular | Historial accesible; edición/anulación solo Administrador; restitución y reembolso trazables | sales.test.cjs, sales-client.test.cjs, permissions-http.test.cjs | A | Versiones, caja, confirmaciones y HTTP 403 |
+| Cuentas | Listado de deudas activas | Excluir anuladas/pagadas; conservarlas en el historial | sales-client.test.cjs, sales.test.cjs | A | Fiados con saldo positivo frente a anulados/pagados |
+| Cuentas | Registrar abono parcial/completo y sobrepago | Actualizar saldo e ingreso único; rechazar importe superior al saldo | sales.test.cjs, sales-client.test.cjs, permissions-http.test.cjs | A | Servicio simulado y flujo HTTP permitido del Vendedor |
+| Cuentas | Selector e historial por cliente | Deuda/abonos/saldo e historial con anulaciones y reembolsos | sales-client.test.cjs, sales.test.cjs | A | Tablas, escape, fechas y trazabilidad; interacción real pendiente |
+| Inventario | Alta producto | Campos RF-14 completos; lote opcional generado sin duplicar por reintento | inventory.test.cjs, inventory-client.test.cjs | A | Datos completos, firmas, colisiones y transacción simulada |
+| Inventario | Editar / Archivar | Solo Administrador; conservar lotes, historial y datos asociados | inventory.test.cjs, inventory-client.test.cjs, permissions-http.test.cjs | A | Rechazos de Vendedor y servicio; handlers reales |
+| Inventario | Lotes y alertas | Estados y umbrales remotos; cinco días, stock inferior a tres incluyendo negativos | inventory.test.cjs, inventory-client.test.cjs, modelo.test.cjs | A | Límites, calendario, etiquetas, vacíos y alertas |
+| Inventario | Entrada de lote / ajuste con motivo | Stock/movimientos consistentes; motivo y rol validados; bloqueo visual | inventory.test.cjs, inventory-client.test.cjs | A | Claves de lote, validaciones, rollback simulado y doble envío |
+| Inventario | Historial del producto | Conservar responsable, fecha, variación y motivo; descartar logout tardío | inventory-client.test.cjs, inventory.test.cjs | A | Lectura de historial y sesión estable |
+| Inventario | Registrar clientes / proveedores | Validar entradas; cliente permitido al Vendedor; proveedor administrativo | inventory.test.cjs, permissions-http.test.cjs | A | Rutas de escritura con datos ficticios |
+| Inventario | Descargar inventario local anterior | Exportación explícita heredada; no alimentar la API con datos locales | frontend-integration.test.cjs y revisión de exportarAnterior | P | Handler enlazado; descarga Blob real en navegador pendiente |
+| Pedidos | Agregar/Quitar líneas y Crear | Producto/cantidad/precio válidos, sin duplicado de línea; alta solo Administrador | order-client.test.cjs, order.test.cjs, permissions-http.test.cjs | A | Validadores, carga útil y bloqueo de escritura |
+| Pedidos | Lista / Ver y recibir | Selección reciente, título correcto; no mostrar detalle anterior si falla otro | order-client.test.cjs | A, corregido | Listas resueltas en orden inverso; selección y sesión |
+| Pedidos | Cancelar | Solo Administrador, motivo; conservar recibido e historial | order.test.cjs, permissions-http.test.cjs | A | Estados y autorización; sin cancelaciones reales |
+| Pedidos | Registrar recepción | Parcial/completa; Vendedor permitido; cantidades, fechas, lote y precio válidos | order.test.cjs, order-client.test.cjs | A | Rechazo de vacío/exceso/fecha imposible y precio; idempotencia |
+| Pedidos | Historial y estados | Pendiente, parcial, completo, cancelado; no recibir cerrado/cancelado | order.test.cjs, order-client.test.cjs | A | Estado remoto y cantidades; tablas y ayuda sin selección |
+| Finanzas | Registrar ingreso/egreso/gasto | Permiso administrativo actual, origen/motivo/importe/fecha válidos | finance.test.cjs, finance-client.test.cjs, permissions-http.test.cjs | A | Validaciones, rollback y bloqueo; RF no concede acceso adicional al Vendedor |
+| Finanzas | Desde/Hasta/Consultar/Todas las fechas | Rango inclusivo validado; limpiar filtros; fechas ISO en API | finance.test.cjs, finance-client.test.cjs | A | Rango invertido y límites; fechas Ecuador sin cambio SQL |
+| Finanzas | Resumen, reintento y vacío/error | Usar totales de API, sin duplicar venta_caja; clave estable y mensaje de guardado | finance.test.cjs, finance-client.test.cjs | A | Fiados/cobros/reembolsos; neto negativo y refresco fallido |
+| Reportes | Tipo, fecha/rango y Consultar | Habilitar filtros por tipo; datos de los criterios actuales | report.test.cjs, reports-client.test.cjs | A, corregido | Filtros cambiados durante GET ya no muestran filas anteriores |
+| Reportes | Descargar PDF / imprimir | Sesión/rol; mismos criterios; no duplicar descarga; archivo PDF válido | report.test.cjs, report-download.test.cjs, reports-client.test.cjs | A, corregido | Filtros cambiados durante descarga; cabeceras/filas/paginación PDF |
+| Reportes | Carga/error/vacío | Acciones bloqueadas durante su petición y liberadas tras error | reports-client.test.cjs | A, corregido | Red fallida, doble clic, reintento y logout |
+| Usuarios | Listar usuarios | Solo Administrador; consulta reciente prevalece; error tardío no repuebla lista | auth-client.test.cjs, permissions-http.test.cjs | A, corregido | GET resueltos en orden inverso y guardas de sesión |
+| Usuarios | Crear / Editar / Activar / Desactivar | Validación de rol/cuenta/clave en backend; un envío por sesión, conservar campos tras rechazo | auth.test.cjs, auth-client.test.cjs, password-policy.test.cjs | A, corregido | CSRF, rechazo, botón ocupado, alta simultánea y respuesta posterior a logout |
+| Comunes | Teclado, foco, etiquetas y responsividad | Orden coherente, controles accesibles, sin desbordamientos ni solapamientos | frontend-integration.test.cjs, ui-contract.test.cjs, *layout.test.cjs | P | Solo atributos, CSS y llamadas de foco simuladas; navegador no disponible |
+| Respaldos (sin controles en los ocho módulos) | Estado, ejecución y programación CLI | RF-37/38 privados, cifrado y exclusión; desactivados sin autorización | backup.test.cjs | A simulado; P real | No se ejecutan CLI real, R2 ni restauraciones |
+
+### Hallazgos reproducidos y correcciones
+
+Primero se añadieron siete regresiones que fallaron contra el código anterior: 46 pruebas del subconjunto, 39 exitosas y 7 fallidas, sin canceladas/omitidas. Después pasan todas. Se añadieron casos complementarios de sesión, carga y preservación: quince pruebas nuevas en total. No se cambiaron reglas del servidor para hacerlas pasar.
+
+| ID | Criticidad | Defecto real / evidencia | Corrección mínima |
+|---|---|---|---|
+| F-01 | Alta | HTTP 401 con cuerpo HTML fallaba al parsear JSON antes de limpiar sesión: interfaz local seguía autenticada. No se demostró acceso permitido por Express. | Invalidar sesión vigente antes de decodificar; error genérico seguro para respuesta inválida. |
+| F-02 | Alta | Restauración /auth/me tardía podía sustituir un login reciente o borrarlo al fallar; también podía reabrir el estado local tras logout. | Revisión monotónica de sesión; descartar restauraciones antiguas. Un 401 de restauración anterior tampoco invalida login nuevo pendiente. |
+| F-03 | Media | Dos GET /users de la misma sesión podían pintar el resultado antiguo al resolverse al revés. | Secuencia de consulta y guardas en éxito/error. |
+| F-04 | Media | Crear usuario dos veces durante una petición enviaba dos POST. No implica dos filas reales: la restricción de usuario único sigue en MySQL. | Exclusión de operaciones de usuarios por sesión y botón ocupado; liberar tras error. Evitar limpiar un borrador por respuesta de otra sesión. |
+| F-05 | Media | Dos cargas de lista de pedidos podían sobrescribir la lista reciente con una antigua. | Secuencia de lista independiente del detalle, invalidada con la sesión. |
+| F-06 | Media | Cambiar fechas durante GET de reportes permitía mostrar datos anteriores bajo filtros nuevos. | Comparar ruta/criterios al resolver y solicitar nueva consulta sin publicar esas filas. |
+| F-07 | Media | Cambiar filtros durante descarga permitía entregar un PDF del criterio anterior sin advertencia. | Verificar criterios antes de crear/enlazar Blob y solicitar nueva descarga si cambiaron. |
+| F-08 | Baja | Reportes no reflejaba consulta/descarga activa en los botones; faltaba retroalimentación durante la espera. | Mensaje y disabled/aria-busy de los botones existentes, liberados en finally. La descarga conserva su exclusión previa. |
+
+No se encontraron defectos críticos reproducidos en los escenarios auditados. Esto no demuestra ausencia total de defectos. Las propuestas previas de reorganización de Cuentas, fecha técnica UTC en Reportes, color de Desactivar y sustitución de prompts se consideran mejoras opcionales: el usuario aprobó el diseño y no se aplican aquí.
+
+### Resultado final y alcance real
+
+- npm test: **634 pruebas, 634 exitosas, 0 fallidas, 0 omitidas, 0 canceladas y 0 pendientes**, salida 0, duración 6557.7555 ms. Se conservan las 619 de la línea base.
+- npm audit --omit=dev --json: **0 vulnerabilidades de producción**, salida 0. La consulta inicial falló por acceso al registro dentro del entorno restringido; se repitió autorizada con éxito. Sin instalaciones.
+- git diff --check: sin errores; avisos habituales LF/CRLF.
+- backend/approved-design.test.cjs comprueba SHA-256 del HTML y CSS aprobados normalizando solo CRLF. La huella de los 161 controles originales sigue pasando; no se modificó DOM estático, IDs, atributos, eventos, clases ni estilos.
+- Las 15 nuevas regresiones se reparten en ocho de autenticación, una de lista de pedidos, cuatro de reportes, una integrada de enlaces dinámicos y una de preservación visual. El fixture integrado incorpora appendChild para representar el carrito; no es un motor de navegador.
+- La suite conserva HTTP 401 para anónimo/desactivado, 403 para Vendedor en rutas administrativas y recorridos operativos permitidos. Los permisos y el bloqueo de Superusuario en producción siguen siendo del backend; no se cambian con esta auditoría.
+- No se volvió a ejecutar la integración con MySQL real: los ensayos satisfactorios previos de RF-01 a RF-36 proceden del contexto del usuario y siguen separados de estas simulaciones. No se usaron credenciales personales.
+
+Archivos de esta iteración: auth-client.js, orders-client.js y reports-client.js; backend/auth-client.test.cjs, backend/order-client.test.cjs, backend/reports-client.test.cjs y backend/frontend-integration.test.cjs; nuevo backend/approved-design.test.cjs; FINAL_QA.md y una nota relevante de usabilidad en UI_UX.md. Los demás cambios pendientes son anteriores y se conservan. No se modifica backend de negocio, app.js, modelo.js, rf.txt, migraciones, dependencias, HTML ni CSS.
+
+### Clasificación de los 38 RF
+
+Son ejes separados: implementado no equivale a aceptación de producción; probado indica evidencia aislada vigente y pendiente indica lo que falta fuera de esa evidencia. El texto literal oficial se mantiene en rf.txt y en la matriz histórica de este documento, sin cambios. M = navegador/accesibilidad; C = concurrencia con conexiones independientes; P = persistencia tras commit/reinicio; D = aceptación visual/volumen PDF; R = R2 privado, programación operativa y recuperación aislada. C/P se aplican a los flujos compartidos correspondientes, no implican que cada consulta requiera una carrera propia.
+
+| RF | Función | Implementado | Probado en suite vigente | Pendiente de validación |
+|---|---|---|---|---|
+| RF-01 | Login | Sí | Aislado: auth.test.cjs y clientes/permisos asociados | M, C, P |
+| RF-02 | Roles | Sí | Aislado: auth.test.cjs y clientes/permisos asociados | M, C, P |
+| RF-03 | Gestión de usuarios | Sí | Aislado: auth.test.cjs y clientes/permisos asociados | M, C, P |
+| RF-04 | Registro de ventas | Sí | Aislado: sales.test.cjs y clientes/permisos asociados | M, C, P |
+| RF-05 | Descuento de inventario | Sí | Aislado: sales.test.cjs y clientes/permisos asociados | M, C, P |
+| RF-06 | Stock negativo físico | Sí | Aislado: sales.test.cjs y clientes/permisos asociados | M, C, P |
+| RF-07 | Prohibición de caducados | Sí | Aislado: sales.test.cjs y clientes/permisos asociados | M, C, P |
+| RF-08 | Edición/anulación administrativa | Sí | Aislado: sales.test.cjs y clientes/permisos asociados | M, C, P |
+| RF-09 | Clientes | Sí | Aislado: inventory.test.cjs y clientes/permisos asociados | M, C, P |
+| RF-10 | Ventas fiadas | Sí | Aislado: sales.test.cjs y clientes/permisos asociados | M, C, P |
+| RF-11 | Deuda y saldo | Sí | Aislado: sales.test.cjs y clientes/permisos asociados | M, C, P |
+| RF-12 | Abonos | Sí | Aislado: sales.test.cjs y clientes/permisos asociados | M, C, P |
+| RF-13 | Historial de cliente | Sí | Aislado: sales.test.cjs y clientes/permisos asociados | M, C, P |
+| RF-14 | Registro de producto | Sí | Aislado: inventory.test.cjs y clientes/permisos asociados | M, C, P |
+| RF-15 | Lotes | Sí | Aislado: inventory.test.cjs y clientes/permisos asociados | M, C, P |
+| RF-16 | Alerta de caducidad | Sí | Aislado: inventory.test.cjs y clientes/permisos asociados | M, C, P |
+| RF-17 | Alerta de stock | Sí | Aislado: inventory.test.cjs y clientes/permisos asociados | M, C, P |
+| RF-18 | Ajustes con motivo | Sí | Aislado: inventory.test.cjs y clientes/permisos asociados | M, C, P |
+| RF-19 | Ingreso por recepción | Sí | Aislado: order.test.cjs y clientes/permisos asociados | M, C, P |
+| RF-20 | Proveedores | Sí | Aislado: inventory.test.cjs y clientes/permisos asociados | M, C, P |
+| RF-21 | Crear pedidos | Sí | Aislado: order.test.cjs y clientes/permisos asociados | M, C, P |
+| RF-22 | Estados de pedidos | Sí | Aislado: order.test.cjs y clientes/permisos asociados | M, C, P |
+| RF-23 | Recepción parcial/completa | Sí | Aislado: order.test.cjs y clientes/permisos asociados | M, C, P |
+| RF-24 | Recepción por Vendedor | Sí | Aislado: order.test.cjs y clientes/permisos asociados | M, C, P |
+| RF-25 | Ingresos | Sí | Aislado: finance.test.cjs y clientes/permisos asociados | M, C, P |
+| RF-26 | Egresos | Sí | Aislado: finance.test.cjs y clientes/permisos asociados | M, C, P |
+| RF-27 | Gastos administrativos | Sí | Aislado: finance.test.cjs y clientes/permisos asociados | M, C, P |
+| RF-28 | Filtro financiero por fecha | Sí | Aislado: finance.test.cjs y clientes/permisos asociados | M, C, P |
+| RF-29 | Reporte de ventas | Sí | Aislado: report.test.cjs y clientes/permisos asociados | M, P, D |
+| RF-30 | Cierre diario | Sí | Aislado: report.test.cjs y clientes/permisos asociados | M, P, D |
+| RF-31 | Reporte de pendientes | Sí | Aislado: report.test.cjs y clientes/permisos asociados | M, P, D |
+| RF-32 | Reporte semanal de abonos | Sí | Aislado: report.test.cjs y clientes/permisos asociados | M, P, D |
+| RF-33 | Reporte financiero | Sí | Aislado: report.test.cjs y clientes/permisos asociados | M, P, D |
+| RF-34 | Reporte de inventario | Sí | Aislado: report.test.cjs y clientes/permisos asociados | M, P, D |
+| RF-35 | Consulta de pedidos | Sí | Aislado: order.test.cjs y clientes/permisos asociados | M, C, P |
+| RF-36 | PDF | Sí | Aislado: report.test.cjs y clientes/permisos asociados | M, P, D |
+| RF-37 | Respaldo R2 | Sí | Simulado: backup.test.cjs | R, C/P del trabajador; sin ensayo real |
+| RF-38 | Programación quincenal | Sí | Simulado: backup.test.cjs | R, C/P del trabajador; sin ensayo real |
+
+### Pendientes, mejoras opcionales y procedimiento de aceptación
+
+1. **Navegador real pendiente.** La comprobación de disponibilidad devolvió Computer Use native pipe is unavailable (os error 2). No se ejecutó una prueba visual, de móvil, teclado real, lector de pantalla ni ausencia de solapamientos. El diseño está aprobado por el usuario; esa aprobación no se presenta como una comprobación nueva del agente. Python continúa indisponible para auxiliares de ui-ux-pro-max; no se instalaron herramientas ni se generó otro sistema visual.
+2. **Recorrido visual exacto.** En entorno aislado revisar 375/768/1024/1440px, zoom 200%, Tab/Shift+Tab/Enter/Espacio, foco de login/errores, etiquetas, desplazamiento local de tablas, botones bloqueados, mensajes en espera y recuperación de conexión. Navegar los ocho módulos con ambos roles, comprobar cada acción de la matriz, campos vacíos/límites y filtros inclusivos/invertidos. No usar el negocio para escrituras de prueba.
+3. **Carreras del navegador y servidor.** Las pruebas de revisión local de sesión no certifican el orden real de cookies Set-Cookie entre login/logout concurrentes ni revocación de solicitudes ya admitidas. Ensayar con navegador y servidor de prueba, pestañas independientes y conexiones MySQL separadas. Una cuenta desactivada sigue siendo rechazada por el backend en las solicitudes evaluadas.
+4. **Respuesta perdida y recarga.** Ajustes y alta de pedidos conservan sus limitaciones de idempotencia persistente. La exclusión de usuarios solo evita simultaneidad de la misma sesión/pestaña: no garantiza exactamente una vez ni deduplica tras recarga. Nombres únicos y transacciones del backend permanecen. Si una respuesta de escritura se pierde, consultar el resultado/historial antes de repetir; no se añaden reintentos automáticos. Las claves de ventas/lotes/recepciones/finanzas permanecen en memoria y pueden perderse al recargar. No se certifica recuperación durable de borradores.
+5. **Red bloqueada indefinidamente.** No hay cancelación/timeout uniforme para todos los fetch; un botón puede seguir ocupado mientras una petición no termina. No se introduce abortar/repetir escrituras sin una política de reconciliación. Ensayar conectividad y definir esa política sin cambiar reglas de negocio.
+6. **Persistencia/volumen.** Ensayos históricos con rollback no demuestran commit y reinicio ni volumen. Mantener las pruebas independientes de caja, saldos, stock/lotes y pedidos en base de prueba, comparando lo persistido desde otra conexión. PDF mantiene limitaciones de fuente y memoria; validar nombres largos, paginación e impresión con datos ficticios. El exportador local histórico requiere comprobar Blob/descarga real sin importar esos datos a la API.
+7. **Opcionales sin ejecutar.** Reorganizar Cuentas/Reportes/Usuarios, cambiar colores o reemplazar prompts son propuestas de diseño anteriores; no son defectos reproducibles que autoricen rediseñar. Se preserva la interfaz aprobada.
+8. **Respaldos.** RF-37/38 implementados y simulados; siguen desactivados y sin R2 real/recuperación operativa. No se habilitaron ni ejecutaron en esta auditoría.
+
+Dictamen: suite aislada correcta y defectos reproducidos corregidos, con diseño preservado. RF-01 a RF-36 conservan implementación, pruebas aisladas y los ensayos previos informados; no se certifica de nuevo MySQL ni producción. RF-37/38 requieren validación real autorizada. Los pendientes M/C/P/D/R impiden declarar aceptación técnica integral de producción únicamente con el conteo de pruebas.
+
+## Preparación del cierre local — 18 de noviembre de 2026
+
+Rama desarrollo-jose confirmada, con los cambios acumulados de código, pruebas y documentación conservados. Se revisan 27 archivos candidatos, incluida la ampliación de .gitignore a .auth-* para excluir cualquier auxiliar local de ese prefijo. .env/.env.*, output/, PDF de prueba, credenciales y respaldos permanecen excluidos; no hay archivos sensibles de esas rutas versionados. .env.example conserva vacíos sus campos de usuario/contraseña MySQL y claves/cuenta/bucket R2; Superusuario de desarrollo, respaldo y confirmación de bucket privado permanecen deshabilitados en el ejemplo.
+
+El escaneo completo de los candidatos no encontró coincidencias con el secreto local comparado ni patrones de clave privada, token conocido o URL con credenciales. Los literales aparentes corresponden a credenciales/tokens ficticios de pruebas y claves de columnas, sin credenciales personales detectadas. Es una revisión acotada, no una garantía de detección de cualquier secreto arbitrario. No se imprimieron valores sensibles.
+
+Verificación para cierre: npm test, **634 exitosas, 0 fallidas, 0 omitidas, 0 canceladas y 0 pendientes**, salida 0 (6745.6426 ms); npm audit --omit=dev --json, **0 vulnerabilidades de producción**, salida 0 tras consultar el registro fuera del entorno restringido; git diff --check sin errores. rf.txt está versionado e idéntico a HEAD; app.js, modelo.js, migraciones y dependencias no tienen cambios. UI_UX.md y este documento se incluyen con sus decisiones, matrices y limitaciones. El área de preparación estaba vacía antes del cierre y se utilizará una lista explícita de candidatos revisados.
+
+Este cierre solo autoriza un commit LOCAL. No cambia el diseño aprobado ni constituye autorización de push, merge, migraciones, datos MySQL o R2. Las verificaciones manuales, de concurrencia, persistencia y respaldo real descritas arriba siguen pendientes para publicación/aceptación posterior.

@@ -11,14 +11,27 @@
     let envio;
     let ocupado = false;
     let consultaDetalle = 0;
+    let consultaLista = 0;
     const admin = () => usuarioActual()?.rol === 'administrador';
+    function informar(tipo, mensaje) {
+        el('estadoPedidos').textContent = mensaje;
+        el('estadoPedidos').setAttribute?.('data-estado', tipo);
+    }
+    function controles() {
+        for (const boton of document.querySelectorAll?.('[data-pedido-control]') || []) {
+            boton.disabled = ocupado || !usuarioActual();
+            if (ocupado) boton.setAttribute?.('aria-busy', 'true'); else boton.removeAttribute?.('aria-busy');
+        }
+    }
     async function cargar() {
         if (!usuarioActual()) return;
         const identidad = usuarioActual();
+        const numero = ++consultaLista;
+        if (!ocupado) informar('cargando', 'Consultando pedidos…');
         try {
             const [pedidos, proveedores, inventario] = await Promise.all([api('/orders'), api('/proveedores'), api('/inventory')]);
-            if (usuarioActual() !== identidad) return;
-            el('estadoPedidos').textContent = '';
+            if (usuarioActual() !== identidad || numero !== consultaLista) return;
+            informar('neutro', '');
             el('crearPedidoFormulario').hidden = !admin();
             const seleccionProveedor = valor('pedidoProveedor');
             el('pedidoProveedor').innerHTML = '<option value="">Seleccione</option>' + proveedores.registros
@@ -27,18 +40,21 @@
             el('pedidoProducto').innerHTML = '<option value="">Seleccione</option>' + inventario.productos.filter(p => p.activo)
                 .map(p => `<option value="${Number(p.id)}">${textoSeguro(p.nombre)}</option>`).join('');
             el('listaPedidos').innerHTML = pedidos.pedidos.map(p => `<tr>
-                <td>${p.id}</td><td>${textoSeguro(p.proveedor)}</td><td>${textoSeguro(p.estado)}</td>
-                <td><button onclick="MicroCarmitaPedidos.consultar(${Number(p.id)})">Ver y recibir</button>
-                ${admin() && !['Cancelado', 'Recibido completo'].includes(p.estado) ? `<button onclick="MicroCarmitaPedidos.cancelar(${Number(p.id)})">Cancelar</button>` : ''}</td></tr>`).join('');
-        } catch (error) { el('estadoPedidos').textContent = `${error.message} Compruebe la migración 003.`; }
+                <td>${p.id}</td><td>${textoSeguro(p.proveedor)}</td><td><span class="estado ${p.estado === 'Cancelado' ? 'estado-agotado' : p.estado === 'Recibido completo' ? 'estado-disponible' : 'estado-pendiente'}">${textoSeguro(p.estado)}</span></td>
+                <td><div class="acciones-fila"><button class="btn secundaria" data-pedido-control onclick="MicroCarmitaPedidos.consultar(${Number(p.id)})">Ver y recibir</button>
+                ${admin() && !['Cancelado', 'Recibido completo'].includes(p.estado) ? `<button class="btn peligro" data-pedido-control onclick="MicroCarmitaPedidos.cancelar(${Number(p.id)})">Cancelar</button>` : ''}</div></td></tr>`).join('') || '<tr><td colspan="4">No hay pedidos registrados.</td></tr>';
+            controles();
+        } catch (error) { if (usuarioActual() === identidad && numero === consultaLista) informar('error', `${error.message} Compruebe la migración 003.`); }
     }
     function pintarDetalles() {
         el('pedidoDetalles').innerHTML = detalles.map((d, i) => `<tr><td>${d.productoId}</td><td>${d.cantidad}</td>
-            <td>${dinero(d.precioCompra)}</td><td><button onclick="MicroCarmitaPedidos.quitar(${i})">Quitar</button></td></tr>`).join('');
+            <td>${dinero(d.precioCompra)}</td><td><button class="btn secundaria" data-pedido-control onclick="MicroCarmitaPedidos.quitar(${i})">Quitar</button></td></tr>`).join('') || '<tr><td colspan="4">Agregue los productos que solicitará al proveedor.</td></tr>';
+        controles();
     }
-    function mensajeRecepcion(mensaje) {
+    function mensajeRecepcion(mensaje, tipo = 'exito') {
         const estado = el('estadoRecepcion');
         estado.textContent = mensaje;
+        estado.setAttribute?.('data-estado', tipo);
         estado.focus?.({ preventScroll: true });
         estado.scrollIntoView?.({ block: 'nearest', behavior: 'auto' });
     }
@@ -46,8 +62,8 @@
         const identidad = usuarioActual();
         if (ocupado || !identidad) return;
         ocupado = true;
-        el('estadoPedidos').textContent = 'Procesando…';
-        if (recepcion) { el('recibirPedidoBoton').disabled = true; mensajeRecepcion('Registrando recepción…'); }
+        controles(); informar('cargando', 'Procesando…');
+        if (recepcion) { el('recibirPedidoBoton').disabled = true; mensajeRecepcion('Registrando recepción…', 'cargando'); }
         try {
             const resultado = await fn();
             if (usuarioActual() !== identidad) return;
@@ -55,10 +71,11 @@
             if (recepcion && usuarioActual() === identidad) mensajeRecepcion(resultado);
         } catch (error) {
             if (usuarioActual() !== identidad) return;
-            el('estadoPedidos').textContent = error.message;
-            if (recepcion) mensajeRecepcion(`No se pudo registrar la recepción: ${error.message}`);
+            informar('error', error.message);
+            if (recepcion) mensajeRecepcion(`No se pudo registrar la recepción: ${error.message}`, 'error');
         } finally {
             ocupado = false;
+            controles();
             if (recepcion && usuarioActual() === identidad) el('recibirPedidoBoton').disabled = !pedido || ['Cancelado', 'Recibido completo'].includes(pedido.estado);
         }
     }
@@ -67,13 +84,19 @@
         if (!identidad) return;
         const consulta = ++consultaDetalle;
         pedido = null;
+        el('detallePedido').setAttribute?.('data-seleccionado', 'false');
+        el('recepcionDetalles').innerHTML = '';
+        el('detallePedidoTitulo').textContent = 'Seleccione un pedido';
+        el('detallePedidoObservaciones').textContent = '';
+        el('historialRecepciones').textContent = '';
         el('estadoRecepcion').textContent = '';
         el('recibirPedidoBoton').disabled = true;
-        el('estadoPedidos').textContent = `Cargando pedido ${id}…`;
+        informar('cargando', `Cargando pedido ${id}…`);
         try {
             const obtenido = await api(`/orders/${id}`);
             if (usuarioActual() !== identidad || consulta !== consultaDetalle) return;
             pedido = obtenido;
+            el('detallePedido').setAttribute?.('data-seleccionado', 'true');
             el('detallePedidoTitulo').textContent = `Pedido ${pedido.id} — ${pedido.estado}`;
             el('detallePedidoObservaciones').textContent = pedido.motivo_cancelacion || pedido.observaciones || '';
             el('recepcionDetalles').innerHTML = pedido.detalles.map(d => {
@@ -88,14 +111,14 @@
             el('recibirPedidoBoton').disabled = ['Cancelado', 'Recibido completo'].includes(pedido.estado);
             el('historialRecepciones').textContent = pedido.recepciones.map(r =>
                 `Recepción ${r.id} · ${r.responsable} · ${MicroCarmitaFechas.instante(r.creado_en)} · lote ${r.codigo} · ${r.cantidad} unidades · ingreso ${MicroCarmitaFechas.calendario(r.fecha_ingreso)} · caducidad ${r.caducidad ? MicroCarmitaFechas.calendario(r.caducidad) : 'sin caducidad'}`).join('\n') || 'Sin recepciones.';
-            el('estadoPedidos').textContent = `Pedido ${pedido.id} cargado.`;
+            informar('exito', `Pedido ${pedido.id} cargado.`);
             el('detallePedido').focus?.({ preventScroll: true });
             el('detallePedido').scrollIntoView?.({ block: 'start', behavior: 'auto' });
         } catch (error) {
             if (usuarioActual() !== identidad || consulta !== consultaDetalle) return;
             pedido = null;
             el('recibirPedidoBoton').disabled = true;
-            el('estadoPedidos').textContent = `No se pudo cargar el pedido ${id}: ${error.message}`;
+            informar('error', `No se pudo cargar el pedido ${id}: ${error.message}`);
         }
     }
     globalThis.MicroCarmitaPedidos = {
@@ -104,11 +127,11 @@
             const d = { productoId: numero('pedidoProducto'), cantidad: numero('pedidoCantidad'), precioCompra: numero('pedidoPrecio') };
             if (!Number.isInteger(d.productoId) || d.productoId < 1 || !Number.isInteger(d.cantidad) || d.cantidad < 1
                 || !Number.isFinite(d.precioCompra) || d.precioCompra < 0) {
-                el('estadoPedidos').textContent = 'Seleccione producto, cantidad entera positiva y precio de compra.';
+                informar('error', 'Seleccione producto, cantidad entera positiva y precio de compra.');
                 return;
             }
             if (detalles.some(item => item.productoId === d.productoId)) {
-                el('estadoPedidos').textContent = 'El producto ya está en el pedido.'; return;
+                informar('error', 'El producto ya está en el pedido.'); return;
             }
             detalles.push(d); pintarDetalles();
         },
@@ -154,12 +177,15 @@
     };
     document.addEventListener('microcarmita:sesion', () => {
         consultaDetalle++;
+        consultaLista++;
         detalles = []; pedido = null; envio = null;
         el('listaPedidos').textContent = ''; el('recepcionDetalles').textContent = '';
-        el('historialRecepciones').textContent = ''; el('detallePedidoTitulo').textContent = '';
+        el('historialRecepciones').textContent = ''; el('detallePedidoTitulo').textContent = 'Seleccione un pedido';
         el('detallePedidoObservaciones').textContent = ''; pintarDetalles();
         el('recibirPedidoBoton').disabled = true;
         el('estadoRecepcion').textContent = '';
+        el('detallePedido').setAttribute?.('data-seleccionado', 'false');
+        informar('neutro', ''); controles();
         if (usuarioActual()) cargar();
     });
 })();

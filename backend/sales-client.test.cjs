@@ -7,12 +7,15 @@ const { randomUUID } = require('node:crypto');
 
 function preparar(rol = 'administrador') {
     const campos = {}, solicitudes = [], eventos = {}, mensajes = [];
+    const nodo = () => ({ value:'', innerHTML:'', textContent:'', readOnly:true, disabled:false, atributos:{},
+        setAttribute(k,v) { this.atributos[k]=v; }, removeAttribute(k) { delete this.atributos[k]; } });
+    const controles = Array.from({ length:4 }, nodo);
     let actor = { id: 1,rol }, intentos = 0, respuestaPerdida = false, rechazo = false;
     let esperar;
     const venta = { id: 1,tipo:'fiado',cliente_id:1,cliente:'Cliente',total:4,abonado:1,saldo:3,revision:1,version:1,estado:'Activa',creado_en:'2026-11-17',efectivo:1 };
     const contexto = vm.createContext({
         crypto: { randomUUID },
-        document: { getElementById(id) { return campos[id] ??= { value:'',innerHTML:'',textContent:'',readOnly:true }; }, addEventListener(n,fn) { eventos[n]=fn; } },
+        document: { getElementById(id) { return campos[id] ??= nodo(); }, querySelectorAll: () => controles, addEventListener(n,fn) { eventos[n]=fn; } },
         usuarioActual: () => actor, textoSeguro: v => String(v ?? '').replace(/</g,'&lt;'), dinero: v => String(v),
         obtenerDatos: clave => { if(clave!=='inventario')throw new Error('Acceso local prohibido');return [{id:1,nombre:'Producto',precio:2,cantidad:0,lotes:[]}] },
         guardarDatos: () => { throw new Error('Escritura local prohibida') }, carrito: [],
@@ -38,8 +41,108 @@ function preparar(rol = 'administrador') {
     vm.runInContext(fs.readFileSync(path.join(__dirname,'..','sales-client.js'),'utf8'),contexto);
     contexto.document.getElementById('ventaTipo').value='contado';
     contexto.carrito=[{id:1,nombre:'Producto',cantidad:1,precio:2}];
-    return {contexto,campos,solicitudes,eventos,mensajes,perder(){respuestaPerdida=true},rechazar(){rechazo=true},salir(){actor=null;eventos['microcarmita:sesion']()},pausar(p){esperar=p}};
+    return {contexto,campos,controles,solicitudes,eventos,mensajes,perder(){respuestaPerdida=true},rechazar(){rechazo=true},salir(){actor=null;eventos['microcarmita:sesion']()},pausar(p){esperar=p}};
 }
+
+test('ventas comunica carga, consulta terminada y vacío real sin inventar registros', async () => {
+    const f = preparar(); let resolver;
+    f.contexto.MicroCarmitaAuth.api = ruta => ruta === '/sales'
+        ? new Promise(r => { resolver = r; }) : Promise.resolve({ registros: [] });
+    const carga = f.contexto.MicroCarmitaVentas.cargar();
+    assert.equal(f.campos.estadoVentas.atributos['data-estado'], 'cargando');
+    resolver({ ventas: [] }); await carga;
+    assert.match(f.campos.listaVentas.innerHTML, /No hay ventas registradas/);
+    assert.equal(f.campos.estadoVentas.atributos['data-estado'], 'neutro');
+    assert.match(f.campos.estadoVentas.textContent, /actualizados/);
+});
+
+test('registro bloquea controles visibles durante el envío, evita doble POST y comunica éxito', async () => {
+    const f = preparar(); let resolver;
+    const api = f.contexto.MicroCarmitaAuth.api;
+    f.contexto.MicroCarmitaAuth.api = async (...args) => {
+        if (args[1] === 'POST') await new Promise(r => { resolver = r; });
+        return api(...args);
+    };
+    const registro = f.contexto.registrarVenta();
+    assert.ok(f.controles.every(b => b.disabled && b.atributos['aria-busy'] === 'true'));
+    await f.contexto.registrarVenta();
+    resolver(); await registro;
+    assert.equal(f.solicitudes.filter(s => s.metodo === 'POST').length, 1);
+    assert.equal(f.contexto.carrito.length, 0);
+    assert.ok(f.controles.every(b => !b.disabled && !b.atributos['aria-busy']));
+    assert.equal(f.campos.estadoVentas.atributos['data-estado'], 'exito');
+    assert.equal(f.campos.estadoVentas.textContent, 'Venta registrada correctamente.');
+});
+
+test('validación fallida mantiene carrito, muestra error próximo a la acción y libera controles', async () => {
+    const f = preparar(); f.rechazar();
+    let visible = false;
+    f.contexto.document.getElementById('estadoVentas').scrollIntoView = () => { visible = true; };
+    await f.contexto.registrarVenta();
+    assert.equal(f.campos.estadoVentas.atributos['data-estado'], 'error');
+    assert.match(f.campos.estadoVentas.textContent, /Validación/);
+    assert.ok(visible);
+    assert.equal(f.contexto.carrito.length, 1);
+    assert.ok(f.controles.every(b => !b.disabled));
+});
+
+test('venta confirmada con refresco fallido informa que fue guardada sin invitar a duplicarla', async () => {
+    const f = preparar(); const api = f.contexto.MicroCarmitaAuth.api;
+    f.contexto.MicroCarmitaAuth.api = async (ruta, metodo = 'GET', datos) => {
+        if (metodo === 'GET') throw new Error('Sin conexión');
+        return api(ruta, metodo, datos);
+    };
+    await f.contexto.registrarVenta();
+    assert.match(f.campos.estadoVentas.textContent, /fue guardada/);
+    assert.match(f.campos.estadoVentas.textContent, /No vuelva a registrarla/);
+    assert.match(f.campos.estadoVentas.textContent, /Actualizar ventas y cuentas/);
+    assert.equal(f.contexto.carrito.length, 0);
+    assert.equal(f.solicitudes.filter(s => s.metodo === 'POST').length, 1);
+    assert.equal(f.campos.estadoVentas.atributos['data-estado'], 'error');
+});
+
+test('historial diferencia tipo y estado con etiquetas de texto conservando anuladas y permisos', async () => {
+    for (const rol of ['administrador', 'vendedor']) {
+        const f = preparar(rol);
+        f.contexto.MicroCarmitaAuth.api = async ruta => ruta === '/sales' ? { ventas: [
+            { id:1, cliente:'<Cliente>', tipo:'contado', estado:'Activa', total:4 },
+            { id:2, tipo:'fiado', estado:'Anulada', total:8 }
+        ] } : { registros:[] };
+        await f.contexto.MicroCarmitaVentas.cargar();
+        const html = f.campos.listaVentas.innerHTML;
+        assert.match(html, /venta-tipo--contado">contado/);
+        assert.match(html, /venta-tipo--fiado">fiado/);
+        assert.match(html, /estado-disponible">Activa/);
+        assert.match(html, /estado-agotado">Anulada/);
+        assert.match(html, /&lt;Cliente>/);
+        assert.doesNotMatch(html, /<Cliente>/);
+        assert.equal((html.match(/MicroCarmitaVentas.detalle/g) || []).length, 2);
+        assert.equal((html.match(/MicroCarmitaVentas.anular/g) || []).length, rol === 'administrador' ? 1 : 0);
+        assert.equal((html.match(/MicroCarmitaVentas.editar/g) || []).length, rol === 'administrador' ? 1 : 0);
+    }
+});
+
+test('detalle termina el estado de carga y logout elimina mensajes y bloquea controles', async () => {
+    const f = preparar();
+    await f.contexto.MicroCarmitaVentas.detalle(1);
+    assert.notEqual(f.campos.estadoVentas.atributos['data-estado'], 'cargando');
+    assert.ok(f.controles.every(b => !b.disabled));
+    f.salir();
+    assert.equal(f.campos.estadoVentas.textContent, '');
+    assert.ok(f.controles.every(b => b.disabled));
+});
+
+test('respuesta antigua no sustituye mensaje de error de la consulta vigente', async () => {
+    const f = preparar(), resolver = [], rechazar = [];
+    f.contexto.MicroCarmitaAuth.api = ruta => ruta === '/sales'
+        ? new Promise((r,j) => { resolver.push(r); rechazar.push(j); }) : Promise.resolve({ registros: [] });
+    const vieja = f.contexto.MicroCarmitaVentas.cargar(), actual = f.contexto.MicroCarmitaVentas.cargar();
+    rechazar[1](new Error('Red no disponible')); await actual;
+    const mensaje = f.campos.estadoVentas.textContent;
+    resolver[0]({ ventas: [] }); await vieja;
+    assert.equal(f.campos.estadoVentas.textContent, mensaje);
+    assert.equal(f.campos.estadoVentas.atributos['data-estado'], 'error');
+});
 
 test('consulta antigua no sobrescribe ventas de una consulta posterior de la misma sesión', async () => {
     const f = preparar();
