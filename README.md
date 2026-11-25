@@ -1,183 +1,136 @@
-# Micro Carmita — prototipo adaptado
+# Micro Carmita
 
-## Backend de Fase 1
+Sistema de gestión con interfaz HTML, CSS y JavaScript, backend Node.js/Express y persistencia MySQL. Los 38 requisitos funcionales están implementados; las verificaciones pendientes de aceptación se distinguen más abajo. El despliegue en la nube, incluidos Render y TiDB, está pospuesto.
 
-El bloque de pedidos y recepciones se documenta en [ORDERS.md](ORDERS.md). Incluye estados, recepción parcial/completa, permisos, idempotencia y la migración administrativa pendiente `003_pedidos_recepciones.sql`.
+## Arquitectura y almacenamiento
 
-El bloque de clientes, proveedores e inventario se documenta en [INVENTORY.md](INVENTORY.md), con la migración administrativa pendiente `002_catalogo_inventario.sql`, endpoints, formularios y alcance de las pruebas. El registro local de nuevas ventas queda pendiente de integrarse transaccionalmente con el inventario remoto.
+- `index.html` y `estilos.css` contienen las pantallas y el diseño aprobado.
+- `app.js` conserva la base de interfaz utilizada por los adaptadores `auth-client.js`, `inventory-client.js`, `orders-client.js`, `sales-client.js`, `finance-client.js`, `reports-client.js` y `dashboard-client.js`. No debe retirarse por contener funciones históricas.
+- `date-formatter.js` comparte la fecha técnica actual de Ecuador (`hoy`, YYYY-MM-DD) y los formatos de presentación (`calendario`, `instante`). Las cadenas de presentación no se usan para cálculos ni filtros.
+- `backend/server.js` configura el pool y los repositorios e inicia Express en loopback. `backend/app.js` compone autenticación, API y recursos públicos explícitos.
+- Cada dominio conserva rutas, servicios y repositorios separados. `modelo.js` aporta reglas compartidas al backend; no es un archivo obsoleto del prototipo.
+- `backend/migrations/` contiene el esquema versionado. Las migraciones son administrativas: no se ejecutan al iniciar la aplicación.
+- Los respaldos se ejecutan mediante una CLI independiente de Express.
 
-La autenticación y gestión de usuarios de RF-01, RF-02 y RF-03 están implementadas. Consulte [AUTH.md](AUTH.md) para migraciones administrativas, primera cuenta, configuración, endpoints y pruebas. La aplicación completa se abre desde Express mediante `npm start`. La aplicación de la migración y la comprobación con MySQL real quedan pendientes del paso administrativo.
+Los datos operativos del negocio se almacenan en MySQL. El almacenamiento del navegador no sustituye esa persistencia; quedan funciones históricas y estado de navegación local. Abra la aplicación desde Express, no mediante `file://` ni un servidor estático.
 
-La estructura inicial utiliza Express instalado en el proyecto y CommonJS.
+**GitHub contiene código, migraciones, pruebas y documentación; no incluye el estado local de MySQL**, sus filas, cuentas MySQL ni sesiones. Clonar el repositorio no reproduce la base operativa. `.env`, dependencias instaladas, salidas de prueba y respaldos están ignorados por Git.
 
-- `backend/app.js` define la aplicación y el endpoint de salud, y exporta la aplicación para probarla.
-- `backend/server.js` inicia el servidor en `127.0.0.1` y lee el puerto de la variable de entorno `PORT`. El valor predeterminado es `3000`.
-- `backend/health.test.cjs` prueba el endpoint mediante HTTP real con un puerto temporal, usando las herramientas integradas de Node.js.
+## Instalación local
 
-Desde la raíz del proyecto, inicie el servidor con Node.js 22 o posterior.
+Requisitos: Node.js 22 o posterior con npm y MySQL 8.0 compatible con el esquema, verificado previamente con MySQL 8.0.46. Ejecute los comandos desde la raíz del proyecto. Para mantenimiento de esta entrega se utiliza exclusivamente `desarrollo-jose`.
 
-```powershell
-npm start
-```
+1. Instale las versiones fijadas en el lockfile:
 
-Para elegir otro puerto en PowerShell, configure la variable antes de iniciar.
+   ```powershell
+   npm ci
+   ```
 
-```powershell
-$env:PORT = '3001'
-npm start
-```
+2. Si todavía no existe `.env`, cree la configuración local sin sobrescribir una existente:
 
-En otra terminal, compruebe el servidor con el puerto elegido.
+   ```powershell
+   if (-not (Test-Path -LiteralPath .env)) {
+       Copy-Item -LiteralPath .env.example -Destination .env
+   }
+   ```
 
-```powershell
-Invoke-WebRequest http://127.0.0.1:3001/api/health
-```
+3. Complete privadamente las variables de conexión y origen. No publique ni comparta sus valores.
 
-Con el puerto predeterminado, utilice `http://127.0.0.1:3000/api/health`. La respuesta esperada tiene estado HTTP `200`, tipo `application/json` y cuerpo `{"status":"ok"}`. Detenga el servidor con `Ctrl+C`. Para volver al puerto predeterminado, elimine la variable de la sesión de PowerShell mediante `Remove-Item Env:PORT`.
-
-Ejecute todas las pruebas desde la raíz.
-
-```powershell
-npm test
-```
-
-El script `test` ejecuta directamente `node --test modelo.test.cjs app.test.cjs backend/*.test.cjs`. Conserva las 56 pruebas previas e incorpora pruebas de autenticación, autorización, gestión de usuarios y adaptación del frontend. También puede ejecutar la prueba HTTP de salud directamente mediante `node --test backend/health.test.cjs`.
-
-El frontend utiliza el mismo origen HTTP de Express para autenticación y usuarios. Las secciones históricas sobre el prototipo se contrastan con `BASELINE.md` y `AUTH.md` para conocer la evolución y las diferencias funcionales verificadas.
-
-### Configuración MySQL
-
-`backend/database.js` exporta `crearPool()` mediante `mysql2/promise` y `comprobarConexion(pool)`. El pool admite hasta cinco conexiones y utiliza un tiempo de conexión de cinco segundos. La comprobación ejecuta únicamente `SELECT 1` y devuelve un booleano. Las pruebas inyectan un cliente o pool simulado y funcionan sin MySQL real.
-
-Desde la raíz, copie `.env.example` a `.env` si todavía carece de configuración local.
-
-```powershell
-Copy-Item .env.example .env
-```
-
-Complete `.env` con los valores de su servidor y una base de datos ya existente.
-
-| Variable | Configuración |
+| Variable | Uso |
 | --- | --- |
-| `DB_HOST` | Dirección real del servidor MySQL. El ejemplo usa `127.0.0.1` para desarrollo local. |
-| `DB_PORT` | Puerto MySQL. Se utiliza `3306` si la variable está ausente. |
-| `DB_USER` | Usuario autorizado de su servidor. El ejemplo queda vacío. |
-| `DB_PASSWORD` | Contraseña local. El ejemplo queda vacío. Se permite una cadena vacía solo si el servidor está configurado así. |
-| `DB_NAME` | Nombre de una base existente. El ejemplo queda vacío. |
-| `PORT` | Puerto HTTP de Express, con valor predeterminado `3000`. |
+| `DB_HOST`, `DB_PORT` | Host y puerto MySQL; el puerto predeterminado es 3306. |
+| `DB_NAME` | Base existente de la instalación. |
+| `DB_USER`, `DB_PASSWORD` | Cuenta de aplicación con los permisos DML necesarios, separada de la cuenta administrativa de migraciones. Una contraseña vacía debe configurarse explícitamente. |
+| `NODE_ENV` | `development` para el entorno local; también admite `test` y `production`. |
+| `PORT` | Puerto HTTP, predeterminado 3000. |
+| `APP_ORIGIN` | Origen exacto, por ejemplo `http://127.0.0.1:3000`, sin barra final y coherente con `PORT`. |
+| `ALLOW_DEV_SUPERUSER` | Desactivado en el ejemplo; habilitación exclusiva de desarrollo/pruebas. |
 
-`npm start` y `npm run db:check` cargan `.env` con dotenv, conservando la prioridad de las variables ya definidas en el proceso. Ejecute el comando siguiente para comprobar MySQL.
+La aplicación carga `.env` sin reemplazar variables ya definidas en el proceso. Mantenga las credenciales administrativas fuera de esa configuración.
+
+### Esquema y migraciones
+
+**En el entorno local existente las migraciones 001–005 ya están aplicadas: no volver a ejecutarlas.** Para una instalación nueva, un administrador debe preparar una base vacía, confirmar el destino y aplicar los siguientes archivos una sola vez, en este orden:
+
+| Orden | Archivo | Contenido y procedimiento |
+| --- | --- | --- |
+| 001 | `backend/migrations/001_auth.sql` | Roles, usuarios, sesiones, auditoría y registro de versiones. [AUTH.md](AUTH.md) |
+| 002 | `backend/migrations/002_catalogo_inventario.sql` | Clientes, proveedores, catálogo, lotes e inventario. [INVENTORY.md](INVENTORY.md) |
+| 003 | `backend/migrations/003_pedidos_recepciones.sql` | Pedidos y recepciones. [ORDERS.md](ORDERS.md) |
+| 004 | `backend/migrations/004_ventas_cobros.sql` | Ventas, fiados, abonos, caja e historial. [SALES.md](SALES.md) |
+| 005 | `backend/migrations/005_finanzas.sql` | Movimientos financieros manuales. [FINANCE.md](FINANCE.md) |
+
+Use el cliente MySQL con una cuenta administrativa separada y el procedimiento por lotes documentado en AUTH.md, revisando cada archivo y deteniéndose ante cualquier error. Compruebe las versiones en `schema_migrations` antes de continuar. MySQL puede confirmar DDL implícitamente: una aplicación parcial requiere inspección específica, no repetir archivos indiscriminadamente.
+
+No ejecute el directorio recursivamente: `migrations/development/001_dev_role.sql` es exclusivo de desarrollo/pruebas. Los SQL de `backend/maintenance/` no son migraciones ni pasos de instalación; el preview de limpieza es evidencia histórica inerte y no debe reutilizarse.
+
+### Comprobación y primera cuenta
+
+Compruebe la conexión configurada:
 
 ```powershell
 npm run db:check
 ```
 
-Una comprobación correcta informa `Conexión MySQL verificada mediante SELECT 1.` y termina con código `0`. Ante configuración incompleta o fallo de conexión, el comando muestra un mensaje genérico y termina con código `1`. El pool se cierra al terminar la comprobación. Los mensajes evitan imprimir credenciales y detalles internos del servidor.
+El comando realiza `SELECT 1` y cierra el pool; no certifica por sí solo que todo el esquema esté instalado.
 
-La conexión real queda pendiente de proporcionar la configuración local. Esta entrega prepara el módulo y sus pruebas simuladas. El comando de comprobación utiliza una base existente. El arranque HTTP y `/api/health` funcionan independientemente de MySQL.
-
-`.gitignore` excluye `.env`, sus variantes, respaldos y logs. La excepción `.env.example` permite compartir la plantilla vacía. Guarde las credenciales reales únicamente en la configuración local o en las variables del entorno de ejecución.
-
-Esta carpeta contiene la adaptación del prototipo compartido. Se conservaron la barra lateral azul, los iconos, las tarjetas de colores, las tablas y los formularios del diseño original. `../Micro-Carmita-1` conserva la copia original sin modificaciones.
-
-## Organización del código reescrito
-
-- `index.html`: declara todas las pantallas y formularios, incluidos lotes, salidas y abonos. Carga los scripts con `defer`, primero el modelo y luego la interfaz.
-- `app.js`: conecta los eventos de los formularios y botones, muestra las tablas, migra los datos anteriores y guarda operaciones completas en el navegador.
-- `modelo.js`: contiene las reglas de inventario, FEFO, caducidad, créditos, cobros y permisos. También valida los registros guardados antes de utilizarlos.
-- `estilos.css`: conserva los colores y componentes del prototipo original, con reglas de adaptación agrupadas al final.
-- `modelo.test.cjs`: verifica las reglas y la validación del almacenamiento con las herramientas incluidas en Node.js.
-
-No se necesitan Express, MySQL2, dotenv ni nodemon para ejecutar este prototipo. Sus instalaciones existentes quedan fuera de esta reescritura.
-
-## Abrir
-
-Abra `index.html` en un navegador o, desde esta carpeta, ejecute:
+En una instalación nueva, después de preparar el esquema y antes de tener usuarios, aprovisione el primer Administrador. Configure temporalmente `BOOTSTRAP_NAME`, `BOOTSTRAP_USER` y `BOOTSTRAP_PASSWORD` mediante el procedimiento de entrada oculta y limpieza de variables de [AUTH.md](AUTH.md), y ejecute:
 
 ```powershell
-python -m http.server 8765 --bind 127.0.0.1
+npm run auth:bootstrap
 ```
 
-Visite `http://127.0.0.1:8765/`. Los datos pertenecen a ese navegador y origen: abrir el archivo directamente, cambiar de puerto o cambiar de navegador utiliza un almacenamiento diferente. Descargue una copia antes de borrar datos del navegador.
+No hay credenciales predeterminadas. El aprovisionamiento inicial se bloquea si ya existen usuarios; no es un mecanismo de recuperación de contraseñas. Las cuentas operativas posteriores se gestionan desde la aplicación por un Administrador. Las contraseñas nuevas de Administrador y Vendedor admiten de 8 a 128 caracteres y rechazan patrones previsibles.
 
-Para probar sin mezclar registros del negocio, visite `http://127.0.0.1:8765/?pruebas=1`. Ese modo utiliza otra clave de almacenamiento. Los ejemplos de la verificación se conservan únicamente allí.
-
-## Requisitos representados
-
-| Necesidad recuperada de las conversaciones | Adaptación |
-| --- | --- |
-| Registro de productos y consulta de stock | Catálogo con categoría y precio; edición de nombre, categoría y precio por administración; stock calculado a partir de lotes y unidades pendientes |
-| Entradas y salidas de inventario | Entrada de lote, salida con motivo e historial; las ventas también generan una salida |
-| Lotes con distintas caducidades | Cantidad y fecha por lote; fecha opcional para productos que no caducan |
-| Rotación FEFO | Se consumen primero los lotes vigentes con caducidad más cercana; los lotes sin caducidad se utilizan después |
-| Alertas con 7 días de anticipación | Inicio muestra lotes con existencias que caducan entre hoy y los próximos 7 días, ambos incluidos |
-| Impedir venta de caducados | Se excluyen de la asignación; la venta se bloquea si las únicas existencias restantes están caducadas |
-| Permitir stock negativo | Las unidades sin existencia quedan pendientes de conciliar; las nuevas entradas vigentes concilian primero ese faltante |
-| Cuentas por cobrar y pagos parciales | Crédito con cliente obligatorio, saldo pendiente, abonos e historial de cobros |
-| Ingresos y egresos | Contado y abonos crean ingresos automáticamente una sola vez; se conservan movimientos manuales |
-| Reportes | Ventas, ingresos, egresos y balance por período; descarga de movimientos CSV |
-| Usuarios con diferentes permisos | Inicio de sesión local, cuentas activas/inactivas y tres roles: vendedor, administrador y super usuario |
-| Ventas internas | No se emiten facturas ni comprobantes tributarios |
-| Interfaz sencilla y adaptable | Estilo original conservado, campos etiquetados, avisos, diálogo de abonos y tablas con desplazamiento horizontal |
-| Tutorías de uso | Pantalla Guía de uso con pasos y reglas de operación |
-| Respaldo | Descarga local JSON y pantalla que identifica Cloudflare R2 como integración pendiente |
-
-Los requisitos se reconstruyeron del texto disponible de las dos conversaciones. Los archivos adjuntos del documento de titulación no estuvieron disponibles en esa lectura; por ello esta matriz no atribuye códigos RF/RN que no pudieron comprobarse.
-
-## Decisiones para revisar con el negocio
-
-- Un lote se considera vigente durante toda su fecha de caducidad y caducado a partir del día siguiente, según la fecha de Ecuador (`America/Guayaquil`).
-- El stock general incluye todas las existencias físicas, incluso caducadas, menos las unidades pendientes de conciliar. La pantalla de ventas muestra además las unidades de lotes vigentes.
-- Si se venden más unidades que las disponibles en lotes vigentes, la diferencia queda sin lote y pendiente de conciliar. Nunca se consume un lote caducado para cubrir esa diferencia.
-- Una entrada caducada se registra para reflejar existencias físicas, pero no concilia unidades pendientes. Puede darse de baja con una salida por caducidad.
-- El saldo financiero representa ingresos cobrados menos egresos registrados. No es una utilidad contable ni incluye un cálculo del costo de los productos.
-- La venta a crédito genera una deuda, pero no un ingreso de efectivo hasta recibir el abono. No registre manualmente un cobro que ya se generó automáticamente.
-
-## Accesos del sistema
-
-El inicio de sesión utiliza cuentas de MySQL. El primer Administrador se aprovisiona mediante el procedimiento de `AUTH.md`. El Administrador gestiona las cuentas operativas. Superusuario queda reservado a desarrollo y pruebas y se bloquea en producción.
-
-## Límites del prototipo y siguiente implementación
-
-La autenticación y los usuarios utilizan el backend y MySQL. Los datos del negocio siguen en almacenamiento local, sin sincronización entre equipos ni soporte de edición simultánea. La descarga JSON descrita en el prototipo es una copia local. La integración de copias a la nube queda pendiente.
-
-Para la versión definitiva quedan pendientes:
-
-1. Backend Node.js/Express, base de datos MySQL y transacciones para ventas, lotes, abonos y movimientos.
-2. Completar la integración del resto de operaciones del negocio con las sesiones y la autorización del servidor.
-3. Copias periódicas de MySQL hacia un espacio privado en Cloudflare R2, política de conservación y prueba de restauración. Las credenciales deben permanecer en el servidor.
-4. Validación del documento oficial y de los permisos definitivos por rol con los responsables del negocio.
-
-No se añadieron facturación tributaria ni asistente de IA. Se mantuvo Ingresos y egresos porque ya forma parte del prototipo y del contexto más reciente; no se impuso un catálogo de gastos administrativos aún sin confirmar.
-
-## Datos del prototipo anterior
-
-En la primera apertura se leen, si existen, las claves originales `inventario`, `ventas`, `cuentas` y `movimientos` del mismo origen y se genera una nueva clave `micro-carmita-v2`. No se borran las claves anteriores. Las existencias iniciales se convierten en lotes sin caducidad para que administración pueda revisarlas.
-
-El prototipo anterior no descontaba existencias al vender. Por eso la migración no reconstruye las salidas de ventas anteriores ni genera ingresos históricos automáticos: hacerlo podría duplicar registros. Revise stock e ingresos anteriores antes de utilizarlos como saldos reales.
-
-## Verificación
+### Inicio y pruebas
 
 ```powershell
-node --check app.js
-node --check modelo.js
-node --test modelo.test.cjs
+npm start
 ```
 
-Las 14 pruebas cubren FEFO, exclusión de caducados, alerta a siete días, stock negativo y conciliación, abonos parciales, rechazo de sobrepagos, redondeo de dinero, validación de entradas, permisos, validación del almacenamiento y edición de productos conservando lotes y ventas anteriores. La interfaz se verifica con el flujo producto → lote → venta a crédito → abono → reporte y el cambio de perfil. El precio del producto se muestra con un prefijo `$` y completa el formato `00.00` al salir del campo.
+Abra `http://127.0.0.1:3000` o el origen local configurado. El frontend y `/api` utilizan el mismo origen. El endpoint público `/api/health` permite comprobar HTTP, pero no certifica la disponibilidad de MySQL.
 
-## Ventas y cobros
+```powershell
+npm test
+```
 
-El módulo de ventas, fiados y abonos se documenta en [SALES.md](SALES.md). La migración administrativa 004 y el ensayo reversible están preparados y pendientes de ejecución autorizada. Inicie con `npm start` después de aplicar la migración; ejecute `npm test` para las comprobaciones aisladas.
+La suite incluye caracterización histórica, reglas del modelo, servicios, repositorios simulados, HTTP local, permisos, contratos de interfaz y respaldo simulado. Funciona sin migraciones ni operaciones contra MySQL real. La línea base previa a esta mejora, del 24 de noviembre de 2026, es de **673 pruebas exitosas**; el total vigente lo informa el ejecutor después de incorporar regresiones.
 
-## Movimientos financieros
+## Roles y permisos actuales
 
-Ingresos, egresos, gastos administrativos y filtros por fecha se documentan en [FINANCE.md](FINANCE.md). La consulta integra la caja de ventas sin copiar sus registros. La migración 005 y el ensayo reversible requieren autorización antes de ejecutarse.
+Los permisos se comprueban en el servidor; ocultar un botón no sustituye la autorización.
 
-## Reportes y PDF
+| Operación | Administrador | Vendedor |
+| --- | --- | --- |
+| Consultar inventario, contactos y alertas; registrar clientes | Sí | Sí |
+| Modificar catálogo, proveedores, entradas libres y ajustes | Sí | No |
+| Registrar/consultar ventas, fiados, saldos y abonos | Sí | Sí |
+| Editar o anular ventas conservando trazabilidad | Sí | No |
+| Crear o cancelar pedidos | Sí | No |
+| Consultar y recibir pedidos existentes | Sí | Sí |
+| Registrar movimientos financieros manuales y consultar el libro general | Sí | No |
+| Consultar reportes globales y descargar PDF | Sí | No |
+| Crear, editar, activar o desactivar cuentas operativas | Sí | No |
 
-Los reportes de ventas, cierre diario, pendientes, abonos semanales, finanzas, inventario y pedidos, con descarga PDF, están documentados en [REPORTS.md](REPORTS.md). Usan las tablas existentes sin migración adicional. El ensayo reversible queda preparado para ejecución autorizada.
+La gestión de usuarios protege al último Administrador activo y no permite asignar ni modificar Superusuario. Superusuario es exclusivo del desarrollador, requiere habilitación explícita fuera de producción y no equivale a Administrador del negocio. Producción rechaza su login y sus sesiones. Los detalles están en AUTH.md y en los documentos de cada dominio.
 
-## Respaldos privados
+Las sesiones usan cookie HttpOnly y SameSite=Strict, Secure en producción; las escrituras autenticadas comprueban origen y CSRF. Las contraseñas se derivan con scrypt. No coloque secretos en el frontend ni en Git.
 
-RF-37 y RF-38 se implementan mediante un worker de respaldo MySQL cifrado y almacenamiento privado en R2, desactivado por defecto. Configuración, programación quincenal y ensayo de recuperación aislado en [BACKUP.md](BACKUP.md). No se ejecutan respaldos al iniciar Express ni hay restauración automática.
+## Implementado y pendiente de validación
+
+Están implementados autenticación y usuarios, catálogo/contactos, inventario por lotes y FEFO, alertas, stock negativo controlado y conciliación, pedidos y recepciones, ventas/fiados/abonos, finanzas, reportes y exportación PDF. `rf.txt` conserva los 38 requisitos y [FINAL_QA.md](FINAL_QA.md) documenta su trazabilidad y las evidencias.
+
+El mecanismo RF-37/38 de respaldo MySQL cifrado hacia Cloudflare R2 y periodicidad quincenal está implementado y probado con simulaciones. **Está desactivado por defecto y pendiente de validación operativa real**: bucket privado, credenciales dedicadas, programación persistente, custodia de claves, retención y restauración en una instancia aislada. `npm start` no inicia respaldos. La CLI usa `.env.backup` o `BACKUP_ENV_FILE`, no el `.env` de Express. Consulte [BACKUP.md](BACKUP.md) antes de habilitar o ejecutar sus comandos.
+
+Las pruebas automatizadas no sustituyen los ensayos pendientes de concurrencia con conexiones MySQL independientes, persistencia tras commit/reinicio, recorrido manual y accesibilidad, volumen PDF y recuperación real de respaldos. Las evidencias históricas de FINAL_QA.md distinguen esos alcances. Esta mejora no ejecuta ninguno de esos procedimientos ni prepara despliegue en la nube.
+
+## Documentación y evidencias
+
+- [AUTH.md](AUTH.md): autenticación, cuentas, aprovisionamiento y migración inicial.
+- [INVENTORY.md](INVENTORY.md), [ORDERS.md](ORDERS.md), [SALES.md](SALES.md), [FINANCE.md](FINANCE.md), [REPORTS.md](REPORTS.md): contratos, reglas y verificaciones por dominio.
+- [BACKUP.md](BACKUP.md): respaldo privado, programación y recuperación aislada.
+- [UI_UX.md](UI_UX.md): decisiones del diseño aprobado.
+- [BASELINE.md](BASELINE.md), [FINAL_QA.md](FINAL_QA.md): líneas base y evolución de pruebas; sus conteos están fechados.
+- [CLEANUP_PLAN.md](CLEANUP_PLAN.md): evidencia de la limpieza operativa ya finalizada; no repetirla.
+
+Este README describe el funcionamiento actual. Los documentos técnicos conservan entregas y estados históricos; sus referencias al prototipo local, migraciones pendientes o conteos anteriores deben leerse con la fecha y el alcance de cada registro.

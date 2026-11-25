@@ -5,7 +5,6 @@
     const el = id => document.getElementById(id);
     const valor = id => el(id).value;
     const numero = id => valor(id).trim() ? Number(valor(id)) : NaN;
-    const hoy = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Guayaquil', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
     let detalles = [];
     let pedido;
     let envio;
@@ -106,7 +105,7 @@
                 return `<tr><td>${textoSeguro(d.producto)}</td><td>${d.cantidad}</td><td>${d.recibida}</td><td>${pendiente}</td>
                     <td><input id="recCantidad${d.id}" type="number" min="0" max="${pendiente}" step="1" value="0" aria-label="Cantidad a recibir"></td>
                     <td><input id="recCodigo${d.id}" maxlength="60" aria-label="Código de lote (opcional)" placeholder="Automático si se omite"></td>
-                    <td><input id="recFecha${d.id}" type="date" value="${hoy()}" aria-label="Fecha de ingreso" required></td>
+                    <td><input id="recFecha${d.id}" type="date" value="${MicroCarmitaFechas.hoy()}" aria-label="Fecha de ingreso" required></td>
                     <td><input id="recCaducidad${d.id}" type="date" aria-label="Caducidad opcional"></td>
                     <td><input id="recPrecio${d.id}" type="number" min="0" max="99999999.99" step="0.01" value="${Number(d.precio_compra)}" aria-label="Precio de compra recibido" required></td></tr>`;
             }).join('');

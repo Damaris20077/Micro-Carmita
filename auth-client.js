@@ -38,8 +38,7 @@
         const selector = '#ventas .ventas-seleccion input, #ventas .ventas-seleccion select, #ventas .gestion-clientes input, #inventario .formulario input, #inventario .formulario select, #movimientos .finanzas-registro input, #movimientos .finanzas-registro select, #crearPedidoFormulario input, #crearPedidoFormulario select, #usuarios .formulario input, #usuarios .formulario select';
         for (const campo of document.querySelectorAll(selector)) {
             if (campo.id === 'finanzaFecha') {
-                const partes = Object.fromEntries(new Intl.DateTimeFormat('en-CA', { timeZone:'America/Guayaquil',year:'numeric',month:'2-digit',day:'2-digit' }).formatToParts(new Date()).map(p => [p.type,p.value]));
-                campo.value = `${partes.year}-${partes.month}-${partes.day}`;
+                campo.value = MicroCarmitaFechas.hoy();
             } else if (campo.type === 'checkbox' || campo.type === 'radio') campo.checked = campo.defaultChecked;
             else if (campo.tagName === 'SELECT') campo.value = [...campo.options].find(o => o.defaultSelected)?.value ?? campo.options[0]?.value ?? '';
             else campo.value = campo.defaultValue || '';

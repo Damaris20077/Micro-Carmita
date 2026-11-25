@@ -1,7 +1,7 @@
 {
   "name": "micro-carmita",
   "version": "1.0.0",
-  "description": "Esta carpeta contiene la adaptación del prototipo compartido. Se conservaron la barra lateral azul, los iconos, las tarjetas de colores, las tablas y los formularios del diseño original. `../Micro-Carmita-1` conserva la copia original sin modificaciones.",
+  "description": "Sistema de gestión de Micro Carmita con interfaz HTML, CSS y JavaScript, API Node.js/Express y persistencia MySQL.",
   "main": "app.js",
   "scripts": {
     "test": "node --test modelo.test.cjs app.test.cjs backend/*.test.cjs",

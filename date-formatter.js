@@ -1,7 +1,13 @@
-/* Solo presentación: nunca usar estas cadenas en filtros, inputs o cálculos. */
+/* hoy devuelve YYYY-MM-DD técnico; calendario e instante son solo presentación. */
 ((root) => {
     'use strict';
     const zona = 'America/Guayaquil';
+    const hoy = (ahora = new Date()) => {
+        const partes = Object.fromEntries(new Intl.DateTimeFormat('en-CA', {
+            timeZone: zona, year: 'numeric', month: '2-digit', day: '2-digit'
+        }).formatToParts(ahora).map(p => [p.type, p.value]));
+        return `${partes.year}-${partes.month}-${partes.day}`;
+    };
     const calendario = valor => {
         if (!valor) return 'Sin fecha';
         const s = String(valor);
@@ -19,7 +25,7 @@
         const d = new Date(iso);
         return Number.isFinite(d.getTime()) ? new Intl.DateTimeFormat('es-EC', { timeZone: zona, dateStyle: 'medium', timeStyle: 'short', hourCycle: 'h23' }).format(d) : s;
     };
-    const api = { calendario, instante };
+    const api = { hoy, calendario, instante };
     if (typeof module === 'object' && module.exports) module.exports = api;
     else root.MicroCarmitaFechas = api;
 })(globalThis);

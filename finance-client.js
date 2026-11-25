@@ -23,7 +23,6 @@
     obtenerDatos=clave=>clave==='movimientos'?movimientos.map(m=>({...m,valor:m.importe,descripcion:m.motivo})):obtenerAnterior(clave);
     guardarDatos=(clave,datos)=>{if(clave==='movimientos')throw new Error('Los movimientos se guardan mediante la API.');return guardarAnterior(clave,datos)};
     function limpiar(){movimientos=[];el('listaMovimientos').innerHTML='';el('resumenFinanzas').innerHTML='';}
-    function hoy(){const p=Object.fromEntries(new Intl.DateTimeFormat('en-CA',{timeZone:'America/Guayaquil',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date()).map(v=>[v.type,v.value]));return `${p.year}-${p.month}-${p.day}`;}
     async function cargar(){
         if(!admin()){limpiar();controles();controlesConsulta(false);return}
         const identidad=usuarioActual(),numero=++consulta;
@@ -67,6 +66,6 @@
         finally{ocupado=false;controles()}
     };
     globalThis.MicroCarmitaFinanzas={cargar,todos(){el('finanzaDesde').value='';el('finanzaHasta').value='';return cargar()}};
-    el('finanzaFecha').value=hoy();
+    el('finanzaFecha').value=MicroCarmitaFechas.hoy();
     document.addEventListener('microcarmita:sesion',()=>{consulta++;pendiente=null;limpiar();informar('estadoFinanzas','neutro','');informar('finanzaRegistroEstado','neutro','');controles();controlesConsulta(false);if(admin())cargar()});
 })();

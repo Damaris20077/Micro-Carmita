@@ -1,6 +1,32 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { calendario, instante } = require('../date-formatter');
+const { hoy, calendario, instante } = require('../date-formatter');
+const vm = require('node:vm');
+const fs = require('node:fs');
+const path = require('node:path');
+
+test('fecha técnica de Ecuador cambia a las 05:00 UTC, incluidos año y día bisiesto', () => {
+    for (const [utc, esperado] of [
+        ['2026-11-25T04:59:59.999Z', '2026-11-24'],
+        ['2026-11-25T05:00:00.000Z', '2026-11-25'],
+        ['2027-01-01T04:59:59.999Z', '2026-12-31'],
+        ['2027-01-01T05:00:00.000Z', '2027-01-01'],
+        ['2028-03-01T04:59:59.999Z', '2028-02-29'],
+        ['2028-03-01T05:00:00.000Z', '2028-03-01']
+    ]) assert.equal(hoy(new Date(utc)), esperado);
+});
+
+test('utilidad del navegador obtiene hoy del reloj actual sin usar el formato de presentación', () => {
+    let reloj = '2026-11-25T04:59:59.999Z';
+    class Reloj extends Date { constructor(...args) { super(...(args.length ? args : [reloj])); } }
+    const contexto = vm.createContext({ Date: Reloj, Intl });
+    vm.runInContext(fs.readFileSync(path.join(__dirname, '..', 'date-formatter.js'), 'utf8'), contexto);
+    const fechas = contexto.MicroCarmitaFechas;
+    assert.equal(fechas.hoy(), '2026-11-24');
+    reloj = '2026-11-25T05:00:00.000Z';
+    assert.equal(fechas.hoy(), '2026-11-25');
+    assert.notEqual(fechas.calendario(fechas.hoy()), fechas.hoy());
+});
 
 test('fecha de calendario conserva día de ingreso/caducidad sin desplazar a la víspera', () => {
     assert.match(calendario('2026-11-17'), /^17.*nov.*2026/);

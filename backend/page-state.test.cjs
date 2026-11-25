@@ -16,6 +16,7 @@ function preparar({store=new Map(),usuario={id:1,rol:'administrador',nombre:'QA'
         sessionStorage:{getItem(k){if(bloqueado)throw new Error('No disponible');return store.get(k)??null},setItem(k,v){if(bloqueado)throw new Error('No disponible');store.set(k,v)},removeItem(k){if(bloqueado)throw new Error('No disponible');store.delete(k)}},
         localStorage:{getItem(){assert.fail('No leer datos locales')},setItem(){assert.fail('No escribir datos locales')}},
         async fetch(r,o={}){if(o.method&&o.method!=='GET')escrituras.push(r);if(r==='/api/auth/logout')return{ok:true,status:204};return{ok:true,status:200,async json(){return r==='/api/users'?{usuarios:[]}:{usuario,csrfToken:'csrf-ficticio'}}}},alert(){}});
+    vm.runInContext(fs.readFileSync(path.join(raiz,'date-formatter.js'),'utf8'),c);
     vm.runInContext(fs.readFileSync(path.join(raiz,'app.js'),'utf8'),c);
     vm.runInContext("actualizarTodo=()=>{};permisosPorRol.administrador.push('pedidos');permisosPorRol.vendedor.push('pedidos');",c);
     vm.runInContext(fs.readFileSync(path.join(raiz,'auth-client.js'),'utf8'),c);
@@ -62,6 +63,7 @@ test('sessionStorage bloqueado no impide autenticar ni navegar por el menú',asy
 
 test('recarga limpia creación y checkbox con valores predeterminados, sin tocar login y usando fecha de hoy',async()=>{
     const f=preparar();
+    f.c.MicroCarmitaFechas.hoy=()=> '2028-02-29';
     const nombre=Object.assign(f.nodo('productoNombre'),{value:'Sin enviar',defaultValue:'',tagName:'INPUT',type:'text'});
     const cantidad=Object.assign(f.nodo('productoCantidad'),{value:'99',defaultValue:'1',tagName:'INPUT',type:'number'});
     const check=Object.assign(f.nodo('finanzaAdministrativo'),{checked:true,defaultChecked:false,type:'checkbox'});
@@ -69,8 +71,7 @@ test('recarga limpia creación y checkbox con valores predeterminados, sin tocar
     const fecha=Object.assign(f.nodo('finanzaFecha'),{value:'2000-01-01'});
     f.entradas.push(nombre,cantidad,check,tipo,fecha);f.nodo('loginUsuario').value='Cuenta del gestor';
     await f.abrir();assert.equal(nombre.value,'');assert.equal(cantidad.value,'1');assert.equal(check.checked,false);assert.equal(tipo.value,'contado');
-    const p=Object.fromEntries(new Intl.DateTimeFormat('en-CA',{timeZone:'America/Guayaquil',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date()).map(p=>[p.type,p.value]));
-    assert.equal(fecha.value,`${p.year}-${p.month}-${p.day}`);assert.equal(f.nodo('loginUsuario').value,'Cuenta del gestor');
+    assert.equal(fecha.value,'2028-02-29');assert.equal(f.nodo('loginUsuario').value,'Cuenta del gestor');
     nombre.value='Restaurado por navegador';f.ventana.pageshow({persisted:false});assert.equal(nombre.value,'');
 });
 
