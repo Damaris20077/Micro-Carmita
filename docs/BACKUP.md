@@ -1,3 +1,9 @@
+[Volver al README](../README.md) · [Manual técnico](MANUAL_TECNICO.md) · [Estado de QA](FINAL_QA.md#estado-documental-actual)
+
+Los comandos de terminal, rutas literales de código, migraciones y archivos privados se interpretan desde la **raíz del repositorio**, no desde `docs/`. Los enlaces de navegación sí son relativos a este documento. Los procedimientos históricos conservan sus condiciones y autorizaciones originales; esta reorganización no autoriza ejecutarlos.
+
+<!-- INICIO FUENTE: BACKUP.md -->
+
 # Respaldos privados de Micro Carmita
 
 ## Requisitos oficiales
@@ -195,8 +201,10 @@ Queda pendiente autorizar/preparar la cuenta MySQL de respaldo sin tocar micro_a
 
 ## Archivos y pruebas
 
-Nuevos: backend/backup-config.js, backup-store.js, backup-crypto.js, backup-runtime.js, backup-service.js, backup-cli.js, backup.test.cjs, backup-test-fixture.sql y BACKUP.md. Modificados: .env.example, .gitignore, package.json, package-lock.json y README.md. No cambia Express, app.js, modelo.js, rf.txt, migraciones, tablas o cuentas existentes.
+Nuevos: backend/backup-config.js, backup-store.js, backup-crypto.js, backup-runtime.js, backup-service.js, backup-cli.js, backup.test.cjs, backup-test-fixture.sql y [BACKUP.md](BACKUP.md). Modificados: .env.example, .gitignore, package.json, package-lock.json y [README.md](../README.md). No cambia Express, app.js, modelo.js, rf.txt, migraciones, tablas o cuentas existentes.
 
 Las pruebas usan SQL ficticio, directorios temporales propios, almacenamiento S3 simulado y procesos simulados; no ejecutan mysqldump ni se conectan a MySQL/R2. Cubren quince días exactos, reinicios/ejecuciones perdidas, exclusión de instancias, reintentos, errores, estados corruptos, limpieza y desbloqueo conservador, cifrado/compresión/descifrado, IV aleatorio y autenticidad, no sobrescritura, opciones sin secretos, preflight y verificación remota simulada. El roundtrip local no equivale todavía a una recuperación probada contra MySQL real.
 
 Resultado de esta entrega: npm test confirma 389 pruebas exitosas (364 conservadas y 25 nuevas), 0 fallidas, 0 omitidas y 0 canceladas, salida 0. npm audit --omit=dev --json informa 0 vulnerabilidades de producción, salida 0. git diff --check termina sin errores; se mantienen avisos LF/CRLF. La sintaxis JavaScript y los nueve bloques PowerShell se verificaron sin ejecutar los comandos operativos. La revisión de los archivos candidatos no detectó secretos locales ni patrones de claves privadas. Los seis avisos de desarrollo previamente documentados no se corrigen con este bloque; no se aplicó audit fix --force. El fixture ficticio está expresamente exceptuado de la regla Git que excluye archivos SQL de respaldo.
+
+<!-- FIN FUENTE: BACKUP.md -->

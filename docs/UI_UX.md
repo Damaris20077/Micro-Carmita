@@ -1,3 +1,9 @@
+[Volver al README](../README.md) · [Manual técnico](MANUAL_TECNICO.md) · [Estado de QA](FINAL_QA.md#estado-documental-actual)
+
+Los comandos de terminal, rutas literales de código, migraciones y archivos privados se interpretan desde la **raíz del repositorio**, no desde `docs/`. Los enlaces de navegación sí son relativos a este documento. Los procedimientos históricos conservan sus condiciones y autorizaciones originales; esta reorganización no autoriza ejecutarlos.
+
+<!-- INICIO FUENTE: UI_UX.md -->
+
 # Sistema visual de Micro Carmita
 
 Primera fase de rediseño: 18 de noviembre de 2026. Rama desarrollo-jose. Punto de partida comprobado: bea4413, árbol limpio; las correcciones anteriores ya estaban registradas. Esta fase no crea commits.
@@ -91,7 +97,7 @@ Los estados mantienen texto además de color. La compatibilidad de lectores de p
 
 ## Protección contra regresiones
 
-`backend/ui-contract.test.cjs` contiene cinco comprobaciones: contrato de los 161 controles originales, sección de Inventario intacta, resto de pantallas de negocio intactas, contraste de tokens y navegación accesible/sesión compartida. El contrato incluye IDs, tipos, valores, límites, obligatoriedad, estados iniciales y eventos inline; excluye clases/estilos y el orden global de presentación. La primera fase añadió el destino del enlace de salto; el panel añade nodos con el prefijo inicioPanel y el botón Actualizar panel. Este espacio de nombres nuevo se excluye del contrato anterior, que mantiene la misma huella y sus 161 controles. No se reemplazó la huella para ocultar cambios. Las huellas representan el contrato anterior a este rediseño: un cambio futuro intencional debe revisarse con su JavaScript antes de actualizarlas, nunca regenerarlas solo para hacer pasar la prueba.
+[backend/ui-contract.test.cjs](../backend/ui-contract.test.cjs) contiene cinco comprobaciones: contrato de los 161 controles originales, sección de Inventario intacta, resto de pantallas de negocio intactas, contraste de tokens y navegación accesible/sesión compartida. El contrato incluye IDs, tipos, valores, límites, obligatoriedad, estados iniciales y eventos inline; excluye clases/estilos y el orden global de presentación. La primera fase añadió el destino del enlace de salto; el panel añade nodos con el prefijo inicioPanel y el botón Actualizar panel. Este espacio de nombres nuevo se excluye del contrato anterior, que mantiene la misma huella y sus 161 controles. No se reemplazó la huella para ocultar cambios. Las huellas representan el contrato anterior a este rediseño: un cambio futuro intencional debe revisarse con su JavaScript antes de actualizarlas, nunca regenerarlas solo para hacer pasar la prueba.
 
 Inventario conserva exactamente su HTML, campos, tablas, lotes, entradas, contactos y ajustes; recibe únicamente los estilos comunes. No se modifican los clientes JavaScript operativos originales, app.js, cálculos, SQL, permisos ni RF. El backend solo incorpora el nuevo recurso estático dashboard-client.js en su lista explícita de archivos públicos; no se añade una ruta de datos. Las pruebas integradas existentes siguen ejecutando los scripts de index.html y verifican sesión, permisos y ausencia de almacenamiento paralelo.
 
@@ -115,7 +121,7 @@ Los resultados visuales no se inventan: la aceptación del diseño queda pendien
 - npm test: 577 pruebas, 577 exitosas, 0 fallidas, 0 omitidas, 0 canceladas y 0 pendientes; salida 0. Duración de la última suite: 7109.6631 ms. Se conservan las 573 anteriores y se añaden cuatro regresiones de UI.
 - npm audit --omit=dev --json: 0 vulnerabilidades de producción; salida 0. No se instalaron dependencias.
 - git diff --check: sin errores; únicamente avisos LF/CRLF.
-- Archivos de la fase: index.html, estilos.css, backend/ui-contract.test.cjs y UI_UX.md. El HEAD permanece en bea4413.
+- Archivos de la fase: index.html, estilos.css, backend/ui-contract.test.cjs y [UI_UX.md](UI_UX.md). El HEAD permanece en bea4413.
 - La sección de Inventario mantiene su huella íntegra y no se cambiaron archivos JavaScript de la aplicación, backend ni requisitos.
 
 
@@ -169,9 +175,9 @@ Esta iteración no obtuvo una inspección visual nueva en navegador: la conexió
 
 Reiniciar el backend para que publique dashboard-client.js y recargar la página. Revisar a 375/768/1024/1440px con una cuenta autorizada: cuatro tarjetas independientes y legibles, usuario/rol/Salir visibles, listas con scroll de teclado, colores de estados, nombres y cantidades largos y conservación del menú lateral. Sin crear operaciones reales, contrastar los bloques con las consultas de Inventario/Pedidos/Ventas y confirmar que Vendedor no accede a información administrativa. Probar cargas lentas, error parcial y cierre de sesión con respuestas pendientes en un entorno de prueba.
 
-Las API actuales no tienen paginación de listas para esta vista: los pedidos abiertos y alertas se muestran con scroll, y el cliente recibe la lista de ventas existente antes de seleccionar cinco. Medir volumen antes de escalar; no se añadieron consultas complejas ni límites que cambien totales del negocio. No se ejecutó un ensayo de datos reales ni escrituras MySQL; las pruebas son aisladas. Los pendientes de R2, concurrencia/persistencia e idempotencia de FINAL_QA.md siguen vigentes.
+Las API actuales no tienen paginación de listas para esta vista: los pedidos abiertos y alertas se muestran con scroll, y el cliente recibe la lista de ventas existente antes de seleccionar cinco. Medir volumen antes de escalar; no se añadieron consultas complejas ni límites que cambien totales del negocio. No se ejecutó un ensayo de datos reales ni escrituras MySQL; las pruebas son aisladas. Los pendientes de R2, concurrencia/persistencia e idempotencia de [FINAL_QA.md](FINAL_QA.md) siguen vigentes.
 
-Archivos de esta iteración: index.html, estilos.css, dashboard-client.js, backend/app.js (solo recurso estático), backend/dashboard-client.test.cjs, backend/frontend-integration.test.cjs, backend/ui-contract.test.cjs, backend/auth.test.cjs y UI_UX.md. Los cambios previos de estilos, HTML, contrato y documentación se conservaron. No se modifican clientes operativos originales, modelo.js, app.js, servicios de negocio, permisos, SQL, credenciales ni datos MySQL. Sin migraciones, respaldos/R2, commits, merge o push.
+Archivos de esta iteración: index.html, estilos.css, dashboard-client.js, backend/app.js (solo recurso estático), backend/dashboard-client.test.cjs, backend/frontend-integration.test.cjs, backend/ui-contract.test.cjs, backend/auth.test.cjs y [UI_UX.md](UI_UX.md). Los cambios previos de estilos, HTML, contrato y documentación se conservaron. No se modifican clientes operativos originales, modelo.js, app.js, servicios de negocio, permisos, SQL, credenciales ni datos MySQL. Sin migraciones, respaldos/R2, commits, merge o push.
 
 ## Iteración de Gestión de Ventas — 18 de noviembre de 2026
 
@@ -217,13 +223,13 @@ Se conservan los métodos/rutas, cuerpos de solicitud, reglas de validación, pe
 - npm audit --omit=dev --json: **0 vulnerabilidades de producción**, salida 0. La primera consulta falló por acceso al registro en el entorno restringido; la repetición autorizada obtuvo el informe. Sin instalaciones ni dependencias nuevas.
 - git diff --check: sin errores de formato; avisos habituales de conversión LF/CRLF. No se realizaron operaciones MySQL, migraciones, respaldos/R2, commits, merges ni push.
 
-Archivos de esta iteración: index.html, estilos.css, sales-client.js, backend/sales-client.test.cjs, backend/sales-layout.test.cjs (nuevo), backend/ui-contract.test.cjs y UI_UX.md. Los demás archivos pendientes pertenecen al trabajo previo y se conservan.
+Archivos de esta iteración: index.html, estilos.css, sales-client.js, backend/sales-client.test.cjs, backend/sales-layout.test.cjs (nuevo), backend/ui-contract.test.cjs y [UI_UX.md](UI_UX.md). Los demás archivos pendientes pertenecen al trabajo previo y se conservan.
 
 ### Aceptación visual pendiente
 
 El acceso nativo al navegador falló con «Computer Use native pipe is unavailable» (os error 2). No se inspeccionó la pantalla renderizada ni se obtuvieron capturas. Las regresiones Node/VM y de DOM/CSS no demuestran medidas reales, contraste en cada navegador ni aceptación táctil. Sigue sin estar disponible el intérprete Python de los auxiliares de ui-ux-pro-max; se aplicaron sus criterios de accesibilidad y disposición con las herramientas existentes.
 
-En un entorno de prueba, recargar sin caché y revisar a 375/768/1024/1440px y zoom 200%: columnas/apilado, total visible, foco de teclado, herramientas largas, nombres largos y scroll local sin desbordamiento de página. Con Administrador y Vendedor comprobar Detalle y acciones permitidas, contado/fiado, Activa/Anulada, carrito vacío/múltiples líneas, edición/cancelación, carga lenta y errores. Verificar registro único y mensaje de guardado con consulta fallida usando API simulada o una base de prueba; no crear ventas de ensayo en el negocio. No se afirma una nueva validación contra MySQL real. Los riesgos generales de FINAL_QA.md permanecen pendientes según su propio alcance.
+En un entorno de prueba, recargar sin caché y revisar a 375/768/1024/1440px y zoom 200%: columnas/apilado, total visible, foco de teclado, herramientas largas, nombres largos y scroll local sin desbordamiento de página. Con Administrador y Vendedor comprobar Detalle y acciones permitidas, contado/fiado, Activa/Anulada, carrito vacío/múltiples líneas, edición/cancelación, carga lenta y errores. Verificar registro único y mensaje de guardado con consulta fallida usando API simulada o una base de prueba; no crear ventas de ensayo en el negocio. No se afirma una nueva validación contra MySQL real. Los riesgos generales de [FINAL_QA.md](FINAL_QA.md) permanecen pendientes según su propio alcance.
 
 ## Iteración de Ingresos y egresos — 18 de noviembre de 2026
 
@@ -275,19 +281,19 @@ Resultados finales:
 - npm audit --omit=dev --json: **0 vulnerabilidades de producción**, salida 0. La primera consulta no pudo acceder al registro dentro del entorno restringido; la repetición autorizada obtuvo el informe. No se instalaron dependencias.
 - git diff --check: sin errores; avisos habituales LF/CRLF.
 
-Archivos de esta iteración: index.html, estilos.css (solo reglas nuevas de #movimientos), finance-client.js, backend/finance-client.test.cjs, backend/finance-layout.test.cjs (nuevo), backend/frontend-integration.test.cjs, backend/sales-layout.test.cjs, backend/ui-contract.test.cjs y UI_UX.md. Los cambios en pruebas compartidas ajustan los límites de preservación y el mensaje esperado; no modifican otros módulos de la aplicación. Se conservan los demás cambios pendientes. Sin operaciones MySQL, migraciones, cambios de rama, commits, merges ni push.
+Archivos de esta iteración: index.html, estilos.css (solo reglas nuevas de #movimientos), finance-client.js, backend/finance-client.test.cjs, backend/finance-layout.test.cjs (nuevo), backend/frontend-integration.test.cjs, backend/sales-layout.test.cjs, backend/ui-contract.test.cjs y [UI_UX.md](UI_UX.md). Los cambios en pruebas compartidas ajustan los límites de preservación y el mensaje esperado; no modifican otros módulos de la aplicación. Se conservan los demás cambios pendientes. Sin operaciones MySQL, migraciones, cambios de rama, commits, merges ni push.
 
 ### Revisión visual pendiente
 
 La conexión al navegador devolvió «Computer Use native pipe is unavailable» (os error 2), por lo que no se obtuvo una inspección renderizada ni capturas. Python sigue sin poder ejecutarse desde el alias de WindowsApps; no se ejecutó el generador auxiliar de ui-ux-pro-max ni se instalaron herramientas. Se aplicaron sus criterios de accesibilidad e interacción sobre los tokens existentes. Las pruebas Node/VM y de estructura/CSS no sustituyen la validación visual.
 
-En un entorno de prueba, revisar a 375/768/1024/1440px y zoom 200%: orden de filas, checkbox y etiqueta pulsables, foco con Tab/Shift+Tab, separación de filtros, resumen de importes largos/negativos y scroll de tabla sin desbordamiento de página. Comprobar vacío, errores, carga lenta, validaciones y confirmación del registro mediante API simulada o base de prueba, sin crear movimientos reales del negocio. Probar pérdida de respuesta, consulta posterior fallida y logout con solicitudes pendientes. Vendedor debe conservar la restricción del módulo; no se hizo una nueva comprobación contra MySQL real. Los riesgos generales registrados en FINAL_QA.md siguen fuera de esta iteración.
+En un entorno de prueba, revisar a 375/768/1024/1440px y zoom 200%: orden de filas, checkbox y etiqueta pulsables, foco con Tab/Shift+Tab, separación de filtros, resumen de importes largos/negativos y scroll de tabla sin desbordamiento de página. Comprobar vacío, errores, carga lenta, validaciones y confirmación del registro mediante API simulada o base de prueba, sin crear movimientos reales del negocio. Probar pérdida de respuesta, consulta posterior fallida y logout con solicitudes pendientes. Vendedor debe conservar la restricción del módulo; no se hizo una nueva comprobación contra MySQL real. Los riesgos generales registrados en [FINAL_QA.md](FINAL_QA.md) siguen fuera de esta iteración.
 
 ## Revisión coordinada — primer bloque, 18 de noviembre de 2026
 
 ### Auditoría global y prioridades
 
-Rama desarrollo-jose; línea base 607/607. Se revisaron rf.txt (38 líneas), la estructura de los ocho módulos, estilos, adaptadores frontend y las comprobaciones de FINAL_QA.md. No se encontraron las ocho capturas ni exportaciones identificables de Stitch entre los archivos del proyecto, incluido output; tampoco llegaron como adjuntos. Esta matriz procede de inspección de código y pruebas aisladas, no de comparar capturas o de una revisión renderizada. La longitud de una página completa no se considera un defecto.
+Rama desarrollo-jose; línea base 607/607. Se revisaron rf.txt (38 líneas), la estructura de los ocho módulos, estilos, adaptadores frontend y las comprobaciones de [FINAL_QA.md](FINAL_QA.md). No se encontraron las ocho capturas ni exportaciones identificables de Stitch entre los archivos del proyecto, incluido output; tampoco llegaron como adjuntos. Esta matriz procede de inspección de código y pruebas aisladas, no de comparar capturas o de una revisión renderizada. La longitud de una página completa no se considera un defecto.
 
 | Área | Evidencia y clasificación | Prioridad | Resultado de este bloque |
 |---|---|---|---|
@@ -339,7 +345,7 @@ La huella de los 161 controles originales permanece idéntica. Se sustituye la c
 
 npm audit --omit=dev --json: **0 vulnerabilidades de producción**, salida 0, tras repetir la consulta al registro fuera del entorno restringido. git diff --check: sin errores, solo avisos habituales LF/CRLF. No se instalaron dependencias. No hubo MySQL, migraciones, respaldos/R2, cambios de rama, commits, merges ni push.
 
-Archivos de esta iteración: index.html, estilos.css, inventory-client.js, orders-client.js; backend/inventory-client.test.cjs, backend/order-client.test.cjs, backend/frontend-integration.test.cjs, backend/ui-contract.test.cjs, backend/sales-layout.test.cjs, backend/finance-layout.test.cjs; nuevo backend/shared-ui.test.cjs; UI_UX.md y FINAL_QA.md. Los cambios previos permanecen pendientes y se conservan.
+Archivos de esta iteración: index.html, estilos.css, inventory-client.js, orders-client.js; backend/inventory-client.test.cjs, backend/order-client.test.cjs, backend/frontend-integration.test.cjs, backend/ui-contract.test.cjs, backend/sales-layout.test.cjs, backend/finance-layout.test.cjs; nuevo backend/shared-ui.test.cjs; [UI_UX.md](UI_UX.md) y [FINAL_QA.md](FINAL_QA.md). Los cambios previos permanecen pendientes y se conservan.
 
 ### Punto de parada para revisión visual
 
@@ -347,13 +353,13 @@ El navegador volvió a fallar con Computer Use native pipe is unavailable (os er
 
 Antes de otro bloque, revisar exclusivamente este resultado a 375/768/1024/1440px y zoom 200%: todas las secciones de Inventario accesibles, alertas legibles, ayudas y registros largos, Tab/Shift+Tab, tablas con desplazamiento local, separación de tareas en Pedidos y aviso sin selección. Con datos simulados/base aislada comprobar errores y bloqueo, elegir dos pedidos seguidos, selección fallida y logout con consultas pendientes; confirmar que el Vendedor conserva recepción y consulta sin alta/cancelación ni ajustes. No ensayar escrituras con los registros reales del negocio.
 
-Después de esa revisión quedan Cuentas, Reportes y Usuarios. No se declara la interfaz global terminada ni se rehacen Inicio/Ventas/Finanzas. La prevención visual de doble clic no resuelve por sí sola la idempotencia persistente de ajustes/alta de pedidos ni la pérdida de claves al recargar; siguen vigentes P-02/P-03 y los pendientes de R2, concurrencia y persistencia de FINAL_QA.md.
+Después de esa revisión quedan Cuentas, Reportes y Usuarios. No se declara la interfaz global terminada ni se rehacen Inicio/Ventas/Finanzas. La prevención visual de doble clic no resuelve por sí sola la idempotencia persistente de ajustes/alta de pedidos ni la pérdida de claves al recargar; siguen vigentes P-02/P-03 y los pendientes de R2, concurrencia y persistencia de [FINAL_QA.md](FINAL_QA.md).
 
 ## Auditoría funcional sin rediseño — 18 de noviembre de 2026
 
 El usuario aprueba la apariencia actual; las propuestas visuales anteriores quedan como opcionales y no son autorización para otro rediseño. Esta iteración conserva íntegros index.html y estilos.css, verificados por backend/approved-design.test.cjs, y la huella anterior de los 161 controles. No se cambian colores, distribución, componentes ni handlers del HTML.
 
-Decisiones de usabilidad: las operaciones de usuarios reflejan un bloqueo de envío en sus botones existentes y conservan los campos ante rechazo; los reportes muestran carga y bloquean su acción durante la petición, liberándola al terminar. Una respuesta de reporte/PDF cuyos filtros cambiaron se descarta y solicita volver a consultar/descargar. Sesiones y listas tardías no sustituyen una sesión/consulta más reciente. Estas correcciones usan los componentes existentes y no cambian consultas ni reglas financieras. Evidencia, resultados y pendientes están en la auditoría funcional de FINAL_QA.md.
+Decisiones de usabilidad: las operaciones de usuarios reflejan un bloqueo de envío en sus botones existentes y conservan los campos ante rechazo; los reportes muestran carga y bloquean su acción durante la petición, liberándola al terminar. Una respuesta de reporte/PDF cuyos filtros cambiaron se descarta y solicita volver a consultar/descargar. Sesiones y listas tardías no sustituyen una sesión/consulta más reciente. Estas correcciones usan los componentes existentes y no cambian consultas ni reglas financieras. Evidencia, resultados y pendientes están en la auditoría funcional de [FINAL_QA.md](FINAL_QA.md).
 
 El navegador continúa sin conexión nativa (os error 2): no se declara una nueva aceptación visual ni validación real de teclado/táctil/lector de pantalla. Las comprobaciones de DOM/CSS no sustituyen revisar a 375/768/1024/1440px, zoom 200%, foco tras login/error, tablas y controles largos. La revisión no requiere un nuevo sistema visual ni instala herramientas para generarlo; se respetan los tokens aprobados y los criterios de accesibilidad de ui-ux-pro-max.
 
@@ -365,7 +371,7 @@ La última sección se conserva por pestaña en sessionStorage bajo micro-carmit
 
 En una carga nueva se limpian los campos de creación, sin borrar registros ni tocar login/filtros/recepción. Se restauran valores predeterminados y la fecha operativa de hoy en Ecuador. No se limpia al cambiar de módulo ni al retornar por bfcache, para conservar edición en curso. El navegador o extensiones pueden restaurar/autocompletar campos pese a autocomplete=off; la corrección distingue ese estado de los registros realmente recuperados de la API.
 
-Resultado: npm test 652/652, sin fallidas/omitidas; auditoría de producción 0 vulnerabilidades; diff --check sin errores. Las pruebas de diseño íntegro y los 161 controles originales se conservan. Evidencia detallada y 18 nuevas regresiones en FINAL_QA.md. La conexión al navegador sigue indisponible: quedan pendientes F5/Ctrl+F5, autocompletado, foco real y archivo/reactivación con datos ficticios en un entorno de prueba. No se afirma una nueva validación MySQL real ni se realizan commits, migraciones o R2.
+Resultado: npm test 652/652, sin fallidas/omitidas; auditoría de producción 0 vulnerabilidades; diff --check sin errores. Las pruebas de diseño íntegro y los 161 controles originales se conservan. Evidencia detallada y 18 nuevas regresiones en [FINAL_QA.md](FINAL_QA.md). La conexión al navegador sigue indisponible: quedan pendientes F5/Ctrl+F5, autocompletado, foco real y archivo/reactivación con datos ficticios en un entorno de prueba. No se afirma una nueva validación MySQL real ni se realizan commits, migraciones o R2.
 
 
 ## Gestión de clientes en Ventas — 19 de noviembre de 2026
@@ -396,3 +402,5 @@ Se conservan números de venta, pedido, recepción y abono, códigos de lote, pr
 No hay cambios de CSS, layout, atributos, IDs HTML, permisos, endpoints o SQL. Las funciones de etiqueta y consulta de nombres/códigos solo leen los catálogos ya cargados. Resultado: 673 pruebas exitosas, 0 fallidas/omitidas; 0 vulnerabilidades de producción; diff --check correcto. Se añaden ocho regresiones de etiquetas/selección/DTO y referencias conservadas. Las pruebas de preservación de HTML admiten únicamente el cambio de una cabecera de texto; los 161 contratos originales se mantienen.
 
 Pendiente manual: navegador nativo indisponible (os error 2). Revisar Clientes/Proveedores con nombres únicos y repetidos, selección correcta, ficha de proveedor, nombre del producto en borrador, números de venta/pedido, códigos de lote y reportes HTML. Revisar homónimos sin datos de contacto: sin información distintiva real, las etiquetas no pueden garantizar desambiguación. No se hicieron escrituras MySQL ni commits.
+
+<!-- FIN FUENTE: UI_UX.md -->

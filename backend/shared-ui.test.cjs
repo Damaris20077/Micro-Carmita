@@ -1,7 +1,9 @@
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
 const {createHash}=require('node:crypto');
 const html=fs.readFileSync(path.join(__dirname,'..','index.html'),'utf8').replace(/\r\n/g,'\n');
-const css=fs.readFileSync(path.join(__dirname,'..','estilos.css'),'utf8').replace(/\r\n/g,'\n');
+    // Normaliza solo la ruta documental; conserva las huellas del diseño aprobado.
+const css=fs.readFileSync(path.join(__dirname,'..','estilos.css'),'utf8').replace(/\r\n/g,'\n')
+        .replace('/* Micro Carmita · base visual compartida. Ver docs/UI_UX.md. */', '/* Micro Carmita · base visual compartida. Ver UI_UX.md. */');
 const hash=v=>createHash('sha256').update(v).digest('hex');
 const seccion=id=>{const a=html.indexOf(`<section id="${id}"`),b=html.indexOf('<section ',a+1);return html.slice(a,b<0?html.indexOf('</main>',a):b)};
 

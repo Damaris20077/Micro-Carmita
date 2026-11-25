@@ -1,3 +1,9 @@
+[Volver al README](../README.md) · [Manual técnico](MANUAL_TECNICO.md) · [Estado de QA](FINAL_QA.md#estado-documental-actual)
+
+Los comandos de terminal, rutas literales de código, migraciones y archivos privados se interpretan desde la **raíz del repositorio**, no desde `docs/`. Los enlaces de navegación sí son relativos a este documento. Los procedimientos históricos conservan sus condiciones y autorizaciones originales; esta reorganización no autoriza ejecutarlos.
+
+<!-- INICIO FUENTE: CLEANUP_PLAN.md -->
+
 # Plan de limpieza operativa — Micro Carmita
 
 Fecha de inspección: 19 de noviembre de 2026. Rama: desarrollo-jose.
@@ -213,3 +219,5 @@ El aumento de 15 a 16 no altera los resultados de la limpieza: las cinco tablas 
 Resultado actual: 17 tablas operativas con cero filas; usuarios 2, roles 2, auditoria_usuarios 3, migraciones 5, sesiones 16. npm test: 673 exitosas, 0 fallidas/omitidas/canceladas/pendientes. npm audit --omit=dev: 0 vulnerabilidades. Se conserva este plan y los SQL como documentación; el preview histórico está totalmente comentado y la inspección contiene solo SELECT/SHOW. No se reutiliza ni se vuelve a ejecutar la limpieza. La base MySQL y los archivos sensibles quedan fuera de Git.
 
 Referencias técnicas: [mysqldump MySQL 8.0](https://dev.mysql.com/doc/refman/8.0/en/mysqldump.html) y [visibilidad de triggers](https://dev.mysql.com/doc/refman/8.0/en/information-schema-triggers-table.html).
+
+<!-- FIN FUENTE: CLEANUP_PLAN.md -->

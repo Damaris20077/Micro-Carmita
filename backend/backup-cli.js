@@ -34,5 +34,5 @@ async function main(args=process.argv.slice(2)){
         try{await esperar(60000,undefined,{signal:controller.signal})}catch{break}
     }while(!controller.signal.aborted)}finally{storage.cerrar();config.key.fill(0);process.removeListener('SIGINT',stop);process.removeListener('SIGTERM',stop)}
 }
-if(require.main===module)main().catch(()=>{console.error(JSON.stringify({status:'failed',stage:'configuracion_o_comando',detail:'Revise BACKUP.md. No comparta secretos.'}));process.exitCode=1});
+if(require.main===module)main().catch(()=>{console.error(JSON.stringify({status:'failed',stage:'configuracion_o_comando',detail:'Revise docs/BACKUP.md. No comparta secretos.'}));process.exitCode=1});
 module.exports={main};

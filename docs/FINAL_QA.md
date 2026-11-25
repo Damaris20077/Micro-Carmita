@@ -1,18 +1,91 @@
-# Revisión integral de Micro Carmita
+# Calidad e historial de Micro Carmita
+
+[Volver al README](../README.md) · [Manual técnico](MANUAL_TECNICO.md) · [Anexo BASELINE](#baseline-historica)
+
+<a id="estado-documental-actual"></a>
+
+## Estado documental actual — 24 de noviembre de 2026
+
+Rama comprobada: desarrollo-jose. HEAD inicial 56b968b; árbol e índice limpios antes de reorganizar. La mejora anterior de documentación y fechas ya estaba registrada en ese commit, sin cambios locales que sobrescribir. La línea base ejecutada en esta reorganización es **675 exitosas, 0 fallidas, omitidas, canceladas y pendientes**, salida 0 (8663.7073 ms).
+
+El diseño y las funcionalidades están aprobados según el contexto del responsable. Se conserva íntegro el alcance de cada comprobación anterior: la aprobación no convierte pendientes de accesibilidad, concurrencia, persistencia, volumen PDF o recuperación R2 en ensayos nuevos ejecutados. R2 permanece desactivado y el despliegue en la nube pospuesto.
+
+Los resultados de 397 a 673 pruebas del registro de QA inferior y las 46 pruebas del anexo BASELINE son evidencia histórica. No sustituyen el resultado de 675 de la línea base actual. Las autorizaciones históricas de commit, push, migración, ensayo o limpieza no se renuevan aquí. No repetir la limpieza operativa ya ejecutada.
+
+Los comandos de terminal, rutas literales de código, migraciones y archivos privados se interpretan desde la **raíz del repositorio**, no desde `docs/`. Los enlaces de navegación sí son relativos a este documento. Los procedimientos históricos conservan sus condiciones y autorizaciones originales; esta reorganización no autoriza ejecutarlos.
+
+### Matriz previa de reorganización
+
+Se encontraron **12 Markdown**, no 13; el decimotercer archivo documental contado en la auditoría de 114 archivos es rf.txt y permanece en la raíz. Quedan **7 Markdown**: README.md y seis en docs/. Los cinco documentos de dominio se incorporan una sola vez al manual y BASELINE pasa al anexo. Se conservan sus bloques completos, ajustando únicamente navegación y jerarquía de títulos.
+
+| Documento de origen | Destino | Referencias afectadas | Riesgo |
+| --- | --- | --- | --- |
+| AUTH.md | docs/AUTH.md | README y referencias entre documentos | Bajo |
+| BACKUP.md | docs/BACKUP.md | README, documentación y ayuda de backup-cli.js | Bajo |
+| UI_UX.md | docs/UI_UX.md | README, historial y comentario de estilos.css | Bajo |
+| CLEANUP_PLAN.md | docs/CLEANUP_PLAN.md | README y evidencia de QA | Bajo |
+| FINAL_QA.md | docs/FINAL_QA.md | README y documentación técnica | Bajo |
+| BASELINE.md | docs/FINAL_QA.md#baseline-historica | Referencias históricas a Fase 0 | Bajo |
+| INVENTORY.md | docs/MANUAL_TECNICO.md#inventario | README y citas históricas | Medio |
+| ORDERS.md | docs/MANUAL_TECNICO.md#pedidos | README y citas históricas | Medio |
+| SALES.md | docs/MANUAL_TECNICO.md#ventas | README y citas históricas | Medio |
+| FINANCE.md | docs/MANUAL_TECNICO.md#finanzas | README y citas históricas | Medio |
+| REPORTS.md | docs/MANUAL_TECNICO.md#reportes | README y citas históricas | Medio |
+| README.md | README.md | Entrada principal y enlaces al nuevo árbol | Bajo |
+
+### Conservación y alcance de la validación
+
+Se tomó una instantánea íntegra de los doce Markdown y huellas SHA-256 de todos los archivos rastreados antes de modificar. Antes de retirar cada original consolidado se compara su bloque completo con la transformación esperada; los bloques de comandos se comparan literalmente, sin ejecutarlos. Los nombres originales se mantienen como etiquetas de procedencia enlazadas al destino actual. Los archivos movidos se registran mediante git mv, sin commit ni push.
+
+No había dependencias de ejecución que leyeran documentos Markdown. Se identificaron únicamente una referencia informativa en el comentario inicial del CSS y la ruta del documento en un mensaje de diagnóstico de la CLI; se corrigen sus rutas sin cambiar comportamiento ni diseño.
+
+Los enlaces locales y anclas se validan contra el árbol final. Las rutas de comandos se mantienen relativas a la raíz. Los enlaces externos, ejecutables instalados, carpetas hermanas o privadas y salidas generadas históricas no se certifican como disponibles; su mención se conserva como evidencia, no como requisito de ejecución ya verificado.
+
+### Resultado final de la reorganización documental
+
+- npm test antes: **675 exitosas**, 0 fallidas, omitidas, canceladas y pendientes; salida 0, 8663.7073 ms.
+- npm test después: **675 exitosas**, 0 fallidas, omitidas, canceladas y pendientes; salida 0, 8680.043 ms. No se añadieron ni eliminaron casos.
+- npm audit --omit=dev: **0 vulnerabilidades de producción**, salida 0 tras repetir autorizadamente fuera del sandbox la consulta que falló por restricciones de acceso al registro. No se instalaron paquetes.
+- git diff --check y git diff --cached --check: sin errores; se mantienen los avisos LF/CRLF del entorno.
+- Conservación: **11 fuentes incorporadas**, **184 encabezados originales**, **474 líneas de tablas** y **48 bloques de comandos**. Los bloques completos coinciden con la transformación de la instantánea; los comandos mantienen literalmente su contenido. README se conserva como entrada principal y se actualiza su navegación y corte de pruebas.
+- Navegación: **206 enlaces locales** comprobados, incluidos destinos y anclas, sin errores. Todas las rutas backend/ literales revisadas existen; las referencias abreviadas a archivos de código se contrastaron con sus ubicaciones. Se corrigió además la ruta de desarrollo del README a backend/migrations/development/001_dev_role.sql.
+- Los **19 enlaces externos** conservan sus destinos originales, pero no se consultaron por red en esta reorganización. Tampoco se verificaron operativamente ejecutables MySQL instalados, rutas privadas de respaldo, credenciales, R2 ni las salidas históricas generadas/ignoradas por Git. No son enlaces locales rotos ni se afirma que un clon incluya esos recursos.
+- El cambio del comentario CSS hizo fallar las comparaciones de huellas que incluían ese texto. En backend/approved-design.test.cjs, shared-ui.test.cjs, sales-layout.test.cjs y finance-layout.test.cjs se normaliza exclusivamente el comentario exacto con docs/UI_UX.md a su forma histórica antes del hash. Se mantienen las cuatro huellas originales, todos los controles y comprobaciones; no se ignoran comentarios arbitrarios ni reglas CSS. La suite final vuelve a pasar completa.
+- Fuera de Markdown solo cambian la ruta documental en el comentario CSS, la referencia de ayuda en backend/backup-cli.js y esa normalización puntual de cuatro pruebas. **96 archivos rastreados restantes** conservan sus huellas iniciales, incluidos rf.txt, HTML, JavaScript funcional, configuración, dependencias y migraciones.
+- Recuento: **12 Markdown antes y 7 después**; de doce en la raíz a uno en la raíz y seis en docs/. Cinco traslados mediante git mv; cinco documentos de dominio fusionados en MANUAL_TECNICO y BASELINE incorporado como anexo de QA. Los seis originales se retiraron únicamente después de verificar su conservación.
+- No se modifican main, datos MySQL, .env, diseño, reglas, API, autenticación ni transacciones. Sin migraciones, ensayos reales, commits, merges ni push. Los cinco movimientos registrados por git mv quedan preparados en el índice; las ediciones posteriores, retiradas y el manual nuevo quedan pendientes de preparación y revisión.
+
+<a id="qa-historico"></a>
+
+## Registro de FINAL_QA.md anterior a la reorganización
+
+El bloque siguiente conserva todas las revisiones anteriores y sus resultados con su fecha y alcance originales.
+
+<!-- INICIO FUENTE: FINAL_QA.md -->
+
+<a id="qa-revisión-integral-de-micro-carmita"></a>
+
+### Revisión integral de Micro Carmita
 
 Fecha: 17 de noviembre de 2026. Rama comprobada: desarrollo-jose. Entrega prevista: 19 de noviembre de 2026.
 
-## Dictamen y alcance
+<a id="qa-dictamen-y-alcance"></a>
+
+#### Dictamen y alcance
 
 El corte vigente del 19 de noviembre de 2026 queda en 673 pruebas exitosas; véase la revisión de identificadores visibles al final. Los resultados anteriores se conservan como evidencia histórica. El sistema tiene implementación de los 38 RF, pero no se declara aceptación integral de producción: RF-37/38 continúan desactivados y sin ensayo real; faltan navegación visual, concurrencia con conexiones independientes y persistencia tras commit/reinicio. No se ejecutaron escrituras sobre MySQL real, migraciones, respaldos, restauraciones ni transferencias a R2.
 
 Las integraciones reales satisfactorias de RF-01 a RF-36 proceden del contexto confirmado por el usuario. Esta revisión ejecutó pruebas aisladas, inspección de código y consultas MySQL exclusivamente SELECT; no volvió a autenticar usuarios reales ni a tocar sesiones. Un ensayo con rollback comprueba operaciones dentro de una transacción, pero no demuestra persistencia tras commit ni carreras entre dos conexiones independientes.
 
-## Conservación de avances
+<a id="qa-conservación-de-avances"></a>
 
-Antes de corregir el frontend se ejecutaron npm test (389/389, cero fallos y omitidas), git diff --check y auditoría de secretos de los 14 candidatos. npm audit --omit=dev --json: cero vulnerabilidades de producción. Se creó únicamente el commit LOCAL abf11826bd9dac457a0790c9c0174626d4daa451, mensaje: feat: registrar respaldos cifrados y programacion quincenal. Registra BACKUP.md, README.md, .env.example, .gitignore, package.json, package-lock.json y los ocho archivos backup de backend. No hubo push ni cambio de rama. Las correcciones de esta revisión permanecen pendientes de commit.
+#### Conservación de avances
 
-## Evidencias verificadas en esta sesión
+Antes de corregir el frontend se ejecutaron npm test (389/389, cero fallos y omitidas), git diff --check y auditoría de secretos de los 14 candidatos. npm audit --omit=dev --json: cero vulnerabilidades de producción. Se creó únicamente el commit LOCAL abf11826bd9dac457a0790c9c0174626d4daa451, mensaje: feat: registrar respaldos cifrados y programacion quincenal. Registra [BACKUP.md](BACKUP.md), [README.md](../README.md), .env.example, .gitignore, package.json, package-lock.json y los ocho archivos backup de backend. No hubo push ni cambio de rama. Las correcciones de esta revisión permanecen pendientes de commit.
+
+<a id="qa-evidencias-verificadas-en-esta-sesión"></a>
+
+#### Evidencias verificadas en esta sesión
 
 - MySQL mediante el pool configurado de la aplicación: versión 8.0.46; 22 tablas base; schema_migrations registra 001_auth, 002_catalogo_inventario, 003_pedidos_recepciones y 005_finanzas, además de 004_ventas_cobros. Un Administrador activo y cero Superusuarios activos. No se seleccionaron contraseñas, hashes ni tokens.
 - Configuración efectiva cargada desde .env: respaldo desactivado, entorno local fuera de producción y autorización de Superusuario desactivada. Esto no sustituye comprobar la configuración del futuro servidor de producción.
@@ -23,7 +96,9 @@ Antes de corregir el frontend se ejecutaron npm test (389/389, cero fallos y omi
 - index.html carga app.js, auth-client.js, inventory-client.js, orders-client.js, sales-client.js, finance-client.js y reports-client.js en ese orden. La nueva prueba VM ejecuta esa cadena real y comprueba sesión, consultas, logout, permisos y acceso a reportes sin lecturas/escrituras locales. Las escrituras a inventario/ventas/cuentas/movimientos mediante guardarDatos se rechazan.
 - app.js conserva el prototipo local y sus pruebas de caracterización. Los adaptadores de index.html sustituyen esas operaciones; no se elimina su historial. La exportación explícita del inventario local antiguo es una descarga de archivo, no una fuente operativa del backend. No debe abrirse app.js de forma aislada como aplicación de producción; se usa npm start y el index servido por Express.
 
-## Hallazgos corregidos y regresiones
+<a id="qa-hallazgos-corregidos-y-regresiones"></a>
+
+#### Hallazgos corregidos y regresiones
 
 | ID / criticidad | Defecto demostrado | Corrección y prueba |
 |---|---|---|
@@ -39,20 +114,24 @@ Antes de corregir el frontend se ejecutaron npm test (389/389, cero fallos y omi
 
 La primera ejecución tras las correcciones también detectó un mock de document incompleto en report-download.test.cjs; se añadió getElementById para representar el nuevo manejo de foco. No era un fallo de autenticación real. La suite final debe pasar completa; estos fallos intermedios no se ocultan como resultados exitosos.
 
-## Riesgos pendientes y criterios de salida
+<a id="qa-riesgos-pendientes-y-criterios-de-salida"></a>
+
+#### Riesgos pendientes y criterios de salida
 
 | ID / prioridad | Evidencia y efecto | Acción antes de aceptación |
 |---|---|---|
-| P-01 Alta | RF-37/38 implementados pero desactivados; sin bucket real, recuperación MySQL efectiva ni programación instalada y probada tras reinicio. | Autorizar el ensayo aislado de BACKUP.md, comprobar R2 privado, restauración en destino NUEVO, retención, custodia de clave, alertas operativas y RPO/RTO. No habilitar copias reales desde esta revisión. |
+| P-01 Alta | RF-37/38 implementados pero desactivados; sin bucket real, recuperación MySQL efectiva ni programación instalada y probada tras reinicio. | Autorizar el ensayo aislado de [BACKUP.md](BACKUP.md), comprobar R2 privado, restauración en destino NUEVO, retención, custodia de clave, alertas operativas y RPO/RTO. No habilitar copias reales desde esta revisión. |
 | P-02 Alta | Ajustes y creación de pedidos siguen sin clave persistente de idempotencia. Las altas y entradas de lote ahora registran la clave en el historial transaccional cuando se proporciona; el frontend siempre la envía (actualización descrita al final). Un POST confirmado en servidor cuya respuesta se pierde puede repetirse. El bloqueo de botón solo evita simultaneidad en la pestaña. | Reconciliar historial antes de repetir ajustes o pedidos; preparar su idempotencia persistente y pruebas de carrera. La mejora de lotes reutiliza JSON y bloqueos existentes, sin migración. No se alteró el esquema en esta auditoría. |
 | P-03 Media | Claves de ventas, abonos, finanzas y recepciones se conservan en memoria del cliente. Cerrar/recargar la pestaña tras una respuesta perdida puede perder la clave aunque el servidor sí deduplica claves repetidas. | Ensayo de respuesta perdida + recarga en entorno aislado. Definir recuperación de operaciones pendientes por servidor o almacenamiento de identificadores sin datos de negocio ni credenciales. No afirmar garantía exactamente una vez. |
 | P-04 Alta para aceptación | No fue posible abrir navegador: la automatización nativa devolvió pipe no disponible (error del sistema 2). | Ejecutar manualmente PC/móvil, teclado y lector de pantalla. No hay capturas ni resultados visuales aprobados. Python tampoco está instalado; no pudo ejecutarse el generador de diseño de ui-ux-pro-max. Se aplicaron sus reglas de accesibilidad por inspección. |
 | P-05 Media | Los ensayos SQL reversibles se ejecutan bajo rollback; la simulación de concurrencia no sustituye conexiones reales. | Ensayar C y P descritos abajo sobre base de prueba con conexiones independientes, nunca sobre datos del negocio. |
 | P-06 Media | Reportes reúnen filas y PDF en memoria y efectúan consultas por detalles; no hay ensayo de volumen ni paginación de consultas. Fuente PDF estándar limita alfabetos. | Medir con datos ficticios representativos, verificar PDF extenso y nombres reales de prueba; acotar períodos o introducir límites sin truncar totales. |
-| P-07 Baja | Existen avisos de desarrollo de la cadena nodemon ya documentados en REPORTS.md; producción arroja cero. | Mantener fuera del despliegue con npm ci --omit=dev. Revisar actualización compatible cuando esté disponible; no se usó audit fix --force. |
-| P-08 Baja | Documentos de entregas anteriores contienen estados y conteos históricos que pueden confundirse con el actual. | Tomar esta matriz como corte fechado; los ensayos anteriores no equivalen a una nueva certificación completa. AUTH.md identifica ahora su estado inicial como histórico. |
+| P-07 Baja | Existen avisos de desarrollo de la cadena nodemon ya documentados en [REPORTS.md](MANUAL_TECNICO.md#reportes); producción arroja cero. | Mantener fuera del despliegue con npm ci --omit=dev. Revisar actualización compatible cuando esté disponible; no se usó audit fix --force. |
+| P-08 Baja | Documentos de entregas anteriores contienen estados y conteos históricos que pueden confundirse con el actual. | Tomar esta matriz como corte fechado; los ensayos anteriores no equivalen a una nueva certificación completa. [AUTH.md](AUTH.md) identifica ahora su estado inicial como histórico. |
 
-## Matriz de los 38 requisitos
+<a id="qa-matriz-de-los-38-requisitos"></a>
+
+#### Matriz de los 38 requisitos
 
 Texto de cada fila leído directamente de rf.txt (38 líneas, sin añadir requisitos). Implementado significa que se encontró el servicio, persistencia/API o mecanismo indicado y sus pruebas en el repositorio; no equivale a aceptación completa del despliegue. Los nombres de pruebas de la tabla pertenecen a backend/ y llevan sufijo .cjs salvo indicación; se conservan además modelo.test.cjs y app.test.cjs de caracterización.
 
@@ -99,7 +178,9 @@ Pendientes: **M** = recorrido manual real en navegador y pruebas de pérdida de 
 | RF-37 | El sistema deberá permitir generar copias de seguridad de la base de datos para su almacenamiento en Cloudflare R2. | Implementado: backup-service / backup-runtime / backup-store / backup-crypto / backup-cli | backup.test (simulaciones) | No validado en servicio real; desactivado | R; sin ensayo R2/MySQL de recuperación real |
 | RF-38 | Los respaldos de la información deberán realizarse con una periodicidad quincenal. | Implementado: backup-service / backup-runtime / backup-store / backup-crypto / backup-cli | backup.test (simulaciones) | No validado en servicio real; desactivado | R; sin ensayo R2/MySQL de recuperación real |
 
-## Procedimiento de validación manual y adicional (pendiente)
+<a id="qa-procedimiento-de-validación-manual-y-adicional-pendiente"></a>
+
+#### Procedimiento de validación manual y adicional (pendiente)
 
 1. Preparar un entorno de ensayo aislado, con datos ficticios y cuentas creadas por un operador autorizado. Para pruebas de escritura no usar la base del emprendimiento ni reutilizar el Administrador real. No copiar sesiones reales. Aplicar migraciones solo en el entorno de ensayo mediante cuenta administrativa separada, fuera de esta revisión.
 2. Desde la raíz ejecutar npm test, npm audit --omit=dev y git diff --check. Para leer la aplicación ejecutar npm start y abrir el APP_ORIGIN configurado (valor habitual http://127.0.0.1:3000). No abrir index.html como file:// ni introducir contraseñas en el chat. En producción verificar HTTPS, NODE_ENV=production, origen exacto y cookie Secure.
@@ -111,19 +192,25 @@ Pendientes: **M** = recorrido manual real en navegador y pruebas de pérdida de 
 8. Registrar ingresos, egresos y gasto administrativo ficticios; consultar extremos inclusivos y rango invertido. Comparar los siete reportes y PDF con las mismas operaciones: ventas, cierre, pendientes, pagos semanales, finanzas, inventario y pedidos. Revisar cabeceras, fecha, totales, dos decimales, columnas, varias páginas, impresión y ausencia de duplicados. Vendedor y usuario sin sesión no deben descargar PDF.
 9. Simular offline, lentitud, doble clic y pérdida de respuesta después de que el servidor confirme escritura. Reintentar con la misma clave donde exista; comprobar historial antes de repetir ajustes/entradas/pedidos. Recargar pestaña para evaluar P-03. Inspeccionar Application/Storage: no deben escribirse nuevas colecciones de negocio ni sesiones/credenciales en localStorage.
 10. En la base aislada confirmar operaciones, cerrar pool/servidor, reiniciar y volver a leer desde una conexión nueva. Comparar ventas/saldos/caja/stock/estados. Forzar fallos intermedios para confirmar rollback sin efectos parciales. Los ensayos verify-*-real.js documentados no sustituyen este ensayo de commit real. No se ejecutaron aquí.
-11. Para R2 seguir exclusivamente el ensayo ficticio y el destino aislado de BACKUP.md después de autorización. Revisar ACL del directorio, bucket sin acceso público, token limitado al bucket, clave de cifrado fuera del repositorio y retención. Comprobar carga/descarga cifrada, rechazo de corrupción, recuperación SQL sobre servidor distinto y vacío, quincena exacta, ejecución perdida tras reinicio y bloqueo simultáneo. Nunca restaurar sobre micro_carmita. Registrar tiempo y tamaño sin imprimir secretos.
+11. Para R2 seguir exclusivamente el ensayo ficticio y el destino aislado de [BACKUP.md](BACKUP.md) después de autorización. Revisar ACL del directorio, bucket sin acceso público, token limitado al bucket, clave de cifrado fuera del repositorio y retención. Comprobar carga/descarga cifrada, rechazo de corrupción, recuperación SQL sobre servidor distinto y vacío, quincena exacta, ejecución perdida tras reinicio y bloqueo simultáneo. Nunca restaurar sobre micro_carmita. Registrar tiempo y tamaño sin imprimir secretos.
 
-## Configuración y seguridad de respaldos
+<a id="qa-configuración-y-seguridad-de-respaldos"></a>
 
-Se revisaron los módulos backup y BACKUP.md: habilitación explícita, cuenta lectora separada de micro_app/root, mysqldump single-transaction, validación de InnoDB, compresión, AES-256-GCM y verificación de bytes cifrados en R2. Credenciales por variables/archivo privado ignorado, directorio externo al proyecto, estado persistido y bloqueo exclusivo. No existe endpoint público de descarga de copias ni restauración automática. La política de retención y privacidad del bucket requieren verificación operativa; un booleano de configuración no certifica el servicio remoto. Límite actual de SQL: 512 MiB; estado/clave deben sobrevivir a reinicios; recuperación de lock huérfano es manual y conservadora.
+#### Configuración y seguridad de respaldos
+
+Se revisaron los módulos backup y [BACKUP.md](BACKUP.md): habilitación explícita, cuenta lectora separada de micro_app/root, mysqldump single-transaction, validación de InnoDB, compresión, AES-256-GCM y verificación de bytes cifrados en R2. Credenciales por variables/archivo privado ignorado, directorio externo al proyecto, estado persistido y bloqueo exclusivo. No existe endpoint público de descarga de copias ni restauración automática. La política de retención y privacidad del bucket requieren verificación operativa; un booleano de configuración no certifica el servicio remoto. Límite actual de SQL: 512 MiB; estado/clave deben sobrevivir a reinicios; recuperación de lock huérfano es manual y conservadora.
 
 La documentación oficial indica que la exposición pública de R2 requiere habilitación explícita y puede hacerse tanto por r2.dev como por dominio personalizado; comprobar ambos accesos antes de activar. [Cloudflare: buckets públicos](https://developers.cloudflare.com/r2/buckets/public-buckets/). La consistencia de single-transaction presupone tablas transaccionales y evitar DDL concurrente; esa opción no valida por sí misma una recuperación. [MySQL 8.0: mysqldump](https://dev.mysql.com/doc/refman/8.0/en/mysqldump.html).
 
-## Archivos de esta revisión
+<a id="qa-archivos-de-esta-revisión"></a>
 
-Modificados: auth-client.js, inventory-client.js, sales-client.js, reports-client.js, index.html, estilos.css; backend/auth-client.test.cjs, inventory-client.test.cjs, sales-client.test.cjs, reports-client.test.cjs, report-download.test.cjs y backup.test.cjs; AUTH.md para distinguir su registro inicial histórico. Nuevos: backend/frontend-integration.test.cjs y FINAL_QA.md. Sin cambios a reglas de negocio backend, modelo.js, app.js ni migraciones. Sin dependencias nuevas.
+#### Archivos de esta revisión
 
-## Resultado reproducible de la auditoría inicial (397 pruebas)
+Modificados: auth-client.js, inventory-client.js, sales-client.js, reports-client.js, index.html, estilos.css; backend/auth-client.test.cjs, inventory-client.test.cjs, sales-client.test.cjs, reports-client.test.cjs, report-download.test.cjs y backup.test.cjs; [AUTH.md](AUTH.md) para distinguir su registro inicial histórico. Nuevos: backend/frontend-integration.test.cjs y [FINAL_QA.md](FINAL_QA.md). Sin cambios a reglas de negocio backend, modelo.js, app.js ni migraciones. Sin dependencias nuevas.
+
+<a id="qa-resultado-reproducible-de-la-auditoría-inicial-397-pruebas"></a>
+
+#### Resultado reproducible de la auditoría inicial (397 pruebas)
 
 - npm test: 397 pruebas, 397 exitosas, 0 fallidas, 0 omitidas, 0 canceladas y 0 pendientes; salida 0. Última ejecución completa: 8061.2792 ms. Se conservan las 389 anteriores y se añaden ocho regresiones.
 - npm audit --omit=dev --json: 0 vulnerabilidades de producción (críticas, altas, moderadas, bajas e informativas: todas 0); salida 0. No se instalaron dependencias en esta revisión.
@@ -134,11 +221,15 @@ Modificados: auth-client.js, inventory-client.js, sales-client.js, reports-clien
 - Dictamen: preparado para revisión y aceptación manual; no certificado todavía para entrega productiva completa por P-01, P-02 y P-04. No confundir cero fallos automatizados con cierre de esos pendientes.
 
 
-## Actualización de presentación e interfaz
+<a id="qa-actualización-de-presentación-e-interfaz"></a>
+
+#### Actualización de presentación e interfaz
 
 Rama confirmada: desarrollo-jose. Se revisó git status antes de editar y se conservaron todos los cambios pendientes de la auditoría anterior. No se crearon commits en esta actualización.
 
-### Cambios y alcance
+<a id="qa-cambios-y-alcance"></a>
+
+##### Cambios y alcance
 
 - PDFKit conserva Helvetica/Helvetica-Bold y la normalización Latin-1. Los siete tipos comparten encabezado azul y blanco, título, período o fecha de consulta, generación en es-EC/America/Guayaquil y página actual/total. La tabla utiliza encabezados repetidos, franjas discretas, alturas medidas y cantidades monetarias con dos decimales alineadas a la derecha. Los reportes con siete o más columnas son A4 horizontal; el resto A4 vertical. Las filas largas continúan en otra página sin recortar datos y repiten su identificador. Se corrigió la reserva inferior para que el pie no cree páginas vacías.
 - El generador presenta los totales recibidos del servicio, sin recalcular ni mutar el reporte. Anuladas permanecen en las tablas con total vigente cero; las notas conservan la distinción entre total vendido, fiados, caja y deuda. No se cambiaron SQL, report-service, sales-service, finance-service, modelo.js ni reglas contables.
@@ -146,7 +237,9 @@ Rama confirmada: desarrollo-jose. Se revisó git status antes de editar y se con
 - El detalle de venta aparece en la propia pantalla de Ventas, en un panel con tablas de productos/lotes, acciones/motivos/responsables y movimientos de caja. El historial por cliente usa tablas de abonos y devoluciones y conserva anuladas. Todo texto dinámico se escapa antes de incorporarlo a HTML; los paneles se limpian al cerrar sesión.
 - Reportes separa filtros y acciones con espacios y cuadrícula adaptable (cuatro, dos y una columna). Botones secundarios consistentes con la identidad azul; Pedidos usa un icono de Font Awesome ya disponible. Inventario conserva su estructura, sin pestañas. No se añadieron dependencias ni fuentes externas.
 
-### Evidencia de PDF ficticios
+<a id="qa-evidencia-de-pdf-ficticios"></a>
+
+##### Evidencia de PDF ficticios
 
 Se generaron siete archivos en output/pdf/: ventas-ficticio.pdf, cierre-ficticio.pdf, pendientes-ficticio.pdf, pagos-ficticio.pdf, finanzas-ficticio.pdf, inventario-ficticio.pdf y pedidos-ficticio.pdf. Los datos proceden de fixtures en memoria, sin consultas MySQL. Pendientes contiene 45 clientes ficticios en dos páginas (deuda 540.00, abonos 90.00, saldo 450.00); las otras seis muestras ocupan una página cada una. Ventas incluye una anulación visible, excluida del total vigente de 10.00; cierre distingue ese total de ingresos 5.00, egresos 3.00 y neto de caja 2.00.
 
@@ -154,7 +247,9 @@ Se renderizaron las ocho páginas con Windows.Data.Pdf y se inspeccionaron sus i
 
 El navegador nativo devolvió nuevamente pipe no disponible (error del sistema 2); no se verificó visualmente la nueva interfaz web. El usuario informó comprobaciones visuales previas satisfactorias de ventas, fiados, abonos, inventario, finanzas y un PDF; no se presentan como inspección de esta nueva versión. El generador Python de ui-ux-pro-max tampoco pudo ejecutarse por falta de un intérprete accesible. Se aplicaron sus criterios de contraste, foco, espacio, controles y adaptación responsiva mediante inspección y pruebas.
 
-### Pruebas y pendientes
+<a id="qa-pruebas-y-pendientes"></a>
+
+##### Pruebas y pendientes
 
 - npm test: 410 pruebas, 410 exitosas, 0 fallidas, 0 omitidas, 0 canceladas y 0 pendientes; salida 0, 11242.8594 ms. Se conservan las 397 anteriores y se añaden 13 (nueve PDF, tres de historial/saldos y una de estructura de interfaz).
 - npm audit --omit=dev --json: 0 vulnerabilidades de producción; salida 0.
@@ -163,20 +258,26 @@ El navegador nativo devolvió nuevamente pipe no disponible (error del sistema 2
 - Validación manual pendiente del rediseño: refrescar el frontend y reiniciar el backend para cargar el nuevo generador; entrar a Ventas y abrir detalle de una venta activa y una anulada, consultar historial por cliente, comprobar la lista pendiente, los filtros y botones de Reportes a 375/768/1440 px, foco por teclado y descarga de los siete PDF. Revisar registros largos y períodos grandes con datos ficticios. No ejecutar nuevas escrituras en el negocio para esta comprobación.
 - Permanecen los riesgos P-01/P-02/P-03/P-05/P-06 de la auditoría: R2 real y recuperación, idempotencia persistente pendiente, recuperación de claves tras recarga, concurrencia y persistencia tras commit/reinicio, volumen. La revisión visual de las muestras cubre parcialmente D, no la aceptación de todos los documentos reales.
 
-Archivos modificados en este bloque: backend/report-pdf.js, backend/report.test.cjs, sales-client.js, backend/sales-client.test.cjs, backend/frontend-integration.test.cjs, index.html, estilos.css y FINAL_QA.md. Creados: los siete PDF ficticios indicados. Otros cambios de git status pertenecen a la auditoría anterior y se conservaron. Sin migraciones, cambios de credenciales, escrituras MySQL, respaldos/R2, commits ni push.
+Archivos modificados en este bloque: backend/report-pdf.js, backend/report.test.cjs, sales-client.js, backend/sales-client.test.cjs, backend/frontend-integration.test.cjs, index.html, estilos.css y [FINAL_QA.md](FINAL_QA.md). Creados: los siete PDF ficticios indicados. Otros cambios de git status pertenecen a la auditoría anterior y se conservaron. Sin migraciones, cambios de credenciales, escrituras MySQL, respaldos/R2, commits ni push.
 
 
-## Actualización: lotes opcionales y fechas ecuatorianas
+<a id="qa-actualización-lotes-opcionales-y-fechas-ecuatorianas"></a>
+
+#### Actualización: lotes opcionales y fechas ecuatorianas
 
 Rama desarrollo-jose confirmada y cambios pendientes conservados. Suite previa: 427 pruebas. El usuario informa que el pedido 3 fue recibido completamente y dejó stock 15; esta actualización no modifica ni vuelve a recibir ese pedido y no certifica nuevamente ese saldo mediante escrituras de prueba.
 
-### Correspondencia con requisitos y esquema
+<a id="qa-correspondencia-con-requisitos-y-esquema"></a>
+
+##### Correspondencia con requisitos y esquema
 
 Se leyó rf.txt completo. RF-14 pide proveedor, fechas, precios y existencias; RF-15 diferencia lotes por caducidad; RF-19/RF-23 regulan entradas y recepciones. Ninguno exige que la persona invente un código de lote. RF-06/RF-07, FEFO y alertas RF-16/RF-17 conservan sus cálculos originales. Los permisos de Administrador y Vendedor no cambian.
 
 No se necesita migración: la consulta de solo lectura a information_schema.STATISTICS confirmó en MySQL real uq_lote_producto_codigo, NON_UNIQUE=0, columnas producto_id y codigo, en ese orden. Se conserva ese alcance de unicidad por producto; no se impone una nueva restricción global sobre códigos proporcionados. No se altera la columna NOT NULL ni el CHECK: al persistir, el código interno ya está resuelto y nunca está vacío.
 
-### Códigos internos y protección de reintentos
+<a id="qa-códigos-internos-y-protección-de-reintentos"></a>
+
+##### Códigos internos y protección de reintentos
 
 - Se acepta código omitido, null, vacío o espacios. Un código proporcionado se conserva con el recorte de espacios que ya hacía la validación; tipos incorrectos y más de 60 caracteres se rechazan. Los códigos dados por el usuario siguen sujetos al índice único y generan conflicto 409 si se repiten para el producto.
 - Dentro de la transacción se genera MC- seguido de randomUUID de node:crypto. Se evitan colisiones visibles en los lotes bloqueados y se reintenta exclusivamente el INSERT si MySQL devuelve ER_DUP_ENTRY para un código generado. Los intentos son acotados; al agotarlos se devuelve 409 y se revierte toda la transacción. No se regeneran códigos proporcionados ni se repite el incremento de stock para resolver una colisión.
@@ -185,7 +286,9 @@ No se necesita migración: la consulta de solo lectura a information_schema.STAT
 - Contrato API: POST /api/products y POST /api/products/:id/lots aceptan clave de 8–80 caracteres ASCII de letras, números, guion o guion bajo. Cuando se omite el código, esa clave es obligatoria para que el reintento sea seguro. El frontend la añade automáticamente. Se mantiene compatibilidad con clientes anteriores que envían código explícito sin clave; en ellos un duplicado sigue rechazándose, sin añadir stock. La respuesta incluye el código finalmente guardado.
 - Los formularios indican Código de lote (opcional) y explican su generación automática. No se modifican lotes antiguos. El código generado se consulta en la lista de lotes y el historial de recepción existentes.
 
-### Fechas y defecto demostrado de serialización
+<a id="qa-fechas-y-defecto-demostrado-de-serialización"></a>
+
+##### Fechas y defecto demostrado de serialización
 
 Se incorporó date-formatter.js, compartido por inventario, pedidos/recepciones, ventas/cuentas y finanzas. Las fechas de calendario se muestran en es-EC sin convertir su medianoche en un instante del día anterior. Los instantes se presentan en America/Guayaquil, con hora de 24 horas; DATETIME sin sufijo se interpreta como UTC conforme al esquema. Valores desconocidos se muestran como texto, sin ejecutar HTML. Se conserva el escape en las plantillas.
 
@@ -193,7 +296,9 @@ En una consulta de solo lectura se comparó CAST(UTC_TIMESTAMP(6) AS DATETIME(6)
 
 No cambian los cálculos de caducidad, FEFO, filtros SQL ni reportes financieros. Los inputs date y el JSON de escrituras conservan sus formatos técnicos; el formato legible solo se utiliza al presentar datos. Se corrigió también la fecha técnica que aún mostraba la lista de cuentas por cobrar.
 
-### Verificación y limitaciones
+<a id="qa-verificación-y-limitaciones"></a>
+
+##### Verificación y limitaciones
 
 - npm test: 442 pruebas, 442 exitosas, 0 fallidas, 0 omitidas, 0 canceladas y 0 pendientes; salida 0. Última ejecución: 7507.8058 ms. Las 427 anteriores se conservan; se añadieron 15 regresiones.
 - npm audit --omit=dev --json: 0 vulnerabilidades de producción; salida 0. Sin dependencias nuevas.
@@ -205,20 +310,26 @@ No cambian los cálculos de caducidad, FEFO, filtros SQL ni reportes financieros
 - Reiniciar npm start para cargar los servicios y el nuevo archivo permitido por Express; después recargar la página. En un entorno aislado, comprobar alta/entrada/recepción con y sin código, colisión explícita, reintento de misma clave, nombre del lote en pantalla y caducidad en los límites de 5/0/-1 días. No repetir la recepción real del pedido 3.
 - No se realizó inspección visual nueva en navegador. Los criterios de ui-ux-pro-max se aplicaron a etiquetas, instrucciones y consistencia de fechas; el generador Python continúa sin intérprete accesible según la comprobación previa. La adaptación visual debe comprobarse manualmente. Se conservan los demás riesgos de FINAL_QA, incluidos R2, concurrencia real y recuperación.
 
-Archivos de este bloque: backend/app.js, backend/database.js, backend/database.test.cjs, backend/inventory-service.js, backend/inventory-repository.js, backend/order-service.js; backend/inventory.test.cjs, backend/order.test.cjs, backend/inventory-client.test.cjs, backend/order-client.test.cjs, backend/sales-client.test.cjs y backend/finance-client.test.cjs; inventory-client.js, orders-client.js, sales-client.js, finance-client.js, index.html y FINAL_QA.md. Nuevos: backend/lot-code.js, date-formatter.js y backend/date-formatter.test.cjs. Otros cambios de git status son anteriores y se conservaron. Sin cambios de permisos, tablas, migraciones, estilos ni reglas de cálculo de modelo.js.
+Archivos de este bloque: backend/app.js, backend/database.js, backend/database.test.cjs, backend/inventory-service.js, backend/inventory-repository.js, backend/order-service.js; backend/inventory.test.cjs, backend/order.test.cjs, backend/inventory-client.test.cjs, backend/order-client.test.cjs, backend/sales-client.test.cjs y backend/finance-client.test.cjs; inventory-client.js, orders-client.js, sales-client.js, finance-client.js, index.html y [FINAL_QA.md](FINAL_QA.md). Nuevos: backend/lot-code.js, date-formatter.js y backend/date-formatter.test.cjs. Otros cambios de git status son anteriores y se conservaron. Sin cambios de permisos, tablas, migraciones, estilos ni reglas de cálculo de modelo.js.
 
 
-## Auditoría de permisos HTTP
+<a id="qa-auditoría-de-permisos-http"></a>
+
+#### Auditoría de permisos HTTP
 
 Rama comprobada: desarrollo-jose. Se leyó rf.txt completo y se inspeccionaron backend/app.js, auth-service.js, auth-repository.js y todos los servicios/rutas de inventario, pedidos, ventas, finanzas y reportes. Los cambios anteriores se conservaron. No se modificaron permisos ni código de producción en este bloque.
 
-### Autenticación y autorización
+<a id="qa-autenticación-y-autorización"></a>
+
+##### Autenticación y autorización
 
 Todos los routers de negocio están montados después de auth.authenticate en /api. La cookie se valida por formato y digest contra el repositorio de sesiones, que consulta al usuario actual; cuentas inactivas y sesiones revocadas/expiradas se rechazan. El rol no procede del cuerpo ni de cabeceras X-Role/X-User-Id. Los servicios exigen el rol en el backend. Las escrituras críticas vuelven a consultar/bloquear al actor dentro de sus transacciones. La desactivación de usuarios revoca sus sesiones mediante auth-repository; la suite de autenticación conserva sus pruebas de gestión de cuentas y revocación.
 
 Las pruebas nuevas usan crearApp y los middleware/servicios reales en servidores HTTP locales con puerto aleatorio. Solo las sesiones y repositorios se simulan. Se envían Origin, JSON y CSRF válidos para que los 403 administrativos provengan de autorización por rol. Los repositorios trampa cuentan accesos y fallan si una ruta denegada intenta consultar o escribir datos de negocio: todos los casos de denegación terminaron con contador cero. No se usa la cuenta vendedor-qa ni sus credenciales.
 
-### Rutas administrativas comprobadas: Vendedor 403
+<a id="qa-rutas-administrativas-comprobadas-vendedor-403"></a>
+
+##### Rutas administrativas comprobadas: Vendedor 403
 
 Todas las rutas de la tabla llevan prefijo /api. Son 31 solicitudes de matriz, incluidas las variantes de modificación/activación/desactivación que comparten endpoint.
 
@@ -243,7 +354,9 @@ Todas las rutas de la tabla llevan prefijo /api. Son 31 solicitudes de matriz, i
 
 RF-03, RF-08, RF-18 y RF-21/RF-24 establecen explícitamente responsabilidades de Administrador y Vendedor. RF-14/RF-19/RF-20, cancelación de pedidos y RF-25 a RF-36 no detallan por sí solos toda la matriz por rol. Las restricciones adicionales de productos, entrada libre, proveedores, finanzas/reportes y cancelación corresponden a la política actual documentada y al contexto autorizado de esta auditoría; no se presentan como frases literales añadidas a rf.txt ni se ampliaron/redujeron permisos.
 
-### Operaciones permitidas comprobadas: Vendedor
+<a id="qa-operaciones-permitidas-comprobadas-vendedor"></a>
+
+##### Operaciones permitidas comprobadas: Vendedor
 
 | Operación | Método/ruta / evidencia aislada | Resultado |
 |---|---|---|
@@ -259,7 +372,9 @@ RF-03, RF-08, RF-18 y RF-21/RF-24 establecen explícitamente responsabilidades d
 
 El flujo HTTP nuevo de ventas usa repositorio en memoria y lógica real: venta ficticia de 4.00, stock de lote 10 a 8, abono 1.00, saldo 3.00, un pago y un movimiento de caja. No basta con comprobar que la API no devolvió 403: se contrastan los efectos simulados. Los flujos HTTP existentes de inventario y pedidos se ampliaron para consultar con Vendedor también alertas, catálogos, historial y lista de pedidos.
 
-### Ausencia de sesión, desactivación y rutas alternativas
+<a id="qa-ausencia-de-sesión-desactivación-y-rutas-alternativas"></a>
+
+##### Ausencia de sesión, desactivación y rutas alternativas
 
 - Sin cookie: las 31 solicitudes administrativas y otras 16 operativas/autenticadas devuelven 401. El mismo conjunto devuelve 401 cuando el repositorio de sesiones devuelve una cuenta desactivada; no hay accesos a repositorios de negocio ni actualización de actividad.
 - Con la misma cookie simulada: GET /auth/me primero devuelve 200; tras cambiar activo a false en memoria, GET /auth/me y POST /clientes devuelven 401. Se comprueban nuevas solicitudes después de desactivar la cuenta, sin fabricar una sesión nueva.
@@ -267,7 +382,9 @@ El flujo HTTP nuevo de ventas usa repositorio en memoria y lógica real: venta f
 - No se encontró router de negocio montado antes de autenticación ni un endpoint alternativo de administración. GET /api/health es público intencionalmente; POST /api/auth/login debe ser accesible sin sesión. HTML/JS/CSS públicos no conceden permisos. Los archivos .env, SQL y backend no están publicados por el listado estático; se conservan sus pruebas anteriores. No existen endpoints HTTP de respaldos ni restauración.
 - El 401 descrito corresponde a solicitudes correctamente formadas a rutas protegidas. JSON malformado, Origin incorrecto o tipo de contenido inválido pueden ser rechazados antes con 400/403/415; esto no concede acceso. Las comprobaciones de rol tampoco prometen un 403 para cualquier cuerpo inválido: algunos servicios validan campos antes de autorizar la operación administrativa.
 
-### Resultado y riesgos pendientes
+<a id="qa-resultado-y-riesgos-pendientes"></a>
+
+##### Resultado y riesgos pendientes
 
 npm test: 573 pruebas, 573 exitosas, 0 fallidas, 0 omitidas, 0 canceladas y 0 pendientes; salida 0, 9378.2541 ms. Se conservan las 442 anteriores. permissions-http.test.cjs aporta 125 combinaciones por ruta (31 Vendedor + 47 anónimo + 47 desactivado), tres contenedores y dos pruebas adicionales: 130 entradas en node:test. Se añade una prueba HTTP del flujo permitido de ventas/abonos: 131 entradas nuevas en total. No confundir el conteo de pruebas/contenedores con 131 endpoints distintos.
 
@@ -275,10 +392,12 @@ npm audit --omit=dev --json: 0 vulnerabilidades de producción, salida 0. git di
 
 No se detectó un defecto de autorización reproducible en las rutas evaluadas. Se añadieron regresiones, sin cambiar los permisos. La auditoría es de Express real con persistencia simulada: no revalida configuración de proxy/HTTPS/despliegue ni permisos MySQL reales de vendedor-qa. Queda pendiente la revocación concurrente con solicitudes ya en curso y dos conexiones MySQL, además de los riesgos de R2, persistencia e idempotencia ya descritos. Las lecturas aceptadas antes de una desactivación no se consideran canceladas retroactivamente por esta prueba. Toda ruta futura debe incorporarse a esta matriz y aplicar autorización en el servicio.
 
-Archivos de este bloque: nuevo backend/permissions-http.test.cjs; modificados backend/sales.test.cjs, backend/inventory.test.cjs, backend/order.test.cjs y FINAL_QA.md. No se conectó a MySQL, no se usaron credenciales personales, no se crearon sesiones reales ni se ejecutaron migraciones u operaciones administrativas reales. Sin cambios de rama, commits o push.
+Archivos de este bloque: nuevo backend/permissions-http.test.cjs; modificados backend/sales.test.cjs, backend/inventory.test.cjs, backend/order.test.cjs y [FINAL_QA.md](FINAL_QA.md). No se conectó a MySQL, no se usaron credenciales personales, no se crearon sesiones reales ni se ejecutaron migraciones u operaciones administrativas reales. Sin cambios de rama, commits o push.
 
 
-## Revisión final de Git antes del commit de correcciones
+<a id="qa-revisión-final-de-git-antes-del-commit-de-correcciones"></a>
+
+#### Revisión final de Git antes del commit de correcciones
 
 Rama desarrollo-jose y HEAD inicial abf1182 comprobados; seis commits locales por delante de origin/desarrollo-jose según la referencia local (sin fetch ni push). Se revisaron los 28 archivos modificados y seis nuevos candidatos. Se añadió output/ a .gitignore para excluir de forma permanente los siete PDF ficticios generados. El commit previsto incluye 35 archivos: código, pruebas, documentación y esta regla de exclusión; no incluye PDFs ni archivos temporales.
 
@@ -288,9 +407,11 @@ El escaneo de candidatos no detectó coincidencias con secretos locales ni patro
 
 Verificación repetida: npm test, 573 exitosas, 0 fallidas, 0 omitidas, 0 canceladas, salida 0 (6708.0595 ms); npm audit --omit=dev --json, 0 vulnerabilidades de producción, salida 0; git diff --check sin errores, con avisos LF/CRLF habituales. No se ejecutaron operaciones en MySQL ni migraciones. No se cambia de rama, no se hace merge ni push. Los riesgos funcionales y validaciones reales pendientes de las secciones anteriores no se consideran resueltos por este commit.
 
-## Revisión coordinada de interfaz — 18 de noviembre de 2026
+<a id="qa-revisión-coordinada-de-interfaz--18-de-noviembre-de-2026"></a>
 
-Rama desarrollo-jose y cambios pendientes conservados. Línea base ejecutada: 607/607. El alcance autorizado de implementación se detiene en componentes compartidos e Inventario/Pedidos. La matriz global se presentó antes de editar y queda detallada en UI_UX.md. No se encontraron las ocho capturas ni archivos identificables de Stitch; esta revisión es de código y pruebas aisladas. No se juzga la longitud de una captura como defecto.
+#### Revisión coordinada de interfaz — 18 de noviembre de 2026
+
+Rama desarrollo-jose y cambios pendientes conservados. Línea base ejecutada: 607/607. El alcance autorizado de implementación se detiene en componentes compartidos e Inventario/Pedidos. La matriz global se presentó antes de editar y queda detallada en [UI_UX.md](UI_UX.md). No se encontraron las ocho capturas ni archivos identificables de Stitch; esta revisión es de código y pruebas aisladas. No se juzga la longitud de una captura como defecto.
 
 | ID / criticidad | Clasificación y evidencia | Estado |
 |---|---|---|
@@ -303,7 +424,9 @@ Rama desarrollo-jose y cambios pendientes conservados. Línea base ejecutada: 60
 | UI-07 Media, pendiente | Diseño: Cuentas requiere separar selector/historial y jerarquía de deuda; Reportes necesita estado inicial/carga y fecha legible; Usuarios conserva estilo de pago para Desactivar. | Siguiente bloque, después de revisión visual. No se modifican sus clientes ni HTML aquí. |
 | UI-08 Alta para aceptación, pendiente | No hay inspección renderizada; la conexión nativa al navegador falló (os error 2). | No se certifican responsividad, ausencia de desbordamientos/solapamientos, foco real ni legibilidad visual. |
 
-### Evidencia del bloque
+<a id="qa-evidencia-del-bloque"></a>
+
+##### Evidencia del bloque
 
 - npm test: **619 pruebas, 619 exitosas, 0 fallidas, 0 omitidas, 0 canceladas y 0 pendientes**, salida 0, 6780.8045 ms. Doce nuevas sobre las 607 conservadas: tres de Inventario, cinco de Pedidos, una de enlace de eventos y tres de preservación/estructura visual.
 - npm audit --omit=dev --json: **0 vulnerabilidades de producción**, salida 0. Primera consulta bloqueada en entorno restringido; repetición autorizada al registro exitosa. Sin instalaciones.
@@ -313,20 +436,26 @@ Rama desarrollo-jose y cambios pendientes conservados. Línea base ejecutada: 60
 - Se mantienen los validadores existentes de cantidades, precios, fechas, lote opcional y recepción vacía, así como permisos de Administrador/Vendedor, claves de lotes/recepciones, descarte de respuestas obsoletas y fechas ecuatorianas. No se añade obligatoriedad indiscriminada a campos opcionales ni se reinterpretan los RF.
 - Backend, API, consultas SQL, datos y reglas financieras/inventario no se modifican. Pruebas con Node/VM y persistencia simulada; no hubo escrituras MySQL, migraciones, respaldos/R2, cambio de rama, commits, merges ni push.
 
-Archivos de esta iteración: index.html, estilos.css, inventory-client.js, orders-client.js; backend/inventory-client.test.cjs, backend/order-client.test.cjs, backend/frontend-integration.test.cjs, backend/ui-contract.test.cjs, backend/sales-layout.test.cjs, backend/finance-layout.test.cjs; nuevo backend/shared-ui.test.cjs; UI_UX.md y FINAL_QA.md. Los demás cambios pendientes pertenecen a iteraciones anteriores y se conservan.
+Archivos de esta iteración: index.html, estilos.css, inventory-client.js, orders-client.js; backend/inventory-client.test.cjs, backend/order-client.test.cjs, backend/frontend-integration.test.cjs, backend/ui-contract.test.cjs, backend/sales-layout.test.cjs, backend/finance-layout.test.cjs; nuevo backend/shared-ui.test.cjs; [UI_UX.md](UI_UX.md) y [FINAL_QA.md](FINAL_QA.md). Los demás cambios pendientes pertenecen a iteraciones anteriores y se conservan.
 
-### Validación manual antes de continuar
+<a id="qa-validación-manual-antes-de-continuar"></a>
+
+##### Validación manual antes de continuar
 
 Detener el rediseño aquí para revisión de este bloque. Usar un entorno de prueba, no los datos del negocio. Comprobar 375/768/1024/1440px y zoom 200%, teclado y lectura de mensajes; tablas con scroll local; alertas/nombres/códigos largos; todas las secciones de Inventario en flujo vertical; ayuda sin pedido seleccionado; selección exitosa/fallida y recepción parcial/completa con estados correctos. Verificar límites de formularios y ausencia de solapamientos sin considerar la longitud de la página un defecto.
 
 Con Administrador y Vendedor revisar los mismos permisos; con API simulada/base aislada probar errores HTTP/red, doble clic, respuesta perdida y logout con consultas pendientes. Reconciliar historial antes de repetir ajustes o pedidos cuya respuesta se perdió. No se afirma un nuevo ensayo MySQL real ni aceptación visual de las ocho pantallas. Continúan pendientes P-01 a P-08 según su alcance: especialmente R2, idempotencia persistente de ajustes/creación de pedidos, concurrencia y persistencia tras commit/reinicio. Cuentas/Reportes/Usuarios quedan para el bloque posterior y no se declara concluida la revisión visual global.
 
 
-## Auditoría funcional y de usabilidad — 18 de noviembre de 2026
+<a id="qa-auditoría-funcional-y-de-usabilidad--18-de-noviembre-de-2026"></a>
 
-Rama desarrollo-jose. Línea base ejecutada: 619 exitosas, 0 fallidas/omitidas (7079.4744 ms). Cambios pendientes conservados. Se aplicaron senior-qa, ui-ux-pro-max y senior-backend mediante inspección y Node/VM/HTTP aislado. Se leyeron rf.txt, UI_UX.md y esta evidencia histórica. El diseño aprobado se conserva: no se editan index.html ni estilos.css. No se realizaron escrituras MySQL, migraciones, respaldos R2, cambios de rama, commits, merges ni push.
+#### Auditoría funcional y de usabilidad — 18 de noviembre de 2026
 
-### Inventario de controles y eventos de los ocho módulos
+Rama desarrollo-jose. Línea base ejecutada: 619 exitosas, 0 fallidas/omitidas (7079.4744 ms). Cambios pendientes conservados. Se aplicaron senior-qa, ui-ux-pro-max y senior-backend mediante inspección y Node/VM/HTTP aislado. Se leyeron rf.txt, [UI_UX.md](UI_UX.md) y esta evidencia histórica. El diseño aprobado se conserva: no se editan index.html ni estilos.css. No se realizaron escrituras MySQL, migraciones, respaldos R2, cambios de rama, commits, merges ni push.
+
+<a id="qa-inventario-de-controles-y-eventos-de-los-ocho-módulos"></a>
+
+##### Inventario de controles y eventos de los ocho módulos
 
 Inventario extraído del HTML actual. Los controles sin ID se identifican por su evento, sin renombrarlos. La matriz siguiente añade las acciones dinámicas y sus validaciones. Los valores del formulario y las credenciales no forman parte del inventario.
 
@@ -345,7 +474,9 @@ Comunes: ocho botones de navegación con mostrarSeccion, salto al contenido, Sal
 
 Controles dinámicos: recCantidadN, recCodigoN, recFechaN, recCaducidadN y recPrecioN de cada detalle de recepción; Quitar en líneas/carrito; Historial/Editar/Archivar en productos; Ver y recibir/Cancelar en pedidos; Detalle/Modificar/Anular en ventas; Registrar abono/Historial del cliente en cuentas; Editar/Activar/Desactivar en usuarios. Sus datos proceden de API o del borrador en memoria, sin almacenamiento paralelo. Los prompts de edición/motivo y confirmaciones existentes permanecen intactos.
 
-### Matriz de pruebas funcionales
+<a id="qa-matriz-de-pruebas-funcionales"></a>
+
+##### Matriz de pruebas funcionales
 
 A = probado de forma aislada en esta suite (Node/VM o Express con repositorios simulados); P = parcial/pendiente. Una fila A no afirma ensayo MySQL nuevo ni aceptación visual. Los archivos citados están en backend/ salvo app.test.cjs y modelo.test.cjs.
 
@@ -388,7 +519,9 @@ A = probado de forma aislada en esta suite (Node/VM o Express con repositorios s
 | Comunes | Teclado, foco, etiquetas y responsividad | Orden coherente, controles accesibles, sin desbordamientos ni solapamientos | frontend-integration.test.cjs, ui-contract.test.cjs, *layout.test.cjs | P | Solo atributos, CSS y llamadas de foco simuladas; navegador no disponible |
 | Respaldos (sin controles en los ocho módulos) | Estado, ejecución y programación CLI | RF-37/38 privados, cifrado y exclusión; desactivados sin autorización | backup.test.cjs | A simulado; P real | No se ejecutan CLI real, R2 ni restauraciones |
 
-### Hallazgos reproducidos y correcciones
+<a id="qa-hallazgos-reproducidos-y-correcciones"></a>
+
+##### Hallazgos reproducidos y correcciones
 
 Primero se añadieron siete regresiones que fallaron contra el código anterior: 46 pruebas del subconjunto, 39 exitosas y 7 fallidas, sin canceladas/omitidas. Después pasan todas. Se añadieron casos complementarios de sesión, carga y preservación: quince pruebas nuevas en total. No se cambiaron reglas del servidor para hacerlas pasar.
 
@@ -405,7 +538,9 @@ Primero se añadieron siete regresiones que fallaron contra el código anterior:
 
 No se encontraron defectos críticos reproducidos en los escenarios auditados. Esto no demuestra ausencia total de defectos. Las propuestas previas de reorganización de Cuentas, fecha técnica UTC en Reportes, color de Desactivar y sustitución de prompts se consideran mejoras opcionales: el usuario aprobó el diseño y no se aplican aquí.
 
-### Resultado final y alcance real
+<a id="qa-resultado-final-y-alcance-real"></a>
+
+##### Resultado final y alcance real
 
 - npm test: **634 pruebas, 634 exitosas, 0 fallidas, 0 omitidas, 0 canceladas y 0 pendientes**, salida 0, duración 6557.7555 ms. Se conservan las 619 de la línea base.
 - npm audit --omit=dev --json: **0 vulnerabilidades de producción**, salida 0. La consulta inicial falló por acceso al registro dentro del entorno restringido; se repitió autorizada con éxito. Sin instalaciones.
@@ -415,9 +550,11 @@ No se encontraron defectos críticos reproducidos en los escenarios auditados. E
 - La suite conserva HTTP 401 para anónimo/desactivado, 403 para Vendedor en rutas administrativas y recorridos operativos permitidos. Los permisos y el bloqueo de Superusuario en producción siguen siendo del backend; no se cambian con esta auditoría.
 - No se volvió a ejecutar la integración con MySQL real: los ensayos satisfactorios previos de RF-01 a RF-36 proceden del contexto del usuario y siguen separados de estas simulaciones. No se usaron credenciales personales.
 
-Archivos de esta iteración: auth-client.js, orders-client.js y reports-client.js; backend/auth-client.test.cjs, backend/order-client.test.cjs, backend/reports-client.test.cjs y backend/frontend-integration.test.cjs; nuevo backend/approved-design.test.cjs; FINAL_QA.md y una nota relevante de usabilidad en UI_UX.md. Los demás cambios pendientes son anteriores y se conservan. No se modifica backend de negocio, app.js, modelo.js, rf.txt, migraciones, dependencias, HTML ni CSS.
+Archivos de esta iteración: auth-client.js, orders-client.js y reports-client.js; backend/auth-client.test.cjs, backend/order-client.test.cjs, backend/reports-client.test.cjs y backend/frontend-integration.test.cjs; nuevo backend/approved-design.test.cjs; [FINAL_QA.md](FINAL_QA.md) y una nota relevante de usabilidad en [UI_UX.md](UI_UX.md). Los demás cambios pendientes son anteriores y se conservan. No se modifica backend de negocio, app.js, modelo.js, rf.txt, migraciones, dependencias, HTML ni CSS.
 
-### Clasificación de los 38 RF
+<a id="qa-clasificación-de-los-38-rf"></a>
+
+##### Clasificación de los 38 RF
 
 Son ejes separados: implementado no equivale a aceptación de producción; probado indica evidencia aislada vigente y pendiente indica lo que falta fuera de esa evidencia. El texto literal oficial se mantiene en rf.txt y en la matriz histórica de este documento, sin cambios. M = navegador/accesibilidad; C = concurrencia con conexiones independientes; P = persistencia tras commit/reinicio; D = aceptación visual/volumen PDF; R = R2 privado, programación operativa y recuperación aislada. C/P se aplican a los flujos compartidos correspondientes, no implican que cada consulta requiera una carrera propia.
 
@@ -462,7 +599,9 @@ Son ejes separados: implementado no equivale a aceptación de producción; proba
 | RF-37 | Respaldo R2 | Sí | Simulado: backup.test.cjs | R, C/P del trabajador; sin ensayo real |
 | RF-38 | Programación quincenal | Sí | Simulado: backup.test.cjs | R, C/P del trabajador; sin ensayo real |
 
-### Pendientes, mejoras opcionales y procedimiento de aceptación
+<a id="qa-pendientes-mejoras-opcionales-y-procedimiento-de-aceptación"></a>
+
+##### Pendientes, mejoras opcionales y procedimiento de aceptación
 
 1. **Navegador real pendiente.** La comprobación de disponibilidad devolvió Computer Use native pipe is unavailable (os error 2). No se ejecutó una prueba visual, de móvil, teclado real, lector de pantalla ni ausencia de solapamientos. El diseño está aprobado por el usuario; esa aprobación no se presenta como una comprobación nueva del agente. Python continúa indisponible para auxiliares de ui-ux-pro-max; no se instalaron herramientas ni se generó otro sistema visual.
 2. **Recorrido visual exacto.** En entorno aislado revisar 375/768/1024/1440px, zoom 200%, Tab/Shift+Tab/Enter/Espacio, foco de login/errores, etiquetas, desplazamiento local de tablas, botones bloqueados, mensajes en espera y recuperación de conexión. Navegar los ocho módulos con ambos roles, comprobar cada acción de la matriz, campos vacíos/límites y filtros inclusivos/invertidos. No usar el negocio para escrituras de prueba.
@@ -475,22 +614,28 @@ Son ejes separados: implementado no equivale a aceptación de producción; proba
 
 Dictamen: suite aislada correcta y defectos reproducidos corregidos, con diseño preservado. RF-01 a RF-36 conservan implementación, pruebas aisladas y los ensayos previos informados; no se certifica de nuevo MySQL ni producción. RF-37/38 requieren validación real autorizada. Los pendientes M/C/P/D/R impiden declarar aceptación técnica integral de producción únicamente con el conteo de pruebas.
 
-## Preparación del cierre local — 18 de noviembre de 2026
+<a id="qa-preparación-del-cierre-local--18-de-noviembre-de-2026"></a>
+
+#### Preparación del cierre local — 18 de noviembre de 2026
 
 Rama desarrollo-jose confirmada, con los cambios acumulados de código, pruebas y documentación conservados. Se revisan 27 archivos candidatos, incluida la ampliación de .gitignore a .auth-* para excluir cualquier auxiliar local de ese prefijo. .env/.env.*, output/, PDF de prueba, credenciales y respaldos permanecen excluidos; no hay archivos sensibles de esas rutas versionados. .env.example conserva vacíos sus campos de usuario/contraseña MySQL y claves/cuenta/bucket R2; Superusuario de desarrollo, respaldo y confirmación de bucket privado permanecen deshabilitados en el ejemplo.
 
 El escaneo completo de los candidatos no encontró coincidencias con el secreto local comparado ni patrones de clave privada, token conocido o URL con credenciales. Los literales aparentes corresponden a credenciales/tokens ficticios de pruebas y claves de columnas, sin credenciales personales detectadas. Es una revisión acotada, no una garantía de detección de cualquier secreto arbitrario. No se imprimieron valores sensibles.
 
-Verificación para cierre: npm test, **634 exitosas, 0 fallidas, 0 omitidas, 0 canceladas y 0 pendientes**, salida 0 (6745.6426 ms); npm audit --omit=dev --json, **0 vulnerabilidades de producción**, salida 0 tras consultar el registro fuera del entorno restringido; git diff --check sin errores. rf.txt está versionado e idéntico a HEAD; app.js, modelo.js, migraciones y dependencias no tienen cambios. UI_UX.md y este documento se incluyen con sus decisiones, matrices y limitaciones. El área de preparación estaba vacía antes del cierre y se utilizará una lista explícita de candidatos revisados.
+Verificación para cierre: npm test, **634 exitosas, 0 fallidas, 0 omitidas, 0 canceladas y 0 pendientes**, salida 0 (6745.6426 ms); npm audit --omit=dev --json, **0 vulnerabilidades de producción**, salida 0 tras consultar el registro fuera del entorno restringido; git diff --check sin errores. rf.txt está versionado e idéntico a HEAD; app.js, modelo.js, migraciones y dependencias no tienen cambios. [UI_UX.md](UI_UX.md) y este documento se incluyen con sus decisiones, matrices y limitaciones. El área de preparación estaba vacía antes del cierre y se utilizará una lista explícita de candidatos revisados.
 
 Este cierre solo autoriza un commit LOCAL. No cambia el diseño aprobado ni constituye autorización de push, merge, migraciones, datos MySQL o R2. Las verificaciones manuales, de concurrencia, persistencia y respaldo real descritas arriba siguen pendientes para publicación/aceptación posterior.
 
 
-## Archivar/Reactivar, recarga y navegación — 18 de noviembre de 2026
+<a id="qa-archivarreactivar-recarga-y-navegación--18-de-noviembre-de-2026"></a>
+
+#### Archivar/Reactivar, recarga y navegación — 18 de noviembre de 2026
 
 Rama desarrollo-jose; HEAD inicial c48d31a y árbol limpio. Línea base ejecutada: 634 pruebas exitosas, 0 fallidas/omitidas (6582.6805 ms). Se utilizaron senior-qa y senior-backend con pruebas Node/VM y HTTP de Express, exclusivamente con persistencia simulada. No se ejecutó una operación contra MySQL real. La eliminación definitiva queda descartada; se mantiene activo/inactivo y la infraestructura existente.
 
-### Diagnóstico y evidencia
+<a id="qa-diagnóstico-y-evidencia"></a>
+
+##### Diagnóstico y evidencia
 
 | Comportamiento | Evidencia comprobada | Corrección / límite |
 |---|---|---|
@@ -504,7 +649,9 @@ Rama desarrollo-jose; HEAD inicial c48d31a y árbol limpio. Línea base ejecutad
 
 El GET de inventario ya trae todos los productos; no se añadió filtro, pantalla ni ruta nueva para consultar archivados. Se conservan lotes, historial y referencias, y los selectores operativos siguen usando productos activos. No se ejecutan DELETE ni se cambia SQL, esquema, reglas de stock, permisos, RF o finanzas. Los cambios de estado usan la ficha y estado booleano existentes. HTTP simulado confirma 409 con stock positivo/negativo, 200 al archivar con cero, 403 al reactivar como Vendedor y 200 como Administrador; el historial y lotes permanecen.
 
-### Persistencia de navegación y limpieza
+<a id="qa-persistencia-de-navegación-y-limpieza"></a>
+
+##### Persistencia de navegación y limpieza
 
 - Única clave nueva: micro-carmita-vista en sessionStorage. Contiene solo usuarioId (identificador interno, no credencial) y seccion. No contiene nombre, rol, contraseña, token, cookie, carrito ni datos de negocio; no se usa localStorage.
 - Se valida lista cerrada de ocho módulos, existencia en el DOM, identidad del usuario y tienePermiso derivado del perfil recibido del backend. El almacenamiento no concede permisos: Express conserva su autorización real. Valor inválido, módulo ausente/restringido o identidad distinta llevan a Inicio.
@@ -513,7 +660,9 @@ El GET de inventario ya trae todos los productos; no se añadió filtro, pantall
 - Se desaconseja restauración automática con autocomplete=off en esos campos de creación no sensibles; el campo password de usuario conserva su autocomplete original. No se modifica el autocompletado del login. Los gestores de contraseñas/extensiones pueden ignorar indicaciones del navegador: no se promete impedir todo autocompletado.
 - No hay limpieza al cambiar de módulo: borradores/edición en curso permanecen durante esa navegación. Una recarga nueva descarta los estados temporales de JavaScript como antes y ahora limpia también los campos. pageshow con persisted=true (retorno por bfcache, no F5) no borra una edición.
 
-### Resultado y regresiones
+<a id="qa-resultado-y-regresiones"></a>
+
+##### Resultado y regresiones
 
 npm test: **652 pruebas, 652 exitosas, 0 fallidas, 0 omitidas, 0 canceladas y 0 pendientes**, salida 0; duración 6564.9671 ms. Se conservan las 634 previas y se agregan 18: ocho de archivo/reactivación en cliente, una de servicio, ocho de estado de página y una integrada de conservación de registros al recargar. La prueba HTTP existente amplía los casos de archivo y reactivación, conservando su caso de stock negativo.
 
@@ -523,9 +672,11 @@ Una ejecución completa intermedia detectó un fixture de descarga PDF incomplet
 
 npm audit --omit=dev --json: **0 vulnerabilidades de producción**, salida 0, después de repetir fuera del entorno restringido la consulta al registro. git diff --check: sin errores; avisos habituales LF/CRLF. No se instalaron dependencias.
 
-Archivos de esta iteración: auth-client.js, inventory-client.js; backend/auth-client.test.cjs, backend/inventory-client.test.cjs, backend/inventory.test.cjs, backend/frontend-integration.test.cjs, backend/report-download.test.cjs; nuevo backend/page-state.test.cjs; FINAL_QA.md y UI_UX.md. index.html, estilos.css, app.js, modelo.js, backend de negocio, SQL, migraciones, rf.txt y dependencias quedan sin cambios. Las pruebas de preservación del diseño y de los 161 controles originales siguen pasando.
+Archivos de esta iteración: auth-client.js, inventory-client.js; backend/auth-client.test.cjs, backend/inventory-client.test.cjs, backend/inventory.test.cjs, backend/frontend-integration.test.cjs, backend/report-download.test.cjs; nuevo backend/page-state.test.cjs; [FINAL_QA.md](FINAL_QA.md) y [UI_UX.md](UI_UX.md). index.html, estilos.css, app.js, modelo.js, backend de negocio, SQL, migraciones, rf.txt y dependencias quedan sin cambios. Las pruebas de preservación del diseño y de los 161 controles originales siguen pasando.
 
-### Comprobaciones manuales pendientes
+<a id="qa-comprobaciones-manuales-pendientes"></a>
+
+##### Comprobaciones manuales pendientes
 
 La conexión nativa al navegador devolvió pipe no disponible (os error 2). No se inspeccionó el botón en el navegador del usuario, no se capturó su petición real ni se ejecutaron F5/Ctrl+F5, autocompletado, password manager o bfcache reales. La simulación de eventos no certifica el orden de restauración de campos en cada navegador.
 
@@ -534,11 +685,15 @@ En base de prueba, comprobar: (1) producto con stock distinto de cero muestra la
 El bloqueo de botón no da idempotencia durable entre recargas; ante una respuesta PATCH perdida consultar el estado antes de repetir. Las pruebas no revalidan MySQL real ni eliminan los pendientes anteriores de concurrencia, persistencia tras commit/reinicio y R2. No hubo migraciones, operaciones MySQL, respaldos R2, commits, merges ni push.
 
 
-## Traslado de Gestión de clientes a Ventas — 19 de noviembre de 2026
+<a id="qa-traslado-de-gestión-de-clientes-a-ventas--19-de-noviembre-de-2026"></a>
+
+#### Traslado de Gestión de clientes a Ventas — 19 de noviembre de 2026
 
 Rama desarrollo-jose confirmada. Se conservan todos los cambios pendientes del bloque Archivar/Reactivar, recarga y sección activa, que el usuario informa verificados manualmente. Línea base ejecutada: 652 pruebas exitosas, 0 fallidas/omitidas (7066.3436 ms). No se modifica la base de datos ni el backend.
 
-### Controles, integración y permisos
+<a id="qa-controles-integración-y-permisos"></a>
+
+##### Controles, integración y permisos
 
 El bloque único sale de Inventario y se inserta en Ventas después de terminal/carrito y antes del historial. Campos originales: clientesNombre, clientesIdentificacion, clientesTelefono, clientesDireccion; listado listaClientes. Se mantienen etiquetas, maxlength y onclick MicroCarmitaInventario.contacto('clientes'). El método público delega al registro de Ventas, sin duplicar lógica; el atributo de bloqueo pasa a data-ventas-control. Se añaden solo + Nuevo cliente y el mensaje accesible estadoClientes. Se preservan los 161 controles originales y su huella de IDs/eventos/atributos.
 
@@ -546,7 +701,9 @@ Se revisaron inventory-client.js, sales-client.js, auth-client.js y navegación:
 
 GET/POST /api/clientes se reutilizan sin modificar rutas, servicio o repositorio. crearContacto conserva campos/validaciones y escritura autorizada para clientes de Administrador/Vendedor; proveedores continúa administrativo como antes. No se introduce permiso/rol, endpoint, tabla, migración o dependencia. Se mantienen fiado con cliente y Consumidor final solo contado.
 
-### Matriz del traslado
+<a id="qa-matriz-del-traslado"></a>
+
+##### Matriz del traslado
 
 | Acción / caso | Resultado esperado | Evidencia | Resultado |
 |---|---|---|---|
@@ -562,15 +719,19 @@ GET/POST /api/clientes se reutilizan sin modificar rutas, servicio o repositorio
 | Recarga / sesión restaurada | GET de la misma lista para selector y listado, sin visita previa a Inventario | frontend-integration.test.cjs y page-state.test.cjs | Aislado correcto; F5 real pendiente |
 | Conservación de operación | Carrito/cantidades/fiado intactos y sin escrituras locales | sales-client.test.cjs, frontend-integration.test.cjs | Aislado correcto |
 
-### Resultado final
+<a id="qa-resultado-final"></a>
+
+##### Resultado final
 
 npm test: **665 pruebas, 665 exitosas, 0 fallidas, 0 omitidas, 0 canceladas y 0 pendientes**, salida 0, duración 6782.6422 ms. Se conservan las 652 previas y se añaden trece (ocho del cliente de ventas, tres de estructura/contrato, dos integradas). npm audit --omit=dev --json: **0 vulnerabilidades de producción**, salida 0, tras repetir autorizada la consulta al registro que falló dentro del entorno restringido. git diff --check: sin errores; avisos habituales LF/CRLF.
 
 Las pruebas de huellas de presentación se delimitan al traslado autorizado; no se reemplaza la huella original de controles para admitir pérdidas. Se protege íntegro el HTML fuera de Ventas/Inventario, incluidos los otros seis módulos, el historial de ventas y el CSS previo; solo se añade al final el estilo del selector/acceso rápido. Los casos de Archivar/Reactivar y navegación/recarga anteriores siguen pasando.
 
-Archivos de esta iteración: index.html, estilos.css, inventory-client.js, sales-client.js, auth-client.js (selector de limpieza); backend/sales-client.test.cjs, backend/frontend-integration.test.cjs, backend/sales-layout.test.cjs, backend/shared-ui.test.cjs, backend/ui-contract.test.cjs, backend/approved-design.test.cjs; nuevo backend/customer-placement.test.cjs; UI_UX.md, SALES.md, INVENTORY.md y FINAL_QA.md. Otros archivos pendientes de la corrección anterior se conservan sin cambios adicionales en esta iteración.
+Archivos de esta iteración: index.html, estilos.css, inventory-client.js, sales-client.js, auth-client.js (selector de limpieza); backend/sales-client.test.cjs, backend/frontend-integration.test.cjs, backend/sales-layout.test.cjs, backend/shared-ui.test.cjs, backend/ui-contract.test.cjs, backend/approved-design.test.cjs; nuevo backend/customer-placement.test.cjs; [UI_UX.md](UI_UX.md), [SALES.md](MANUAL_TECNICO.md#ventas), [INVENTORY.md](MANUAL_TECNICO.md#inventario) y [FINAL_QA.md](FINAL_QA.md). Otros archivos pendientes de la corrección anterior se conservan sin cambios adicionales en esta iteración.
 
-### Pendientes manuales y límites
+<a id="qa-pendientes-manuales-y-límites"></a>
+
+##### Pendientes manuales y límites
 
 La conexión nativa al navegador devolvió pipe no disponible (os error 2). No se ejecutó una inspección renderizada nueva ni F5/Ctrl+F5 real; la revisión manual anterior informada por el usuario no se atribuye a este traslado. Revisar 375/768/1024/1440px, nombres largos, selector/botón, foco/teclado, separación carrito-Clientes-historial; ejecutar en base de prueba el alta con ambos roles, selección por ID, conservación de carrito y errores. Confirmar que no quede formulario de clientes en Inventario.
 
@@ -579,11 +740,15 @@ No hay reintento automático del alta de contacto. La exclusión evita envíos s
 Se mantienen los pendientes generales de concurrencia, persistencia tras commit/reinicio y R2 según los cortes anteriores. No se ejecutaron escrituras MySQL reales, migraciones, respaldos, cambios de rama, commits, merges ni push. Se detiene el trabajo para revisión manual de este traslado.
 
 
-## Auditoría de identificadores internos visibles — 19 de noviembre de 2026
+<a id="qa-auditoría-de-identificadores-internos-visibles--19-de-noviembre-de-2026"></a>
+
+#### Auditoría de identificadores internos visibles — 19 de noviembre de 2026
 
 Rama desarrollo-jose confirmada; cambios pendientes conservados. Línea base: 665 pruebas exitosas, 0 fallidas/omitidas, 6851.8951 ms. Se revisaron index.html y los adaptadores activos inventory-client, sales-client, orders-client, finance-client, reports-client, auth-client y dashboard-client. Se contrastaron las referencias con rf.txt: no se exige mostrar la clave primaria de clientes/productos/proveedores como etiqueta. Los números de documentos y las referencias de trazabilidad sí tienen utilidad operativa y se conservan. El prototipo local de app.js no se modifica; sus adaptadores son la interfaz operativa activa.
 
-### Clasificación y cambios de presentación
+<a id="qa-clasificación-y-cambios-de-presentación"></a>
+
+##### Clasificación y cambios de presentación
 
 | Módulo | ID técnico innecesario / cambio | Referencias conservadas y motivo |
 |---|---|---|
@@ -600,7 +765,9 @@ En detalles de ventas, el lote muestra su código si la asignación lo trae o si
 
 Clientes/proveedores con el mismo nombre se distinguen con identificación comercial, teléfono o dirección ya disponibles, no con una clave técnica automática. Si también coinciden o faltan todos esos datos, se muestra Sin datos de contacto distintivos. No es posible garantizar una identidad humana distinta con los mismos datos sin añadir información; no se inventan números de documento ni se renombran registros.
 
-### Integridad y regresiones
+<a id="qa-integridad-y-regresiones"></a>
+
+##### Integridad y regresiones
 
 - Los cambios se hicieron por contexto revisado, sin reemplazos masivos de números o expresiones de ID. El único cambio del HTML estático es el texto de una cabecera. No se cambia estilos.css, ningún value/data-id, ID HTML, callback de fila, parámetro, DTO, endpoint, permiso, tabla, PK/FK, SQL, respuesta o dependencia.
 - La prueba de los 161 controles originales sigue pasando. La normalización de una única cabecera en las huellas de preservación permite Producto ID → Producto y protege todo lo demás, sin aceptar pérdidas de controles.
@@ -611,15 +778,19 @@ Clientes/proveedores con el mismo nombre se distinguen con identificación comer
 
 Resultado final: **npm test 673 pruebas, 673 exitosas, 0 fallidas, 0 omitidas, 0 canceladas y 0 pendientes**, salida 0, 12266.1706 ms. Se conservan las 665 anteriores. **npm audit --omit=dev --json: 0 vulnerabilidades de producción**, salida 0, tras repetir autorizada la consulta al registro fuera del entorno restringido. **git diff --check: sin errores**, con avisos LF/CRLF habituales. No se instalaron dependencias.
 
-Archivos de esta iteración: index.html (una etiqueta), inventory-client.js, sales-client.js, orders-client.js, finance-client.js, reports-client.js; backend/inventory-client.test.cjs, backend/sales-client.test.cjs, backend/order-client.test.cjs, backend/finance-client.test.cjs, backend/reports-client.test.cjs, backend/approved-design.test.cjs, backend/shared-ui.test.cjs; UI_UX.md y FINAL_QA.md. Los cambios acumulados anteriores, incluido el CSS previo del traslado de Clientes y los documentos SALES/INVENTORY, permanecen conservados sin modificaciones adicionales en este bloque.
+Archivos de esta iteración: index.html (una etiqueta), inventory-client.js, sales-client.js, orders-client.js, finance-client.js, reports-client.js; backend/inventory-client.test.cjs, backend/sales-client.test.cjs, backend/order-client.test.cjs, backend/finance-client.test.cjs, backend/reports-client.test.cjs, backend/approved-design.test.cjs, backend/shared-ui.test.cjs; [UI_UX.md](UI_UX.md) y [FINAL_QA.md](FINAL_QA.md). Los cambios acumulados anteriores, incluido el CSS previo del traslado de Clientes y los documentos SALES/INVENTORY, permanecen conservados sin modificaciones adicionales en este bloque.
 
-### Revisión manual pendiente
+<a id="qa-revisión-manual-pendiente"></a>
+
+##### Revisión manual pendiente
 
 La conexión nativa al navegador volvió a fallar (os error 2); no se ejecutó una inspección renderizada ni un ensayo MySQL real. En entorno de prueba revisar nombres únicos/repetidos/largos en listados y selectores, selección correcta con etiquetas de contacto, diálogo de proveedor, borrador de pedidos, cabeceras de Cuentas, códigos de lote disponibles/fallback histórico, movimientos y siete reportes HTML. Comparar con el PDF sin suponer que su presentación cambió. Confirmar nombres/usuarios y números operativos conservados. Los homónimos sin datos distintivos requieren revisión de calidad del catálogo; no resolverlos mostrando automáticamente una PK.
 
 Sin escrituras MySQL reales, migraciones, eliminación definitiva, cambios de rama, commits, merges ni push. Se detiene el trabajo para revisión manual. Continúan los pendientes generales anteriores de concurrencia, persistencia y R2.
 
-## Preparación de la versión para presentación — 19 de noviembre de 2026
+<a id="qa-preparación-de-la-versión-para-presentación--19-de-noviembre-de-2026"></a>
+
+#### Preparación de la versión para presentación — 19 de noviembre de 2026
 
 Presentación prevista: 20 de noviembre de 2026. Se parte del commit c48d31a en desarrollo-jose, conservando las correcciones acumuladas de archivo/reactivación, formularios, sección activa, Clientes en Ventas y etiquetas sin IDs técnicos innecesarios. El usuario autoriza registrar estos cambios y publicar únicamente desarrollo-jose; esta autorización no incluye main, merges, force push, migraciones, datos MySQL ni respaldos R2.
 
@@ -631,11 +802,15 @@ Entorno de verificación: Node.js v26.10.0 y npm 11.11.0. El área de preparaci�
 
 Los resultados anteriores de UI y MySQL se mantienen como evidencias con su alcance original. El usuario ha aprobado el diseño y confirmó manualmente el bloque de archivo/recarga; continúan las verificaciones específicas pendientes que se documentan arriba y no se habilita R2 para la presentación.
 
-## Cierre con base operativa limpia — 19 de noviembre de 2026
+<a id="qa-cierre-con-base-operativa-limpia--19-de-noviembre-de-2026"></a>
+
+#### Cierre con base operativa limpia — 19 de noviembre de 2026
 
 Rama desarrollo-jose confirmada y sincronizada con origin/desarrollo-jose al comenzar, HEAD 3171d5e. Las mejoras funcionales y UX anteriores ya estaban guardadas en ese commit; los nuevos candidatos son esta actualización y los tres artefactos de mantenimiento. No se modifica main ni el diseño aprobado.
 
-### Limpieza previamente autorizada y ejecutada
+<a id="qa-limpieza-previamente-autorizada-y-ejecutada"></a>
+
+##### Limpieza previamente autorizada y ejecutada
 
 El usuario confirmó que todos los datos operativos carecían de valor y autorizó su eliminación permanente sin respaldo. También confirmó una inspección administrativa con root: cero triggers, rutinas y eventos en micro_carmita y cero FK externas. Las consultas de la cuenta DML coincidieron con los metadatos visibles, sin asumir visibilidad administrativa completa.
 
@@ -662,7 +837,9 @@ La intervención anterior eliminó **101 filas de las 17 tablas operativas** med
 | proveedores | 1 | 0 |
 | **Total** | **101** | **0** |
 
-### Verificación de cierre actual: solo lectura
+<a id="qa-verificación-de-cierre-actual-solo-lectura"></a>
+
+##### Verificación de cierre actual: solo lectura
 
 Destino verificado: micro_carmita, MySQL 8.0.46, puerto 3306, 22 tablas InnoDB, claves foráneas activas y versiones 001 a 005. No se volvió a ejecutar la limpieza ni se generaron registros de demostración.
 
@@ -680,13 +857,17 @@ Pruebas actuales: **npm test: 673 exitosas, 0 fallidas, 0 omitidas, 0 canceladas
 
 En la intervención de limpieza se comprobaron Express y el frontend con HTTP 200, inventario sin sesión con HTTP 401, consultas reales vacías de clientes/proveedores/inventario/pedidos/ventas, finanzas en cero y siete reportes sin filas. No se atribuye una prueba visual ni un login real nuevo: crear o tocar sesiones contradiría la conservación solicitada.
 
-### Artefactos y alcance de Git
+<a id="qa-artefactos-y-alcance-de-git"></a>
 
-Se conserva CLEANUP_PLAN.md como historial y resultado; inspeccion_limpieza.sql contiene solo SELECT/SHOW. limpieza_operativa.preview.sql queda como referencia histórica completamente comentada y sin sentencias ejecutables, para impedir otro borrado al abrirlo o ejecutarlo por accidente. No es una migración ni un mecanismo de limpieza reutilizable.
+##### Artefactos y alcance de Git
 
-**MySQL no forma parte del commit Git:** el código no incorpora la base, filas, contraseñas, sesiones ni un volcado. Un clon no reproduce el estado de datos del servidor; requiere configuración local y aplicación administrativa de migraciones conforme a la documentación existente. Se conservan rf.txt, UI_UX.md y los resultados previos. Los respaldos R2 permanecen sin habilitar.
+Se conserva [CLEANUP_PLAN.md](CLEANUP_PLAN.md) como historial y resultado; inspeccion_limpieza.sql contiene solo SELECT/SHOW. limpieza_operativa.preview.sql queda como referencia histórica completamente comentada y sin sentencias ejecutables, para impedir otro borrado al abrirlo o ejecutarlo por accidente. No es una migración ni un mecanismo de limpieza reutilizable.
 
-### Reanudación del cierre y revisión no sensible de sesiones
+**MySQL no forma parte del commit Git:** el código no incorpora la base, filas, contraseñas, sesiones ni un volcado. Un clon no reproduce el estado de datos del servidor; requiere configuración local y aplicación administrativa de migraciones conforme a la documentación existente. Se conservan rf.txt, [UI_UX.md](UI_UX.md) y los resultados previos. Los respaldos R2 permanecen sin habilitar.
+
+<a id="qa-reanudación-del-cierre-y-revisión-no-sensible-de-sesiones"></a>
+
+##### Reanudación del cierre y revisión no sensible de sesiones
 
 El 19 de noviembre de 2026 a las 23:24 UTC se consultaron únicamente metadatos de columnas y las columnas usuario_id, creada_en, ultima_actividad_en y el estado calculado con expiración/revocación. No existe un identificador primario de sesión no sensible: la clave primaria es un hash de token y no se seleccionó. No se consultaron ni imprimieron tokens, hashes de sesión, cookies o credenciales. No se versionan filas ni identificadores de los usuarios inspeccionados.
 
@@ -696,4 +877,101 @@ El conteo de sesiones es dinámico y no forma parte de la limpieza operativa. La
 
 Calidad repetida en esta reanudación: **673 pruebas exitosas, 0 fallidas, 0 omitidas, 0 canceladas y 0 pendientes**, salida 0, duración 7574.3084 ms. **npm audit --omit=dev --json: 0 vulnerabilidades de producción**, salida 0 tras repetir con acceso autorizado al registro el intento restringido. No se ejecutaron operaciones de escritura en MySQL, migraciones ni R2. No se realizaron nuevas pruebas visuales ni login.
 
-**Estado del cierre: habilitado para commit y publicación exclusivamente en desarrollo-jose**, sujeto a revisión final de secretos, archivos preparados y formato. Se conservan solo cuatro candidatos: FINAL_QA.md, CLEANUP_PLAN.md, backend/maintenance/inspeccion_limpieza.sql y backend/maintenance/limpieza_operativa.preview.sql. Este último es completamente inerte (todas sus líneas comentadas); el otro SQL permite únicamente lectura. La comprobación de publicación y hash se realiza con Git después del commit; no se atribuye éxito de push antes de obtenerlo.
+**Estado del cierre: habilitado para commit y publicación exclusivamente en desarrollo-jose**, sujeto a revisión final de secretos, archivos preparados y formato. Se conservan solo cuatro candidatos: [FINAL_QA.md](FINAL_QA.md), [CLEANUP_PLAN.md](CLEANUP_PLAN.md), backend/maintenance/inspeccion_limpieza.sql y backend/maintenance/limpieza_operativa.preview.sql. Este último es completamente inerte (todas sus líneas comentadas); el otro SQL permite únicamente lectura. La comprobación de publicación y hash se realiza con Git después del commit; no se atribuye éxito de push antes de obtenerlo.
+
+<!-- FIN FUENTE: FINAL_QA.md -->
+
+<a id="baseline-historica"></a>
+
+## Anexo histórico: BASELINE.md — Fase 0
+
+Procedencia: BASELINE.md, anteriormente en la raíz. Corte del 16 de noviembre de 2026, commit 43667ae y 46 pruebas. Sus diferencias funcionales y referencias a main pertenecen exclusivamente a ese corte; esta reorganización no cambia de rama ni modifica main.
+
+<!-- INICIO FUENTE: BASELINE.md -->
+
+<a id="baseline-línea-base-de-micro-carmita--fase-0"></a>
+
+### Línea base de Micro Carmita — Fase 0
+
+Fecha de verificación: 16 de noviembre de 2026, America/Guayaquil.
+
+Commit de referencia: `43667ae`, rama `main`. Esta línea base queda pendiente de revisión y de registro en Git.
+
+<a id="baseline-reproducción-y-resultados"></a>
+
+#### Reproducción y resultados
+
+Entorno verificado con Node.js `v26.10.0` y npm `11.11.0`.
+
+```bash
+npm test
+```
+
+El script ejecuta `node --test modelo.test.cjs app.test.cjs`.
+
+| Resultado | Cantidad |
+| --- | ---: |
+| Pruebas ejecutadas | 46 |
+| Exitosas | 46 |
+| Fallidas | 0 |
+| Omitidas | 0 |
+| Canceladas | 0 |
+| Pendientes declaradas por el ejecutor | 0 |
+
+Código de salida `0`. Duración observada de `205.4865 ms`. Sin errores técnicos durante la ejecución.
+
+<a id="baseline-archivos-examinados-y-alcance"></a>
+
+#### Archivos examinados y alcance
+
+| Archivo | Uso en la revisión |
+| --- | --- |
+| [package.json](../package.json) | Configuración y cambio exclusivo del script `test` para ejecutar ambas suites. |
+| [modelo.test.cjs](../modelo.test.cjs) | 14 pruebas de reglas del modelo, inventario, caducidad, crédito, abonos, permisos y validación de estado. |
+| [modelo.js](../modelo.js) | Implementación ejercitada por la suite del modelo. |
+| [app.test.cjs](../app.test.cjs) | 32 pruebas de caracterización de ventas, cobros, sesiones, permisos e inventario. |
+| [app.js](../app.js) | Código real ejercitado en contextos aislados de `node:vm`. |
+| [index.html](../index.html) | Confirmación de que carga únicamente [app.js](../app.js), mediante la etiqueta script de la línea 531. |
+| [README.md](../README.md) | Contraste de reglas documentadas y alcance del prototipo. |
+
+Las pruebas de aplicación utilizan DOM mínimo y localStorage simulados en memoria. Cada caso prepara datos independientes. La persistencia se comprueba recuperando los datos serializados en otro contexto. Las funciones de negocio reales se ejecutan sin reemplazarlas por simulaciones.
+
+Las pruebas de caracterización registran el comportamiento actual. El resultado exitoso de la suite deja pendientes las diferencias funcionales descritas abajo. La suite del modelo ejercita una implementación separada de la utilizada por la interfaz. Esta verificación utiliza Node.js y deja pendiente la validación integral en un navegador y la futura integración con Express y MySQL.
+
+<a id="baseline-diferencias-conocidas"></a>
+
+#### Diferencias conocidas
+
+Los códigos RF de esta sección corresponden a la identificación indicada por el responsable del proyecto en esta revisión. El documento original completo de los 38 requisitos funcionales sigue pendiente de contraste con los archivos disponibles.
+
+| Referencia | Comportamiento actual y diferencia pendiente |
+| --- | --- |
+| RF-03, gestión de usuarios | Administrador carece del permiso `usuarios`. Se bloquean creación, activación/desactivación y acceso a esa sección. La definición acordada asigna la gestión de usuarios del negocio al Administrador. La prueba conserva el bloqueo actual como caracterización. |
+| RF-06, stock negativo | `registrarVenta()` rechaza una venta cuando las existencias actuales son insuficientes, conservando almacenamiento y carrito. Permitir stock negativo y su conciliación posterior sigue pendiente en la aplicación. [modelo.js](../modelo.js) ya tiene una regla separada de stock negativo cubierta por pruebas. |
+| RF-17, alertas de stock bajo | Con 1 o 2 unidades se muestra Disponible y no se genera una alerta específica por stock menor a tres. Con 0 se muestra Agotado. Se verificó también el límite de 3 unidades. La alerta requerida sigue pendiente. |
+| Validación de cantidades vacías | El registro convierte la cadena vacía en cantidad 0 y acepta el producto. La edición rechaza la misma entrada. Se conserva esta diferencia de validación, pendiente de unificación conforme a los requisitos. |
+
+Los precios negativos y las cantidades negativas, fraccionarias o no numéricas se rechazan en registro y edición. Los duplicados por nombre se rechazan ignorando mayúsculas y espacios exteriores. El Vendedor tiene bloqueadas las modificaciones del inventario.
+
+<a id="baseline-decisión-sobre-roles-y-separación-de-entornos"></a>
+
+#### Decisión sobre roles y separación de entornos
+
+Se mantienen los 38 requisitos funcionales originales. La siguiente definición es una decisión técnica de seguridad y separación de entornos.
+
+- Superusuario se utilizará exclusivamente por el desarrollador durante la construcción y las pruebas. Carece de función operativa en el emprendimiento.
+- En producción, la cuenta de pruebas Superusuario deberá estar deshabilitada o inaccesible. Debe impedirse cualquier vía de acceso privilegiado basada en credenciales de desarrollo.
+- Administrador será responsable de gestionar el negocio y sus usuarios conforme al RF-03, manteniendo separados los privilegios exclusivos del Superusuario.
+- Vendedor tendrá únicamente los permisos operativos autorizados.
+
+Estas decisiones deberán aplicarse al implementar autenticación y autorización con Express y MySQL. Las pruebas actuales de caracterización y los permisos de la aplicación se conservan en esta fase.
+
+<a id="baseline-estado-de-los-cambios-para-revisión"></a>
+
+#### Estado de los cambios para revisión
+
+Antes de crear este documento se comprobó que los únicos cambios respecto de Git eran [package.json](../package.json) y [app.test.cjs](../app.test.cjs). El primero contiene exclusivamente el cambio del script `test`. El segundo contiene la suite de caracterización desarrollada durante la Fase 0 y sigue sin seguimiento.
+
+Este cierre añade [BASELINE.md](FINAL_QA.md#baseline-historica) como tercer archivo autorizado. Los archivos de aplicación, modelo, interfaz y estilos se conservan. No se instalaron dependencias ni se realizaron migraciones o commits. El registro de la línea base en Git queda pendiente de revisión del responsable del proyecto.
+
+<!-- FIN FUENTE: BASELINE.md -->

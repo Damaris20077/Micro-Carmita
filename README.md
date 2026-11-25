@@ -4,11 +4,11 @@ Sistema de gestión con interfaz HTML, CSS y JavaScript, backend Node.js/Express
 
 ## Arquitectura y almacenamiento
 
-- `index.html` y `estilos.css` contienen las pantallas y el diseño aprobado.
-- `app.js` conserva la base de interfaz utilizada por los adaptadores `auth-client.js`, `inventory-client.js`, `orders-client.js`, `sales-client.js`, `finance-client.js`, `reports-client.js` y `dashboard-client.js`. No debe retirarse por contener funciones históricas.
-- `date-formatter.js` comparte la fecha técnica actual de Ecuador (`hoy`, YYYY-MM-DD) y los formatos de presentación (`calendario`, `instante`). Las cadenas de presentación no se usan para cálculos ni filtros.
-- `backend/server.js` configura el pool y los repositorios e inicia Express en loopback. `backend/app.js` compone autenticación, API y recursos públicos explícitos.
-- Cada dominio conserva rutas, servicios y repositorios separados. `modelo.js` aporta reglas compartidas al backend; no es un archivo obsoleto del prototipo.
+- [index.html](index.html) y [estilos.css](estilos.css) contienen las pantallas y el diseño aprobado.
+- [app.js](app.js) conserva la base de interfaz utilizada por los adaptadores [auth-client.js](auth-client.js), [inventory-client.js](inventory-client.js), [orders-client.js](orders-client.js), [sales-client.js](sales-client.js), [finance-client.js](finance-client.js), [reports-client.js](reports-client.js) y [dashboard-client.js](dashboard-client.js). No debe retirarse por contener funciones históricas.
+- [date-formatter.js](date-formatter.js) comparte la fecha técnica actual de Ecuador (`hoy`, YYYY-MM-DD) y los formatos de presentación (`calendario`, `instante`). Las cadenas de presentación no se usan para cálculos ni filtros.
+- [backend/server.js](backend/server.js) configura el pool y los repositorios e inicia Express en loopback. [backend/app.js](backend/app.js) compone autenticación, API y recursos públicos explícitos.
+- Cada dominio conserva rutas, servicios y repositorios separados. [modelo.js](modelo.js) aporta reglas compartidas al backend; no es un archivo obsoleto del prototipo.
 - `backend/migrations/` contiene el esquema versionado. Las migraciones son administrativas: no se ejecutan al iniciar la aplicación.
 - Los respaldos se ejecutan mediante una CLI independiente de Express.
 
@@ -54,15 +54,15 @@ La aplicación carga `.env` sin reemplazar variables ya definidas en el proceso.
 
 | Orden | Archivo | Contenido y procedimiento |
 | --- | --- | --- |
-| 001 | `backend/migrations/001_auth.sql` | Roles, usuarios, sesiones, auditoría y registro de versiones. [AUTH.md](AUTH.md) |
-| 002 | `backend/migrations/002_catalogo_inventario.sql` | Clientes, proveedores, catálogo, lotes e inventario. [INVENTORY.md](INVENTORY.md) |
-| 003 | `backend/migrations/003_pedidos_recepciones.sql` | Pedidos y recepciones. [ORDERS.md](ORDERS.md) |
-| 004 | `backend/migrations/004_ventas_cobros.sql` | Ventas, fiados, abonos, caja e historial. [SALES.md](SALES.md) |
-| 005 | `backend/migrations/005_finanzas.sql` | Movimientos financieros manuales. [FINANCE.md](FINANCE.md) |
+| 001 | [backend/migrations/001_auth.sql](backend/migrations/001_auth.sql) | Roles, usuarios, sesiones, auditoría y registro de versiones. [AUTH.md](docs/AUTH.md) |
+| 002 | [backend/migrations/002_catalogo_inventario.sql](backend/migrations/002_catalogo_inventario.sql) | Clientes, proveedores, catálogo, lotes e inventario. [INVENTORY.md](docs/MANUAL_TECNICO.md#inventario) |
+| 003 | [backend/migrations/003_pedidos_recepciones.sql](backend/migrations/003_pedidos_recepciones.sql) | Pedidos y recepciones. [ORDERS.md](docs/MANUAL_TECNICO.md#pedidos) |
+| 004 | [backend/migrations/004_ventas_cobros.sql](backend/migrations/004_ventas_cobros.sql) | Ventas, fiados, abonos, caja e historial. [SALES.md](docs/MANUAL_TECNICO.md#ventas) |
+| 005 | [backend/migrations/005_finanzas.sql](backend/migrations/005_finanzas.sql) | Movimientos financieros manuales. [FINANCE.md](docs/MANUAL_TECNICO.md#finanzas) |
 
-Use el cliente MySQL con una cuenta administrativa separada y el procedimiento por lotes documentado en AUTH.md, revisando cada archivo y deteniéndose ante cualquier error. Compruebe las versiones en `schema_migrations` antes de continuar. MySQL puede confirmar DDL implícitamente: una aplicación parcial requiere inspección específica, no repetir archivos indiscriminadamente.
+Use el cliente MySQL con una cuenta administrativa separada y el procedimiento por lotes documentado en [AUTH.md](docs/AUTH.md), revisando cada archivo y deteniéndose ante cualquier error. Compruebe las versiones en `schema_migrations` antes de continuar. MySQL puede confirmar DDL implícitamente: una aplicación parcial requiere inspección específica, no repetir archivos indiscriminadamente.
 
-No ejecute el directorio recursivamente: `migrations/development/001_dev_role.sql` es exclusivo de desarrollo/pruebas. Los SQL de `backend/maintenance/` no son migraciones ni pasos de instalación; el preview de limpieza es evidencia histórica inerte y no debe reutilizarse.
+No ejecute el directorio recursivamente: `backend/migrations/development/001_dev_role.sql` es exclusivo de desarrollo/pruebas. Los SQL de `backend/maintenance/` no son migraciones ni pasos de instalación; el preview de limpieza es evidencia histórica inerte y no debe reutilizarse.
 
 ### Comprobación y primera cuenta
 
@@ -74,7 +74,7 @@ npm run db:check
 
 El comando realiza `SELECT 1` y cierra el pool; no certifica por sí solo que todo el esquema esté instalado.
 
-En una instalación nueva, después de preparar el esquema y antes de tener usuarios, aprovisione el primer Administrador. Configure temporalmente `BOOTSTRAP_NAME`, `BOOTSTRAP_USER` y `BOOTSTRAP_PASSWORD` mediante el procedimiento de entrada oculta y limpieza de variables de [AUTH.md](AUTH.md), y ejecute:
+En una instalación nueva, después de preparar el esquema y antes de tener usuarios, aprovisione el primer Administrador. Configure temporalmente `BOOTSTRAP_NAME`, `BOOTSTRAP_USER` y `BOOTSTRAP_PASSWORD` mediante el procedimiento de entrada oculta y limpieza de variables de [AUTH.md](docs/AUTH.md), y ejecute:
 
 ```powershell
 npm run auth:bootstrap
@@ -94,7 +94,7 @@ Abra `http://127.0.0.1:3000` o el origen local configurado. El frontend y `/api`
 npm test
 ```
 
-La suite incluye caracterización histórica, reglas del modelo, servicios, repositorios simulados, HTTP local, permisos, contratos de interfaz y respaldo simulado. Funciona sin migraciones ni operaciones contra MySQL real. La línea base previa a esta mejora, del 24 de noviembre de 2026, es de **673 pruebas exitosas**; el total vigente lo informa el ejecutor después de incorporar regresiones.
+La suite incluye caracterización histórica, reglas del modelo, servicios, repositorios simulados, HTTP local, permisos, contratos de interfaz y respaldo simulado. Funciona sin migraciones ni operaciones contra MySQL real. La línea base de la mejora de fechas fue de **673 pruebas exitosas** y su resultado fue de **675**. La reorganización documental del 24 de noviembre de 2026 parte de **675 pruebas exitosas**; véase el [estado de QA](docs/FINAL_QA.md#estado-documental-actual) para distinguir el corte actual del historial.
 
 ## Roles y permisos actuales
 
@@ -112,25 +112,27 @@ Los permisos se comprueban en el servidor; ocultar un botón no sustituye la aut
 | Consultar reportes globales y descargar PDF | Sí | No |
 | Crear, editar, activar o desactivar cuentas operativas | Sí | No |
 
-La gestión de usuarios protege al último Administrador activo y no permite asignar ni modificar Superusuario. Superusuario es exclusivo del desarrollador, requiere habilitación explícita fuera de producción y no equivale a Administrador del negocio. Producción rechaza su login y sus sesiones. Los detalles están en AUTH.md y en los documentos de cada dominio.
+La gestión de usuarios protege al último Administrador activo y no permite asignar ni modificar Superusuario. Superusuario es exclusivo del desarrollador, requiere habilitación explícita fuera de producción y no equivale a Administrador del negocio. Producción rechaza su login y sus sesiones. Los detalles están en [AUTH.md](docs/AUTH.md) y en los documentos de cada dominio.
 
 Las sesiones usan cookie HttpOnly y SameSite=Strict, Secure en producción; las escrituras autenticadas comprueban origen y CSRF. Las contraseñas se derivan con scrypt. No coloque secretos en el frontend ni en Git.
 
 ## Implementado y pendiente de validación
 
-Están implementados autenticación y usuarios, catálogo/contactos, inventario por lotes y FEFO, alertas, stock negativo controlado y conciliación, pedidos y recepciones, ventas/fiados/abonos, finanzas, reportes y exportación PDF. `rf.txt` conserva los 38 requisitos y [FINAL_QA.md](FINAL_QA.md) documenta su trazabilidad y las evidencias.
+Están implementados autenticación y usuarios, catálogo/contactos, inventario por lotes y FEFO, alertas, stock negativo controlado y conciliación, pedidos y recepciones, ventas/fiados/abonos, finanzas, reportes y exportación PDF. [rf.txt](rf.txt) conserva los 38 requisitos y [FINAL_QA.md](docs/FINAL_QA.md) documenta su trazabilidad y las evidencias.
 
-El mecanismo RF-37/38 de respaldo MySQL cifrado hacia Cloudflare R2 y periodicidad quincenal está implementado y probado con simulaciones. **Está desactivado por defecto y pendiente de validación operativa real**: bucket privado, credenciales dedicadas, programación persistente, custodia de claves, retención y restauración en una instancia aislada. `npm start` no inicia respaldos. La CLI usa `.env.backup` o `BACKUP_ENV_FILE`, no el `.env` de Express. Consulte [BACKUP.md](BACKUP.md) antes de habilitar o ejecutar sus comandos.
+El mecanismo RF-37/38 de respaldo MySQL cifrado hacia Cloudflare R2 y periodicidad quincenal está implementado y probado con simulaciones. **Está desactivado por defecto y pendiente de validación operativa real**: bucket privado, credenciales dedicadas, programación persistente, custodia de claves, retención y restauración en una instancia aislada. `npm start` no inicia respaldos. La CLI usa `.env.backup` o `BACKUP_ENV_FILE`, no el `.env` de Express. Consulte [BACKUP.md](docs/BACKUP.md) antes de habilitar o ejecutar sus comandos.
 
-Las pruebas automatizadas no sustituyen los ensayos pendientes de concurrencia con conexiones MySQL independientes, persistencia tras commit/reinicio, recorrido manual y accesibilidad, volumen PDF y recuperación real de respaldos. Las evidencias históricas de FINAL_QA.md distinguen esos alcances. Esta mejora no ejecuta ninguno de esos procedimientos ni prepara despliegue en la nube.
+Las pruebas automatizadas no sustituyen los ensayos pendientes de concurrencia con conexiones MySQL independientes, persistencia tras commit/reinicio, recorrido manual y accesibilidad, volumen PDF y recuperación real de respaldos. Las evidencias históricas de [FINAL_QA.md](docs/FINAL_QA.md) distinguen esos alcances. Esta mejora no ejecuta ninguno de esos procedimientos ni prepara despliegue en la nube.
 
 ## Documentación y evidencias
 
-- [AUTH.md](AUTH.md): autenticación, cuentas, aprovisionamiento y migración inicial.
-- [INVENTORY.md](INVENTORY.md), [ORDERS.md](ORDERS.md), [SALES.md](SALES.md), [FINANCE.md](FINANCE.md), [REPORTS.md](REPORTS.md): contratos, reglas y verificaciones por dominio.
-- [BACKUP.md](BACKUP.md): respaldo privado, programación y recuperación aislada.
-- [UI_UX.md](UI_UX.md): decisiones del diseño aprobado.
-- [BASELINE.md](BASELINE.md), [FINAL_QA.md](FINAL_QA.md): líneas base y evolución de pruebas; sus conteos están fechados.
-- [CLEANUP_PLAN.md](CLEANUP_PLAN.md): evidencia de la limpieza operativa ya finalizada; no repetirla.
+- [AUTH.md](docs/AUTH.md): autenticación, cuentas, aprovisionamiento y migración inicial.
+- [Manual técnico](docs/MANUAL_TECNICO.md): inventario, pedidos, ventas, finanzas y reportes; conserva los cinco documentos originales por módulo, sus comandos, contratos y evidencias.
+- [BACKUP.md](docs/BACKUP.md): respaldo privado, programación y recuperación aislada.
+- [UI_UX.md](docs/UI_UX.md): decisiones del diseño aprobado.
+- [BASELINE.md](docs/FINAL_QA.md#baseline-historica), [FINAL_QA.md](docs/FINAL_QA.md): líneas base y evolución de pruebas; sus conteos están fechados.
+- [CLEANUP_PLAN.md](docs/CLEANUP_PLAN.md): evidencia de la limpieza operativa ya finalizada; no repetirla.
+
+Los seis documentos de `docs/` se abren desde los enlaces anteriores. Sus comandos se ejecutan desde la raíz del proyecto, no desde `docs/`.
 
 Este README describe el funcionamiento actual. Los documentos técnicos conservan entregas y estados históricos; sus referencias al prototipo local, migraciones pendientes o conteos anteriores deben leerse con la fecha y el alcance de cada registro.

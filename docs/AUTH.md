@@ -1,12 +1,18 @@
+[Volver al README](../README.md) · [Manual técnico](MANUAL_TECNICO.md) · [Estado de QA](FINAL_QA.md#estado-documental-actual)
+
+Los comandos de terminal, rutas literales de código, migraciones y archivos privados se interpretan desde la **raíz del repositorio**, no desde `docs/`. Los enlaces de navegación sí son relativos a este documento. Los procedimientos históricos conservan sus condiciones y autorizaciones originales; esta reorganización no autoriza ejecutarlos.
+
+<!-- INICIO FUENTE: AUTH.md -->
+
 # Autenticación y usuarios — RF-01, RF-02 y RF-03
 
-Corte de revisión del 17/11/2026: consultas de solo lectura confirman un Administrador activo, cero Superusuarios activos, 22 tablas y migraciones 001–005. Los ensayos reales previos satisfactorios fueron confirmados por el responsable del proyecto; no se repitieron en esta auditoría. Véase FINAL_QA.md para el estado actual y las validaciones pendientes. Las cifras y el esquema vacío de la sección siguiente corresponden a la entrega inicial.
+Corte de revisión del 17/11/2026: consultas de solo lectura confirman un Administrador activo, cero Superusuarios activos, 22 tablas y migraciones 001–005. Los ensayos reales previos satisfactorios fueron confirmados por el responsable del proyecto; no se repitieron en esta auditoría. Véase [FINAL_QA.md](FINAL_QA.md) para el estado actual y las validaciones pendientes. Las cifras y el esquema vacío de la sección siguiente corresponden a la entrega inicial.
 
 ## Estado de la entrega inicial (registro histórico)
 
-El backend implementa inicio y cierre de sesión, autorización y gestión de usuarios. El frontend utiliza `auth-client.js` para estas operaciones. Las 56 pruebas anteriores se conservan. La migración `001_auth` ya se aplicó en `micro_carmita` sobre MySQL 8.0.46 como `root@localhost`, después de comprobar que el esquema estaba vacío. El aprovisionamiento del primer Administrador y el ensayo funcional contra MySQL real quedan pendientes.
+El backend implementa inicio y cierre de sesión, autorización y gestión de usuarios. El frontend utiliza [auth-client.js](../auth-client.js) para estas operaciones. Las 56 pruebas anteriores se conservan. La migración `001_auth` ya se aplicó en `micro_carmita` sobre MySQL 8.0.46 como `root@localhost`, después de comprobar que el esquema estaba vacío. El aprovisionamiento del primer Administrador y el ensayo funcional contra MySQL real quedan pendientes.
 
-La activación ejecutó exclusivamente `001_auth.sql`, con SHA-256 `7cce0d8584607196b7a87beb3a9fac223eb0365a8408b870b25ebf2fa25dbc13`. Se comprobaron cinco tablas, cinco claves primarias, cuatro claves foráneas, nueve CHECK, el índice único de usuario y los índices previstos. Hay dos roles operativos y una versión de migración. Usuarios, sesiones y auditoría permanecen vacíos. `micro_app@localhost` pudo consultar las cinco tablas y conservó únicamente SELECT, INSERT, UPDATE y DELETE sobre `micro_carmita`.*. La contraseña administrativa se solicitó de forma oculta en el terminal local y se mantuvo temporalmente en memoria del proceso. Los archivos auxiliares de activación se retiraron.
+La activación ejecutó exclusivamente [001_auth.sql](../backend/migrations/001_auth.sql), con SHA-256 `7cce0d8584607196b7a87beb3a9fac223eb0365a8408b870b25ebf2fa25dbc13`. Se comprobaron cinco tablas, cinco claves primarias, cuatro claves foráneas, nueve CHECK, el índice único de usuario y los índices previstos. Hay dos roles operativos y una versión de migración. Usuarios, sesiones y auditoría permanecen vacíos. `micro_app@localhost` pudo consultar las cinco tablas y conservó únicamente SELECT, INSERT, UPDATE y DELETE sobre `micro_carmita`.*. La contraseña administrativa se solicitó de forma oculta en el terminal local y se mantuvo temporalmente en memoria del proceso. Los archivos auxiliares de activación se retiraron.
 
 Después de la activación, `npm test` conservó 81 pruebas exitosas, cero fallidas, omitidas o canceladas, código de salida 0 y duración de 5514.05 ms. Las notas de preparación siguientes describen la revisión previa. La migración común ya aplicada debe conservarse como registro y no volver a ejecutarse.
 
@@ -25,7 +31,7 @@ Se conservan las 56 pruebas previas y se añaden 25. Código de salida `0`, dura
 
 ## Migración administrativa
 
-El archivo versionado es `backend/migrations/001_auth.sql`. Crea `schema_migrations`, `roles`, `usuarios`, `sesiones` y `auditoria_usuarios`, y registra la versión `001_auth` al finalizar. Los roles iniciales son Administrador y Vendedor. Los nombres de usuario son únicos sin distinguir mayúsculas, con longitud de 3 a 30 caracteres ASCII de letras, números, punto, guion o guion bajo.
+El archivo versionado es [backend/migrations/001_auth.sql](../backend/migrations/001_auth.sql). Crea `schema_migrations`, `roles`, `usuarios`, `sesiones` y `auditoria_usuarios`, y registra la versión `001_auth` al finalizar. Los roles iniciales son Administrador y Vendedor. Los nombres de usuario son únicos sin distinguir mayúsculas, con longitud de 3 a 30 caracteres ASCII de letras, números, punto, guion o guion bajo.
 
 Desde la raíz del proyecto, abra el cliente MySQL con una cuenta administrativa separada de `micro_app`. Sustituya `cuenta_migraciones` por la cuenta autorizada de su instalación. La opción `-p` solicita la contraseña de forma interactiva.
 
@@ -49,7 +55,7 @@ La cuenta `micro_app` mantiene permisos DML sobre las tablas necesarias y carece
 
 ## Configuración y primera cuenta
 
-Configure localmente `.env` a partir de `.env.example`, conservando cualquier configuración existente. Complete `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD` y `DB_NAME` con la conexión de `micro_app` a `micro_carmita`.
+Configure localmente `.env` a partir de [.env.example](../.env.example), conservando cualquier configuración existente. Complete `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD` y `DB_NAME` con la conexión de `micro_app` a `micro_carmita`.
 
 | Variable | Uso |
 | --- | --- |
@@ -96,7 +102,7 @@ Las solicitudes que modifican estado requieren `Origin` igual a `APP_ORIGIN` y `
 ## Contraseñas, sesiones y roles
 
 - RF-01 utiliza scrypt asíncrono de Node.js, con N=131072, r=8, p=1, sal aleatoria de 16 bytes y hash de 64 bytes. Los parámetros y la sal se guardan junto al hash. Se evita incorporar una dependencia adicional. Esta elección reemplaza la propuesta inicial de Argon2id por una alternativa admitida por OWASP. Consulte [OWASP Password Storage](https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html).
-- La política exige contraseñas de 8 a 128 caracteres para Administrador y Vendedor, y de 15 a 128 para Superusuario. Se aplica al establecer contraseñas nuevas y en el aprovisionamiento. Se permiten letras, números, símbolos y espacios sin exigir una mezcla de categorías. El conteo utiliza la longitud de JavaScript, coherente con los atributos HTML del formulario. `backend/password-policy.js` centraliza la validación utilizada por el servicio y bootstrap. El formulario operativo admite únicamente Administrador y Vendedor y conserva mínimo 8. Superusuario se aprovisiona exclusivamente por la herramienta de desarrollo con mínimo 15, sin añadirlo al formulario operativo.
+- La política exige contraseñas de 8 a 128 caracteres para Administrador y Vendedor, y de 15 a 128 para Superusuario. Se aplica al establecer contraseñas nuevas y en el aprovisionamiento. Se permiten letras, números, símbolos y espacios sin exigir una mezcla de categorías. El conteo utiliza la longitud de JavaScript, coherente con los atributos HTML del formulario. [backend/password-policy.js](../backend/password-policy.js) centraliza la validación utilizada por el servicio y bootstrap. El formulario operativo admite únicamente Administrador y Vendedor y conserva mínimo 8. Superusuario se aprovisiona exclusivamente por la herramienta de desarrollo con mínimo 15, sin añadirlo al formulario operativo.
 - Se rechazan claves comunes y variantes previsibles mediante una lista local de términos, secuencias numéricas, alfabéticas o de teclado, patrones repetidos y variantes del nombre de usuario. La comparación normaliza mayúsculas y espacios exteriores únicamente para detectar esos patrones. La contraseña original se conserva íntegra para scrypt. La lista local tiene alcance limitado y puede ampliarse con términos adicionales. No se consulta ningún servicio externo con contraseñas.
 - Las contraseñas existentes permanecen intactas. El login verifica su hash sin aplicar retroactivamente la nueva política. La regla se aplica al establecer una contraseña nueva. Las contraseñas se transmiten únicamente por HTTPS en producción y se excluyen de respuestas y auditorías.
 - Las sesiones utilizan tokens aleatorios de 32 bytes. MySQL conserva únicamente SHA-256 del token. La cookie es HttpOnly y SameSite=Strict, y utiliza Secure en producción. La duración absoluta es de ocho horas y la inactividad máxima de treinta minutos. El backend verifica el rol y estado actuales en cada solicitud autenticada.
@@ -109,7 +115,7 @@ Producción requiere un origen HTTPS detrás de un terminador TLS que reenvíe l
 
 ## Superusuario de desarrollo
 
-Superusuario queda reservado al desarrollador y carece de función operativa. Las migraciones comunes solo insertan los roles operativos. En una base separada de desarrollo o pruebas, una cuenta administrativa puede aplicar `backend/migrations/development/001_dev_role.sql` después de la migración común.
+Superusuario queda reservado al desarrollador y carece de función operativa. Las migraciones comunes solo insertan los roles operativos. En una base separada de desarrollo o pruebas, una cuenta administrativa puede aplicar [backend/migrations/development/001_dev_role.sql](../backend/migrations/development/001_dev_role.sql) después de la migración común.
 
 Para aprovisionar una cuenta de desarrollo, configure `NODE_ENV=development` o `test`, habilite `ALLOW_DEV_SUPERUSER=true` y proporcione las variables `BOOTSTRAP_*` mediante el mismo procedimiento seguro, solicitando en Read-Host una contraseña de 15 a 128 caracteres. Ejecute `npm run auth:bootstrap -- --superuser`. La cuenta tendrá credenciales elegidas localmente y un nombre único. El script valida el entorno y la política específica del rol antes de abrir el pool. El aprovisionamiento operativo inicial debe realizarse primero.
 
@@ -117,17 +123,17 @@ En producción, el backend rechaza tanto el login como las sesiones existentes d
 
 ## Archivos y verificación
 
-Los módulos nuevos son `backend/passwords.js`, `backend/auth-service.js`, `backend/auth-repository.js`, `backend/bootstrap.js`, las migraciones y sus pruebas. `backend/app.js` integra rutas y middleware. `backend/server.js` configura el repositorio y el cierre del pool. `auth-client.js` integra las pantallas.
+Los módulos nuevos son [backend/passwords.js](../backend/passwords.js), [backend/auth-service.js](../backend/auth-service.js), [backend/auth-repository.js](../backend/auth-repository.js), [backend/bootstrap.js](../backend/bootstrap.js), las migraciones y sus pruebas. [backend/app.js](../backend/app.js) integra rutas y middleware. [backend/server.js](../backend/server.js) configura el repositorio y el cierre del pool. [auth-client.js](../auth-client.js) integra las pantallas.
 
-Los cambios en `app.js` retiran las credenciales iniciales y delegan el arranque al adaptador. Sus funciones locales anteriores permanecen para conservar las pruebas históricas de caracterización. El navegador utiliza las funciones reemplazadas por el adaptador, y los controles de sesión del HTML apuntan explícitamente a este. La prueba histórica sobre el bloqueo del Administrador describe el módulo local aislado. Las nuevas pruebas verifican que la aplicación integrada sí permite RF-03.
+Los cambios en [app.js](../app.js) retiran las credenciales iniciales y delegan el arranque al adaptador. Sus funciones locales anteriores permanecen para conservar las pruebas históricas de caracterización. El navegador utiliza las funciones reemplazadas por el adaptador, y los controles de sesión del HTML apuntan explícitamente a este. La prueba histórica sobre el bloqueo del Administrador describe el módulo local aislado. Las nuevas pruebas verifican que la aplicación integrada sí permite RF-03.
 
-`index.html` incorpora el adaptador y ajusta el texto, las opciones operativas y la longitud de contraseña del formulario. `package.json` incorpora `auth:bootstrap`. `.env.example` documenta el entorno y el origen. `modelo.js`, `estilos.css`, las pruebas anteriores y `BASELINE.md` se conservan.
+[index.html](../index.html) incorpora el adaptador y ajusta el texto, las opciones operativas y la longitud de contraseña del formulario. [package.json](../package.json) incorpora `auth:bootstrap`. [.env.example](../.env.example) documenta el entorno y el origen. [modelo.js](../modelo.js), [estilos.css](../estilos.css), las pruebas anteriores y [BASELINE.md](FINAL_QA.md#baseline-historica) se conservan.
 
 Después de aplicar la migración y crear el Administrador, compruebe en el navegador login, creación de Vendedor, rechazo de su acceso a usuarios, edición, desactivación, reactivación y logout. Una cuenta desactivada deberá perder acceso a la API. La verificación contra MySQL real y la revisión visual del navegador quedan pendientes de este paso administrativo.
 
 ## Revisión de preparación para activación
 
-Se revisaron ambos archivos SQL y su correspondencia con `auth-repository.js`, `auth-service.js`, `bootstrap.js` y la configuración de Express. El esquema utiliza funcionalidades disponibles en MySQL 8.0.46. Las expresiones DEFAULT requieren 8.0.13 o posterior y los CHECK efectivos requieren 8.0.16 o posterior. Esta conclusión procede de revisión estática. La ejecución DDL real sigue pendiente. Referencias oficiales de [valores predeterminados](https://dev.mysql.com/doc/refman/8.0/en/data-type-defaults.html) y [restricciones CHECK](https://dev.mysql.com/doc/refman/8.0/en/create-table-check-constraints.html).
+Se revisaron ambos archivos SQL y su correspondencia con [auth-repository.js](../backend/auth-repository.js), [auth-service.js](../backend/auth-service.js), [bootstrap.js](../backend/bootstrap.js) y la configuración de Express. El esquema utiliza funcionalidades disponibles en MySQL 8.0.46. Las expresiones DEFAULT requieren 8.0.13 o posterior y los CHECK efectivos requieren 8.0.16 o posterior. Esta conclusión procede de revisión estática. La ejecución DDL real sigue pendiente. Referencias oficiales de [valores predeterminados](https://dev.mysql.com/doc/refman/8.0/en/data-type-defaults.html) y [restricciones CHECK](https://dev.mysql.com/doc/refman/8.0/en/create-table-check-constraints.html).
 
 Las cinco tablas tienen clave primaria. `usuarios.usuario` tiene índice único sin distinción de mayúsculas. Las columnas de rol de ambas tablas tienen tipo y collation coincidentes. Las relaciones usuario-rol, sesión-usuario y auditoría-usuario usan claves foráneas InnoDB y rechazo de cambios referenciados por defecto. Los índices explícitos cubren rol/estado, usuario de sesión, caducidad y auditoría por afectado/fecha. InnoDB crea el índice necesario de la FK del actor. Se reforzaron los CHECK de fechas de actividad y revocación de sesiones. Estos CHECK admiten la renovación de actividad de una sesión que ya haya alcanzado su vencimiento absoluto, aunque esa sesión seguirá siendo rechazada por el servicio.
 
@@ -211,3 +217,5 @@ FROM auditoria_usuarios ORDER BY id;
 ```
 
 Para producción, configure `NODE_ENV=production`, `ALLOW_DEV_SUPERUSER=false` y el origen HTTPS real. Aplique solo la migración común. Las pruebas automatizadas verifican el rechazo tanto de login como de sesiones Superusuario en producción incluso ante una habilitación accidental. Una comprobación real de esa condición deberá realizarse en un entorno aislado equivalente a producción, conservando las credenciales y cuentas de desarrollo fuera de la base operativa.
+
+<!-- FIN FUENTE: AUTH.md -->
